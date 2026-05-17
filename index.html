@@ -449,6 +449,10 @@
             <button class="control-btn start" id="btn-start" onclick="startRun()">Iniciar Run</button>
             <button class="control-btn restart" id="btn-restart" onclick="restartRun()" disabled>Reiniciar</button>
         </div>
+        <div style="text-align: center; margin-top: 4px;">
+            <button onclick="resetGame()" style="background: transparent; border: 1px solid #3a2a2a; color: #6b4a4a; padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 0.75rem;">🗑️ Borrar progreso</button>
+            <span id="save-indicator" style="font-size: 0.7rem; color: #4a6a4a; margin-left: 8px; opacity: 0; transition: opacity 0.3s;">✓ Guardado</span>
+        </div>
     </div>
 
     <!-- Tutorial Modal -->
@@ -553,6 +557,8 @@
             },
         };
 
+        const SAVE_KEY = 'torre_infinita_save_v1';
+
         // ============================================
         // 2. ESTADO CENTRAL
         // ============================================
@@ -568,6 +574,80 @@
         // Inicializar upgrades desde BALANCE
         for (const [key, u] of Object.entries(BALANCE.metaUpgrades)) {
             metaState.upgrades[key] = { level: 0, ...u };
+        }
+
+        // ============================================
+        // 2b. PERSISTENCIA (localStorage)
+        // ============================================
+        function saveGame() {
+            const data = {
+                souls: metaState.souls,
+                maxFloor: metaState.maxFloor,
+                unlockedEquipment: metaState.unlockedEquipment,
+                equipment: metaState.equipment,
+                abilities: metaState.abilities,
+                upgrades: {},
+            };
+            for (const [key, u] of Object.entries(metaState.upgrades)) {
+                data.upgrades[key] = { level: u.level };
+            }
+            localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+            flashSaveIndicator();
+        }
+
+        function flashSaveIndicator() {
+            const el = document.getElementById('save-indicator');
+            if (!el) return;
+            el.style.opacity = '1';
+            setTimeout(() => el.style.opacity = '0', 1500);
+        }
+
+        function loadGame() {
+            const raw = localStorage.getItem(SAVE_KEY);
+            if (!raw) return false;
+            try {
+                const data = JSON.parse(raw);
+                metaState.souls = data.souls ?? 0;
+                metaState.maxFloor = data.maxFloor ?? 0;
+                metaState.unlockedEquipment = data.unlockedEquipment ?? false;
+                metaState.equipment = data.equipment ?? { weapon: null, armor: null, ring: null };
+                metaState.abilities = data.abilities ?? [];
+                if (data.upgrades) {
+                    for (const [key, saved] of Object.entries(data.upgrades)) {
+                        if (metaState.upgrades[key]) {
+                            metaState.upgrades[key].level = saved.level ?? 0;
+                        }
+                    }
+                }
+                return true;
+            } catch {
+                return false;
+            }
+        }
+
+        function resetGame() {
+            if (!confirm('¿Seguro que quieres borrar TODO el progreso? Esta acción no se puede deshacer.')) return;
+            localStorage.removeItem(SAVE_KEY);
+            // Reset metaState
+            metaState.souls = 0;
+            metaState.maxFloor = 0;
+            metaState.unlockedEquipment = false;
+            metaState.equipment = { weapon: null, armor: null, ring: null };
+            metaState.abilities = [];
+            for (const key of Object.keys(metaState.upgrades)) {
+                metaState.upgrades[key].level = 0;
+            }
+            if (combatLoop) clearInterval(combatLoop);
+            runState.active = false;
+            runState.floor = 1;
+            runState.enemy = null;
+            document.getElementById('combat-log').innerHTML = '';
+            document.getElementById('equip-section').classList.add('locked');
+            document.querySelector('#equip-section h2').textContent = '🎒 Equipo (Se desbloquea tras superar piso 10)';
+            addLog('🗼 Progreso borrado. Nueva run iniciada.', 'system');
+            render();
+            updateButtons();
+            saveGame();
         }
 
         const runState = {
@@ -941,7 +1021,7 @@
                 if (Math.random() * 100 < dropChance || runState.enemy.isBoss) {
                     const item = generateItem(runState.floor, runState.enemy.isBoss);
                     addLog(`🎁 Drop: ${item.name}`, 'loot');
-                    tryEquip(item);
+                    if (tryEquip(item)) saveGame();
                 }
             }
 
@@ -951,6 +1031,7 @@
                 addLog('🔓 ¡SISTEMA DE EQUIPO DESBLOQUEADO!', 'victory');
                 document.getElementById('equip-section').classList.remove('locked');
                 document.querySelector('#equip-section h2').textContent = '🎒 Equipo (Desbloqueado)';
+                saveGame();
             }
 
             runState.floor++;
@@ -965,6 +1046,7 @@
             metaState.maxFloor = Math.max(metaState.maxFloor, runState.floor);
             addLog(`💀 Caíste en el piso ${runState.floor}. +${souls} almas.`, 'death');
             render();
+            saveGame();
         }
 
         // ============================================
@@ -1064,6 +1146,7 @@
             metaState.souls -= cost; metaState.upgrades[key].level++;
             addLog(`⬆️ Mejora: ${metaState.upgrades[key].label} (Nv ${metaState.upgrades[key].level})`, 'system');
             render();
+            saveGame();
         }
 
         function render() {
@@ -1116,7 +1199,7 @@
                 if (item) {
                     const rarityClass = `rarity-${item.rarity.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-')}`;
                     const percentStats = ['crit', 'dodge', 'lifesteal'];
-                    const statLabels = { crit: 'CRIT', dodge: 'EVA', lifesteal: 'ROBO' };
+                    const statLabels = { crit: 'CRIT', dodge: 'EVA', lifesteal: 'Lifesteal' };
                     const statLines = Object.entries(item.stats)
                         .filter(([, v]) => v > 0)
                         .map(([k, v]) => {
@@ -1200,6 +1283,14 @@
         }
 
         // Init
+        const hasSave = loadGame();
+        if (hasSave) {
+            addLog(`💾 Progreso cargado — 💀 ${metaState.souls} almas | Piso máx: ${metaState.maxFloor}`, 'system');
+            if (metaState.unlockedEquipment) {
+                document.getElementById('equip-section').classList.remove('locked');
+                document.querySelector('#equip-section h2').textContent = '🎒 Equipo (Desbloqueado)';
+            }
+        }
         render(); updateButtons();
         if (!localStorage.getItem('torre_tutorial_seen')) showTutorial();
     </script>
