@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Torre Infinita - Fase 2</title>
+    <style>
+        /* ============================================
+           RESET & BASE
+           ============================================ */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #0a0a12;
+            color: #e0e0e0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            user-select: none;
+        }
+
+        #game {
+            max-width: 480px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* ============================================
+           HEADER - Torre, piso y XP
+           ============================================ */
+        .header {
+            text-align: center;
+            padding: 16px;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border-radius: 12px;
+            border: 1px solid #2a2a4a;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 1.4rem;
+            color: #a78bfa;
+            margin-bottom: 4px;
+        }
+
+        .floor-display {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #f0f0f0;
+        }
+
+        .floor-display .boss-indicator {
+            color: #ef4444;
+            font-size: 0.9rem;
+            display: block;
+            margin-top: 2px;
+        }
+
+        .xp-bar-container {
+            margin-top: 8px;
+            background: #0f0f16;
+            border-radius: 4px;
+            height: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .xp-bar {
+            height: 100%;
+            background: #3b82f6;
+            width: 0%;
+            transition: width 0.2s ease;
+        }
+
+        .xp-text {
+            position: absolute;
+            right: 4px;
+            top: -14px;
+            font-size: 0.7rem;
+            color: #9ca3af;
+        }
+
+        .help-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 32px;
+            height: 32px;
+            background: #2a2a4a;
+            border: 1px solid #3a3a5a;
+            border-radius: 50%;
+            color: #a78bfa;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+        }
+
+        .help-btn:hover { background: #3a3a5a; border-color: #a78bfa; }
+
+        /* ============================================
+           COMBAT AREA
+           ============================================ */
+        .combat-area {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            position: relative;
+        }
+
+        .fighter {
+            background: #1a1a2e;
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid #2a2a4a;
+            position: relative;
+        }
+
+        .fighter.player { border-color: #3b82f6; }
+        .fighter.enemy { border-color: #ef4444; }
+        .fighter.enemy.boss { border-color: #f59e0b; box-shadow: 0 0 12px rgba(245, 158, 11, 0.3); }
+
+        .fighter-name { font-weight: 600; font-size: 1rem; margin-bottom: 8px; }
+        .fighter.player .fighter-name { color: #60a5fa; display: flex; justify-content: space-between; align-items: center; }
+        .fighter.player .level-badge { background: #3b82f6; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; }
+        .fighter.enemy .fighter-name { color: #f87171; }
+
+        .hp-bar-container {
+            background: #2a1a1a;
+            border-radius: 6px;
+            height: 20px;
+            overflow: hidden;
+            margin-bottom: 8px;
+            position: relative;
+        }
+
+        .hp-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #22c55e, #16a34a);
+            transition: width 0.15s ease;
+            border-radius: 6px;
+        }
+
+        .hp-bar.low { background: linear-gradient(90deg, #ef4444, #dc2626); }
+        .hp-bar.mid { background: linear-gradient(90deg, #f59e0b, #d97706); }
+
+        .hp-text {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        }
+
+        .fighter-stats { display: flex; gap: 8px; font-size: 0.8rem; color: #9ca3af; }
+        .fighter-stats span { display: flex; align-items: center; gap: 2px; }
+
+        /* Derived Stats */
+        .derived-stats {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+            font-size: 0.7rem;
+            color: #6b7280;
+        }
+        .derived-stats span { background: #111; padding: 2px 4px; border-radius: 4px; }
+
+        /* ============================================
+           FLOATING NUMBERS
+           ============================================ */
+        .floating-container {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 10;
+        }
+
+        .float-num {
+            position: absolute;
+            left: 50%;
+            font-weight: 800;
+            font-size: 1.2rem;
+            transform: translateX(-50%);
+            animation: floatUp 0.8s ease-out forwards;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .float-num.crit { font-size: 1.8rem; color: #fbbf24; }
+        .float-num.normal { color: #ef4444; }
+        .float-num.heal { color: #22c55e; }
+        .float-num.miss { color: #9ca3af; font-style: italic; font-size: 1rem; }
+        .float-num.block { color: #60a5fa; font-size: 1rem; }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translate(-50%, 0) scale(0.8); }
+            20% { transform: translate(-50%, -10px) scale(1.1); }
+            100% { opacity: 0; transform: translate(-50%, -50px) scale(1); }
+        }
+
+        /* ============================================
+           LOG & SOULS
+           ============================================ */
+        .combat-log {
+            background: #111118;
+            border-radius: 12px;
+            padding: 12px;
+            height: 100px;
+            overflow-y: auto;
+            border: 1px solid #2a2a4a;
+            font-size: 0.8rem;
+            font-family: 'Consolas', monospace;
+        }
+
+        .combat-log .log-entry { padding: 2px 0; border-bottom: 1px solid #1a1a2e; }
+        .log-entry.player-atk { color: #60a5fa; }
+        .log-entry.enemy-atk { color: #f87171; }
+        .log-entry.boss-atk { color: #f59e0b; }
+        .log-entry.system { color: #a78bfa; font-weight: 600; }
+        .log-entry.death { color: #ef4444; font-weight: 700; }
+        .log-entry.victory { color: #22c55e; font-weight: 700; }
+        .log-entry.loot { color: #fbbf24; }
+
+        .souls-display {
+            text-align: center;
+            padding: 10px;
+            background: linear-gradient(135deg, #1a0a2e, #2a1a3e);
+            border-radius: 12px;
+            border: 1px solid #4a2a6a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .souls-display .value { font-size: 1.3rem; font-weight: 700; color: #c084fc; }
+
+        /* ============================================
+           EQUIPMENT
+           ============================================ */
+        .equipment-section {
+            background: #1a1a2e;
+            border-radius: 12px;
+            padding: 12px;
+            border: 1px solid #2a2a4a;
+        }
+
+        .equipment-section.locked { opacity: 0.5; pointer-events: none; filter: grayscale(1); }
+        .equipment-section h2 { font-size: 0.9rem; color: #a78bfa; margin-bottom: 8px; text-align: center; }
+
+        .equip-slots { display: flex; gap: 8px; justify-content: center; }
+        .equip-slot {
+            flex: 1;
+            background: #111118;
+            border: 1px dashed #3a3a5a;
+            border-radius: 8px;
+            padding: 8px;
+            text-align: center;
+            font-size: 0.75rem;
+            min-height: 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .equip-slot.filled { border-style: solid; }
+        .equip-slot.weapon { border-color: #ef4444; }
+        .equip-slot.armor { border-color: #3b82f6; }
+        .equip-slot.ring { border-color: #a78bfa; }
+
+        .equip-name { font-weight: 600; margin-bottom: 2px; }
+        .equip-stats { color: #9ca3af; font-size: 0.7rem; }
+        .equip-stat-line { font-size: 0.65rem; color: #9ca3af; }
+
+        /* Rarity text colors */
+        .rarity-poco-comun { color: #22c55e; }
+        .rarity-raro { color: #3b82f6; }
+        .rarity-epico { color: #a78bfa; }
+        .rarity-legendario { color: #f59e0b; }
+
+        /* ============================================
+           UPGRADES & CONTROLS
+           ============================================ */
+        .upgrades-section {
+            background: #1a1a2e;
+            border-radius: 12px;
+            padding: 12px;
+            border: 1px solid #2a2a4a;
+        }
+        .upgrades-section h2 { font-size: 0.9rem; color: #a78bfa; margin-bottom: 8px; text-align: center; }
+
+        .upgrade-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+        .upgrade-btn {
+            background: #2a2a4a;
+            border: 1px solid #3a3a5a;
+            border-radius: 6px;
+            padding: 8px;
+            cursor: pointer;
+            color: #e0e0e0;
+            font-size: 0.7rem;
+            transition: all 0.15s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+        .upgrade-btn:hover:not(:disabled) { background: #3a3a5a; border-color: #a78bfa; }
+        .upgrade-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .upgrade-btn .cost { color: #f59e0b; font-weight: 600; }
+        .upgrade-btn .level { color: #9ca3af; font-size: 0.65rem; }
+
+        .controls { display: flex; gap: 8px; }
+        .control-btn {
+            flex: 1; padding: 10px; border: none; border-radius: 8px;
+            font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.15s ease;
+        }
+        .control-btn.start { background: linear-gradient(135deg, #22c55e, #16a34a); color: white; }
+        .control-btn.restart { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
+        .control-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* ============================================
+           MODALS
+           ============================================ */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+        }
+        .modal-overlay.visible { opacity: 1; pointer-events: auto; }
+
+        .modal {
+            background: #1a1a2e; border: 1px solid #4a2a6a; border-radius: 16px;
+            padding: 20px; max-width: 400px; width: 90%;
+            transform: translateY(20px); transition: transform 0.2s ease;
+        }
+        .modal-overlay.visible .modal { transform: translateY(0); }
+
+        .modal h2 { color: #a78bfa; font-size: 1.2rem; margin-bottom: 12px; text-align: center; }
+        .modal p { color: #b0b0c0; font-size: 0.9rem; line-height: 1.4; margin-bottom: 12px; }
+
+        .choice-grid { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+        .choice-btn {
+            background: #2a2a4a; border: 1px solid #3a3a5a; border-radius: 8px;
+            padding: 12px; cursor: pointer; color: #e0e0e0; text-align: left;
+            transition: all 0.15s ease;
+        }
+        .choice-btn:hover { background: #3a3a5a; border-color: #a78bfa; }
+        .choice-btn .title { font-weight: 600; color: #c084fc; display: block; }
+        .choice-btn .desc { font-size: 0.8rem; color: #9ca3af; }
+
+        .modal-close {
+            display: block; margin: 16px auto 0; padding: 10px 24px;
+            background: #a78bfa; color: white; border: none; border-radius: 8px;
+            font-weight: 600; cursor: pointer;
+        }
+
+        .fighter.hit { animation: flash 0.1s ease; }
+        @keyframes flash { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    </style>
+</head>
+<body>
+    <div id="game">
+        <!-- Header -->
+        <div class="header">
+            <h1>🗼 Torre Infinita</h1>
+            <button class="help-btn" onclick="showTutorial()" title="Tutorial">?</button>
+            <div class="floor-display">
+                <span id="floor-number">Piso 1</span>
+                <span id="boss-indicator" class="boss-indicator" style="display:none">⚔️ JEFE</span>
+            </div>
+        </div>
+
+        <!-- Combat -->
+        <div class="combat-area">
+            <div class="fighter player" id="player-card">
+                <div class="floating-container" id="player-floats"></div>
+                <div class="fighter-name">
+                    <span>🛡️ Héroe</span>
+                    <span class="level-badge" id="player-level">Nivel 1</span>
+                </div>
+                <div class="hp-bar-container">
+                    <div class="hp-bar" id="player-hp-bar" style="width:100%"></div>
+                    <div class="hp-text" id="player-hp-text">100 / 100</div>
+                </div>
+                <div class="xp-bar-container" style="height: 6px; margin-bottom: 8px;">
+                    <div class="xp-bar" id="player-xp-bar" style="width:0%"></div>
+                </div>
+                <div class="fighter-stats">
+                    <span>⚔️ ATK <b id="player-atk">10</b></span>
+                    <span>🛡️ DEF <b id="player-def">5</b></span>
+                    <span>🏃 AGI <b id="player-agi">10</b></span>
+                </div>
+                <div class="derived-stats">
+                    <span>🎯 P.CRIT <b id="player-crit">1%</b></span>
+                    <span>🛡️ BLOQ <b id="player-block">1%</b></span>
+                    <span>💨 EVA <b id="player-dodge">1%</b></span>
+                </div>
+            </div>
+            <div class="fighter enemy" id="enemy-card">
+                <div class="floating-container" id="enemy-floats"></div>
+                <div class="fighter-name" id="enemy-name">👹 Monstruo</div>
+                <div class="hp-bar-container">
+                    <div class="hp-bar" id="enemy-hp-bar" style="width:100%"></div>
+                    <div class="hp-text" id="enemy-hp-text">10 / 10</div>
+                </div>
+                <div class="fighter-stats">
+                    <span>⚔️ <b id="enemy-atk">3</b></span>
+                    <span>🛡️ <b id="enemy-def">1</b></span>
+                    <span>🏃 <b id="enemy-agi">8</b></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Log -->
+        <div class="combat-log" id="combat-log">
+            <div class="log-entry system">Bienvenido a la Torre Infinita. ¡Pulsa Iniciar!</div>
+        </div>
+
+        <!-- Souls -->
+        <div class="souls-display">
+            <span class="label">💀 Almas</span>
+            <span class="value" id="souls-count">0</span>
+        </div>
+
+        <!-- Equipment -->
+        <div class="equipment-section locked" id="equip-section">
+            <h2>🎒 Equipo (Se desbloquea tras superar piso 10)</h2>
+            <div class="equip-slots">
+                <div class="equip-slot weapon" id="slot-weapon">🗡️ Vacío</div>
+                <div class="equip-slot armor" id="slot-armor">🛡️ Vacío</div>
+                <div class="equip-slot ring" id="slot-ring">💍 Vacío</div>
+            </div>
+        </div>
+
+        <!-- Meta Upgrades -->
+        <div class="upgrades-section">
+            <h2>⬆️ Mejoras Permanentes</h2>
+            <div class="upgrade-grid" id="upgrade-grid"></div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <button class="control-btn start" id="btn-start" onclick="startRun()">Iniciar Run</button>
+            <button class="control-btn restart" id="btn-restart" onclick="restartRun()" disabled>Reiniciar</button>
+        </div>
+    </div>
+
+    <!-- Tutorial Modal -->
+    <div class="modal-overlay" id="tutorial-overlay">
+        <div class="modal">
+            <h2>🗼 Bienvenido a la Torre Infinita</h2>
+            <p>Tu héroe sube una torre infinita. Combate automático, jefes cada 10 pisos y mejoras permanentes.</p>
+            <p><strong>Novedades en esta versión:</strong><br>
+            • Sistema de niveles (1-20) con mejoras en cada subida.<br>
+            • Habilidades especiales en niveles 5, 10, 15, 20.<br>
+            • Equipo desbloqueado tras derrotar al primer jefe.<br>
+            • Estadísticas derivadas: Crítico, Bloqueo, Evasión.</p>
+            <button class="modal-close" onclick="closeTutorial()">¡Entendido!</button>
+        </div>
+    </div>
+
+    <!-- Choice Modal (Level Up / Abilities) -->
+    <div class="modal-overlay" id="choice-overlay">
+        <div class="modal">
+            <h2 id="choice-title">¡Nivel Arriba!</h2>
+            <p id="choice-desc">Elige una mejora:</p>
+            <div class="choice-grid" id="choice-grid"></div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // 1. BALANCE CENTRALIZADO
+        // Cambiar un número aquí recalcula todo el juego
+        // ============================================
+        const BALANCE = {
+            // --- PLAYER BASE ---
+            player: { hp: 100, atk: 10, def: 5, agi: 10 },
+
+            // --- RUN LEVEL (flat por level up) ---
+            levelUp: {
+                choices: [
+                    { id: 'hp',  label: '+8 HP',  flat: 8, desc: 'Aumenta tu vida máxima en 8.' },
+                    { id: 'atk', label: '+2 ATK', flat: 2, desc: 'Aumenta tu ataque en 2.' },
+                    { id: 'def', label: '+2 DEF', flat: 2, desc: 'Aumenta tu defensa en 2.' },
+                    { id: 'agi', label: '+2 AGI', flat: 2, desc: 'Aumenta tu agilidad en 2.' },
+                ],
+                xpBase: 10,
+                xpScale: 10,
+                maxLevel: 20,
+                abilityLevels: [5, 10, 15, 20],
+            },
+
+            // --- META PROGRESSION (flat mínimo + %) ---
+            metaUpgrades: {
+                hp:   { baseCost: 10, scale: 1.5, flat: 3, percent: 0.05, label: '+3 HP +5%', icon: '❤️' },
+                atk:  { baseCost: 10, scale: 1.5, flat: 2, percent: 0.05, label: '+2 ATK +5%', icon: '⚔️' },
+                def:  { baseCost: 15, scale: 1.5, flat: 1, percent: 0.05, label: '+1 DEF +5%', icon: '🛡️' },
+                agi:  { baseCost: 20, scale: 1.6, flat: 0, percent: 0.02, label: '+2% AGI', icon: '🏃' },
+                souls:{ baseCost: 25, scale: 1.7, flat: 1, percent: 0, label: '+1 alma/piso', icon: '💀' },
+                crit: { baseCost: 30, scale: 1.8, flat: 0, percent: 0.02, label: '+2% Crítico', icon: '🎯', maxLevel: 15 },
+                drop: { baseCost: 40, scale: 2.0, flat: 0, percent: 0.05, label: '+5% Drop', icon: '🎁', maxLevel: 10 },
+            },
+
+            // --- ENEMIES ---
+            enemy: {
+                normal: { hp: 10, atk: 3, def: 1, agi: 6 },
+                boss:   { hp: 50, atk: 8, def: 3, agi: 7 },
+                scale: {
+                    normal: { hp: 1.10, atk: 1.08, def: 1.05 },
+                    boss:   { hp: 1.08, atk: 1.07, def: 1.06 },
+                },
+                agiScale: 1.02, // ambos tipos usan la misma escala de agilidad
+                bossHpMult: 2,
+            },
+
+            // --- EQUIPMENT ---
+            equipment: {
+                dropBaseChance: 15,
+                slots: ['weapon', 'armor', 'ring'],
+            rarities: [
+                { name: 'Poco común', weights: [70, 0, 0, 0],  statMult: 1.0 },
+                { name: 'Raro',         weights: [25, 60, 0, 0], statMult: 1.5 },
+                { name: 'Épico',        weights: [5, 30, 0, 0],  statMult: 2.0 },
+                { name: 'Legendario',   weights: [0, 10, 0, 0],  statMult: 3.0 },
+            ],
+                budgetPerFloor: 1.0,
+            },
+
+            // --- COMBAT ---
+            combat: {
+                tickMs: 100,
+                speedBase: 3000,
+                speedPerAgi: 100,
+                speedMin: 750,
+                minDamage: 1,
+            },
+
+            // --- SOULS ---
+            souls: {
+                baseMult: 2,
+            },
+        };
+
+        // ============================================
+        // 2. ESTADO CENTRAL
+        // ============================================
+        const metaState = {
+            souls: 0,
+            maxFloor: 0,
+            unlockedEquipment: false,
+            equipment: { weapon: null, armor: null, ring: null },
+            abilities: [],
+            upgrades: {},
+        };
+
+        // Inicializar upgrades desde BALANCE
+        for (const [key, u] of Object.entries(BALANCE.metaUpgrades)) {
+            metaState.upgrades[key] = { level: 0, ...u };
+        }
+
+        const runState = {
+            active: false,
+            floor: 1,
+            level: 1,
+            xp: 0,
+            xpToNext: BALANCE.levelUp.xpBase,
+            runBonuses: { hp: 0, atk: 0, def: 0, agi: 0 },
+            player: { hp: 0, maxHp: 0, atk: 0, def: 0, agi: 0, attackTimer: 0 },
+            enemy: null,
+            combatInterval: BALANCE.combat.tickMs,
+            pendingChoice: null,
+        };
+
+        // ============================================
+        // 3. CONSTANTES Y POOLS
+        // ============================================
+        const ENEMY_NAMES = ['Slime', 'Esqueleto', 'Murciélago', 'Goblin', 'Araña', 'Fantasma', 'Orco', 'Troll'];
+        const BOSS_NAMES = ['Guardián', 'Señor de la Torre', 'Dragón', 'Lich', 'Titán', 'Demonio'];
+
+        const LEVEL_CHOICES = BALANCE.levelUp.choices;
+
+        const ABILITY_POOLS = {
+            5: [
+                { id: 'double_hit', label: 'Golpe Doble', desc: '15% probabilidad de atacar 2 veces.' },
+                { id: 'first_strike', label: 'Primer Golpe', desc: '+25% daño en el primer ataque del combate.' },
+                { id: 'bleed', label: 'Sangrado', desc: '10% prob de aplicar sangrado (3 dmg/turno x3).' },
+            ],
+            10: [
+                { id: 'counter', label: 'Contraataque', desc: '20% prob de devolver 50% del daño recibido.' },
+                { id: 'vital_shield', label: 'Escudo Vital', desc: 'Al entrar, escudo = 10% HP máximo.' },
+                { id: 'precise', label: 'Golpe Preciso', desc: '+15% probabilidad de crítico.' },
+            ],
+            15: [
+                { id: 'brutal', label: 'Golpe Brutal', desc: '10% probabilidad de hacer 3x daño.' },
+                { id: 'execute', label: 'Ejecución', desc: 'Si enemigo <20% HP, tu daño se duplica.' },
+                { id: 'passive_frenzy', label: 'Frenesí Pasivo', desc: '+20% velocidad de ataque.' },
+            ],
+            20: [
+                { id: 'frenzy', label: 'Frenesí', desc: '10% probabilidad de atacar 3 veces.' },
+                { id: 'domination', label: 'Dominio', desc: '+15% a todos tus stats base.' },
+                { id: 'unstoppable', label: 'Imparable', desc: '-25% daño recibido y +30% velocidad.' },
+            ]
+        };
+
+        const ITEM_PASSIVES = [
+            { id: 'venom', label: 'Veneno', desc: 'Aplica veneno al atacar (2 dmg/turno x3).' },
+            { id: 'burn', label: 'Quemadura', desc: 'Aplica quemadura (3% HP enemigo/turno x2).' },
+            { id: 'lifesteal', label: 'Robo de Vida', desc: 'Recupera 5% del daño causado como HP.' },
+            { id: 'block_mastery', label: 'Maestría Bloqueo', desc: '+10% probabilidad de bloqueo.' },
+        ];
+
+        // ============================================
+        // 4. CÁLCULOS
+        // ============================================
+        function speedToInterval(speed) {
+            return Math.max(BALANCE.combat.speedMin, BALANCE.combat.speedBase - (speed * BALANCE.combat.speedPerAgi));
+        }
+
+        function getUpgradeCost(key) {
+            const u = metaState.upgrades[key];
+            return Math.floor(u.baseCost * Math.pow(u.scale, u.level));
+        }
+
+        function calcDamage(atk, def) {
+            return Math.max(BALANCE.combat.minDamage, atk - def);
+        }
+
+        function getDerivedStats(atk, def, agi) {
+            return {
+                crit: Math.min(50, Math.floor(atk / 10)),
+                block: Math.min(50, Math.floor(def / 5)),
+                dodge: Math.min(40, Math.floor(agi / 8)),
+            };
+        }
+
+        function calcPlayerStats() {
+            const u = metaState.upgrades;
+            const base = BALANCE.player;
+
+            // Meta upgrades: flat + percent
+            const metaHp = base.hp * (1 + u.hp.percent * u.hp.level) + u.hp.flat * u.hp.level;
+            const metaAtk = base.atk * (1 + u.atk.percent * u.atk.level) + u.atk.flat * u.atk.level;
+            const metaDef = base.def * (1 + u.def.percent * u.def.level) + u.def.flat * u.def.level;
+            const metaAgi = base.agi * (1 + u.agi.percent * u.agi.level) + u.agi.flat * u.agi.level;
+
+            // Run level bonuses (flat)
+            const r = runState.runBonuses;
+            let hp = metaHp + r.hp;
+            let atk = metaAtk + r.atk;
+            let def = metaDef + r.def;
+            let agi = metaAgi + r.agi;
+
+            // Equipment bonuses
+            let equipCrit = 0, equipDodge = 0, equipLifesteal = 0;
+            for (const slot of ['weapon', 'armor', 'ring']) {
+                const item = metaState.equipment[slot];
+                if (item) {
+                    hp += item.stats.hp || 0;
+                    atk += item.stats.atk || 0;
+                    def += item.stats.def || 0;
+                    agi += item.stats.agi || 0;
+                    equipCrit += item.stats.crit || 0;
+                    equipDodge += item.stats.dodge || 0;
+                    equipLifesteal += item.stats.lifesteal || 0;
+                }
+            }
+
+            // Passive abilities
+            if (metaState.abilities.includes('domination')) {
+                hp *= 1.15; atk *= 1.15; def *= 1.15; agi *= 1.15;
+            }
+            if (metaState.abilities.includes('passive_frenzy')) agi *= 1.2;
+            if (metaState.abilities.includes('unstoppable')) { agi *= 1.3; }
+
+            return {
+                maxHp: Math.floor(hp),
+                atk: Math.floor(atk),
+                def: Math.floor(def),
+                agi: Math.floor(agi),
+                crit: equipCrit,
+                dodge: equipDodge,
+                lifesteal: equipLifesteal,
+            };
+        }
+
+        function calcEnemyStats(floor) {
+            const isBoss = floor % 10 === 0;
+            const b = isBoss ? BALANCE.enemy.boss : BALANCE.enemy.normal;
+            const s = isBoss ? BALANCE.enemy.scale.boss : BALANCE.enemy.scale.normal;
+            const bossMult = isBoss ? BALANCE.enemy.bossHpMult : 1;
+            const agiScale = BALANCE.enemy.agiScale;
+
+            return {
+                hp: Math.floor(b.hp * Math.pow(s.hp, floor - 1) * bossMult),
+                atk: Math.floor(b.atk * Math.pow(s.atk, floor - 1)),
+                def: Math.floor(b.def * Math.pow(s.def, floor - 1)),
+                agi: Math.floor(b.agi * Math.pow(agiScale, floor - 1)),
+                isBoss,
+            };
+        }
+
+        function calcIlvl(item) {
+            return (item.stats.atk || 0) + (item.stats.def || 0) + (item.stats.hp || 0) * 0.5 + (item.stats.agi || 0) * 2;
+        }
+
+        // ============================================
+        // 5. GENERACIÓN DE EQUIPO
+        // ============================================
+        function generateItem(floor, isBoss) {
+            const rarities = BALANCE.equipment.rarities.map(r => r.name);
+            const weights = isBoss
+                ? [0, 60, 30, 10]
+                : [70, 25, 5, 0];
+            let rand = Math.random() * 100;
+            let rarity = 'Común';
+            for (let i = 0; i < rarities.length; i++) {
+                rand -= weights[i];
+                if (rand <= 0) { rarity = rarities[i]; break; }
+            }
+
+            const slots = BALANCE.equipment.slots;
+            const slot = slots[Math.floor(Math.random() * slots.length)];
+            const rarityData = BALANCE.equipment.rarities.find(r => r.name === rarity);
+            const budget = Math.floor(floor * BALANCE.equipment.budgetPerFloor * (1 + rarity.length * 0.5));
+
+            // Definir pools de stats por slot
+            const statPools = {
+                weapon: { primary: ['atk'], secondary: ['crit', 'lifesteal'] },
+                armor: { primary: ['def'], secondary: ['hp', 'dodge'] },
+                ring: { primary: ['hp', 'atk', 'def', 'agi'], secondary: ['hp', 'atk', 'def', 'agi', 'crit', 'dodge'] },
+            };
+
+            // Stats según rareza
+            const numSecondary = rarity === 'Poco común' ? 0 : rarity === 'Raro' ? 1 : rarity === 'Épico' ? 1 : 2;
+            const hasPassive = ['Épico', 'Legendario'].includes(rarity);
+            
+            const pool = statPools[slot];
+            const stats = {};
+            const usedStats = new Set();
+
+            // 1. Elegir primario
+            const primaryStat = pool.primary[Math.floor(Math.random() * pool.primary.length)];
+            stats[primaryStat] = Math.floor(budget * (0.8 + Math.random() * 0.4));
+            usedStats.add(primaryStat);
+
+            // 2. Elegir secundarios (sin repetir)
+            const availableSecondary = pool.secondary.filter(s => !usedStats.has(s));
+            for (let i = 0; i < numSecondary && availableSecondary.length > 0; i++) {
+                const idx = Math.floor(Math.random() * availableSecondary.length);
+                const secStat = availableSecondary.splice(idx, 1)[0];
+                stats[secStat] = Math.floor(budget * 0.4 * (0.7 + Math.random() * 0.6));
+                usedStats.add(secStat);
+            }
+
+            // 3. Pasiva (si aplica)
+            const passive = hasPassive ? ITEM_PASSIVES[Math.floor(Math.random() * ITEM_PASSIVES.length)] : null;
+
+            const item = {
+                id: Date.now() + Math.random(),
+                name: `${slot === 'weapon' ? 'Arma' : slot === 'armor' ? 'Armadura' : 'Anillo'}`,
+                slot, rarity, stats,
+                passive,
+            };
+
+            return item;
+        }
+
+        function tryEquip(item) {
+            const current = metaState.equipment[item.slot];
+            if (!current || calcIlvl(item) > calcIlvl(current)) {
+                metaState.equipment[item.slot] = item;
+                addLog(`✨ ¡Equipo mejorado! ${item.name}`, 'loot');
+                render();
+                return true;
+            }
+            return false;
+        }
+
+        // ============================================
+        // 6. COMBATE
+        // ============================================
+        let combatLoop = null;
+        let isFirstAttack = true;
+
+        function startCombat() {
+            const stats = calcPlayerStats();
+            const p = runState.player;
+            p.maxHp = stats.maxHp;
+            p.hp = stats.maxHp;
+            p.atk = stats.atk;
+            p.def = stats.def;
+            p.agi = stats.agi;
+            p.crit = stats.crit;
+            p.dodge = stats.dodge;
+            p.lifesteal = stats.lifesteal;
+            p.attackTimer = speedToInterval(p.agi);
+
+            const eStats = calcEnemyStats(runState.floor);
+            runState.enemy = {
+                ...eStats,
+                maxHp: eStats.hp,
+                attackTimer: speedToInterval(eStats.agi),
+                name: eStats.isBoss ? BOSS_NAMES[Math.floor((runState.floor / 10 - 1) % BOSS_NAMES.length)] : ENEMY_NAMES[Math.floor((runState.floor - 1) % ENEMY_NAMES.length)],
+            };
+
+            // Escudo Vital
+            if (metaState.abilities.includes('vital_shield')) {
+                p.maxHp += Math.floor(stats.maxHp * 0.1);
+                p.hp += Math.floor(stats.maxHp * 0.1);
+            }
+
+            isFirstAttack = true;
+            addLog(`── Piso ${runState.floor} ${runState.enemy.isBoss ? '— ⚔️ JEFE ⚔️' : ''} ──`, 'system');
+            render();
+
+            if (combatLoop) clearInterval(combatLoop);
+            combatLoop = setInterval(combatTick, BALANCE.combat.tickMs);
+        }
+
+        function combatTick() {
+            if (!runState.active || !runState.enemy || runState.pendingChoice) return;
+
+            const p = runState.player;
+            const e = runState.enemy;
+            const derived = getDerivedStats(p.atk, p.def, p.agi);
+            const critBonus = metaState.upgrades.crit.level * metaState.upgrades.crit.percent * 100;
+            const totalCrit = Math.min(50, derived.crit + critBonus + p.crit + (metaState.abilities.includes('precise') ? 15 : 0));
+            const totalDodge = Math.min(40, derived.dodge + p.dodge);
+
+            // Jugador ataca
+            p.attackTimer -= BALANCE.combat.tickMs;
+            if (p.attackTimer <= 0) {
+                p.attackTimer = speedToInterval(p.agi);
+                
+                let attacks = 1;
+                if (Math.random() < 0.15 && metaState.abilities.includes('double_hit')) attacks = 2;
+                if (Math.random() < 0.10 && metaState.abilities.includes('frenzy')) attacks = 3;
+
+                for (let i = 0; i < attacks; i++) {
+                    let dmg = calcDamage(p.atk, e.def);
+                    let type = 'normal';
+                    
+                    if (isFirstAttack && metaState.abilities.includes('first_strike')) dmg = Math.floor(dmg * 1.25);
+                    if (Math.random() * 100 < totalCrit) { dmg *= 2; type = 'crit'; }
+                    if (metaState.abilities.includes('execute') && e.hp < e.maxHp * 0.2) dmg *= 2;
+                    if (metaState.abilities.includes('brutal') && Math.random() < 0.10) { dmg *= 3; type = 'crit'; }
+
+                    e.hp -= dmg;
+                    spawnFloat('enemy-floats', `-${dmg}`, type);
+                    flashElement('enemy-card');
+                    
+                    // Lifesteal (stats + passive)
+                    const lifestealPct = p.lifesteal + (metaState.equipment.weapon?.passive?.id === 'lifesteal' ? 5 : 0);
+                    if (lifestealPct > 0) {
+                        const heal = Math.floor(dmg * lifestealPct / 100);
+                        if (heal > 0) {
+                            p.hp = Math.min(p.maxHp, p.hp + heal);
+                            spawnFloat('player-floats', `+${heal}`, 'heal');
+                        }
+                    }
+                }
+                isFirstAttack = false;
+            }
+
+            // Enemigo ataca
+            e.attackTimer -= BALANCE.combat.tickMs;
+            if (e.attackTimer <= 0) {
+                e.attackTimer = speedToInterval(e.agi);
+                
+                // Dodge check
+                if (Math.random() * 100 < totalDodge) {
+                    spawnFloat('player-floats', 'MISS', 'miss');
+                    return;
+                }
+
+                let dmg = calcDamage(e.atk, p.def);
+                let type = 'normal';
+
+                // Crítico enemigo (solo bosses o variantes)
+                if (e.isBoss && Math.random() < 0.10) { dmg *= 2; type = 'crit'; }
+
+                // Block check
+                if (Math.random() * 100 < derived.block) {
+                    dmg = Math.floor(dmg * 0.5);
+                    type = 'block';
+                }
+
+                p.hp -= dmg;
+                spawnFloat('player-floats', `-${dmg}`, type);
+                flashElement('player-card');
+
+                // Contraataque
+                if (metaState.abilities.includes('counter') && Math.random() < 0.20) {
+                    const counterDmg = Math.floor(dmg * 0.5);
+                    e.hp -= counterDmg;
+                    spawnFloat('enemy-floats', `-${counterDmg} (C)`, 'crit');
+                }
+            }
+
+            if (e.hp <= 0) { e.hp = 0; enemyDefeated(); }
+            else if (p.hp <= 0) { p.hp = 0; playerDied(); }
+            render();
+        }
+
+        function enemyDefeated() {
+            clearInterval(combatLoop); combatLoop = null;
+            addLog(`¡${runState.enemy.name} derrotado!`, 'victory');
+
+            // XP
+            const xpGain = runState.floor;
+            runState.xp += xpGain;
+            addLog(`+${xpGain} XP`, 'system');
+
+            // Drop de equipo
+            if (metaState.unlockedEquipment) {
+                const dropChance = BALANCE.equipment.dropBaseChance + (metaState.upgrades.drop.level * metaState.upgrades.drop.percent * 100);
+                if (Math.random() * 100 < dropChance || runState.enemy.isBoss) {
+                    const item = generateItem(runState.floor, runState.enemy.isBoss);
+                    addLog(`🎁 Drop: ${item.name}`, 'loot');
+                    tryEquip(item);
+                }
+            }
+
+            // Desbloquear equipo tras Boss 1
+            if (runState.floor === 10 && !metaState.unlockedEquipment) {
+                metaState.unlockedEquipment = true;
+                addLog('🔓 ¡SISTEMA DE EQUIPO DESBLOQUEADO!', 'victory');
+                document.getElementById('equip-section').classList.remove('locked');
+            }
+
+            runState.floor++;
+            checkLevelUp();
+        }
+
+        function playerDied() {
+            clearInterval(combatLoop); combatLoop = null;
+            runState.active = false;
+            const souls = Math.floor(runState.floor * BALANCE.souls.baseMult + (runState.floor * metaState.upgrades.souls.level * metaState.upgrades.souls.flat));
+            metaState.souls += souls;
+            metaState.maxFloor = Math.max(metaState.maxFloor, runState.floor);
+            addLog(`💀 Caíste en el piso ${runState.floor}. +${souls} almas.`, 'death');
+            render();
+        }
+
+        // ============================================
+        // 6. NIVELES Y ELECCIONES
+        // ============================================
+        function checkLevelUp() {
+            if (runState.level >= BALANCE.levelUp.maxLevel) {
+                startCombat();
+                return;
+            }
+            if (runState.xp >= runState.xpToNext) {
+                runState.xp -= runState.xpToNext;
+                runState.level++;
+                runState.xpToNext = BALANCE.levelUp.xpScale * runState.level;
+                addLog(`⬆️ ¡Nivel ${runState.level}!`, 'system');
+
+                if (BALANCE.levelUp.abilityLevels.includes(runState.level)) {
+                    showAbilityChoice();
+                } else {
+                    showStatChoice();
+                }
+            } else {
+                startCombat();
+            }
+        }
+
+        function showStatChoice() {
+            runState.pendingChoice = 'level';
+            const choices = LEVEL_CHOICES.sort(() => 0.5 - Math.random()).slice(0, 3);
+            renderChoices('¡Nivel Arriba!', 'Elige una mejora:', choices.map(c => ({
+                label: c.label, desc: c.desc, action: () => { 
+                    runState.runBonuses[c.id] += c.flat; 
+                    closeChoice(); 
+                }
+            })));
+        }
+
+        function showAbilityChoice() {
+            runState.pendingChoice = 'ability';
+            const pool = ABILITY_POOLS[runState.level];
+            renderChoices(`¡Habilidad de Nivel ${runState.level}!`, 'Elige una habilidad especial:', pool.map(a => ({
+                label: a.label, desc: a.desc, action: () => { metaState.abilities.push(a.id); closeChoice(); }
+            })));
+        }
+
+        function renderChoices(title, desc, options) {
+            document.getElementById('choice-title').textContent = title;
+            document.getElementById('choice-desc').textContent = desc;
+            const grid = document.getElementById('choice-grid');
+            grid.innerHTML = '';
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'choice-btn';
+                btn.innerHTML = `<span class="title">${opt.label}</span><span class="desc">${opt.desc}</span>`;
+                btn.onclick = opt.action;
+                grid.appendChild(btn);
+            });
+            document.getElementById('choice-overlay').classList.add('visible');
+        }
+
+        function closeChoice() {
+            document.getElementById('choice-overlay').classList.remove('visible');
+            runState.pendingChoice = null;
+            if (runState.active) startCombat();
+        }
+
+        // ============================================
+        // 7. CONTROLES Y RENDER
+        // ============================================
+        function startRun() {
+            if (runState.active) return;
+            runState.active = true; runState.floor = 1; runState.level = 1; runState.xp = 0; runState.xpToNext = BALANCE.levelUp.xpBase;
+            runState.runBonuses = { hp: 0, atk: 0, def: 0, agi: 0 };
+            document.getElementById('combat-log').innerHTML = '';
+            if (metaState.unlockedEquipment) document.getElementById('equip-section').classList.remove('locked');
+            addLog('🗼 Nueva run iniciada', 'system');
+            startCombat();
+            updateButtons();
+        }
+
+        function restartRun() {
+            if (combatLoop) clearInterval(combatLoop);
+            runState.active = false; runState.floor = 1; runState.enemy = null;
+            document.getElementById('combat-log').innerHTML = '';
+            addLog('🔄 Run reiniciada', 'system');
+            render(); updateButtons();
+        }
+
+        function buyUpgrade(key) {
+            const u = metaState.upgrades[key];
+            if (u.maxLevel && u.level >= u.maxLevel) return;
+            const cost = getUpgradeCost(key);
+            if (metaState.souls < cost) return;
+            metaState.souls -= cost; metaState.upgrades[key].level++;
+            addLog(`⬆️ Mejora: ${metaState.upgrades[key].label} (Nv ${metaState.upgrades[key].level})`, 'system');
+            render();
+        }
+
+        function render() {
+            document.getElementById('floor-number').textContent = `Piso ${runState.floor}`;
+            document.getElementById('boss-indicator').style.display = runState.floor % 10 === 0 ? 'block' : 'none';
+            
+            // Player
+            document.getElementById('player-level').textContent = `Nivel ${runState.level}`;
+            const xpPct = (runState.xp / runState.xpToNext) * 100;
+            document.getElementById('player-xp-bar').style.width = xpPct + '%';
+            
+            const p = runState.player;
+            const pPct = Math.max(0, (p.hp / p.maxHp) * 100);
+            document.getElementById('player-hp-bar').style.width = pPct + '%';
+            document.getElementById('player-hp-bar').className = 'hp-bar' + (pPct <= 25 ? ' low' : pPct <= 50 ? ' mid' : '');
+            document.getElementById('player-hp-text').textContent = `${Math.max(0, p.hp)} / ${p.maxHp}`;
+            const derived = getDerivedStats(p.atk, p.def, p.agi);
+            document.getElementById('player-atk').textContent = p.atk;
+            document.getElementById('player-def').textContent = p.def;
+            document.getElementById('player-agi').textContent = p.agi;
+            document.getElementById('player-crit').textContent = Math.min(50, derived.crit + Math.floor(metaState.upgrades.crit.level * metaState.upgrades.crit.percent * 100)) + '%';
+            document.getElementById('player-block').textContent = derived.block + '%';
+            document.getElementById('player-dodge').textContent = derived.dodge + '%';
+
+            // Enemy
+            const e = runState.enemy;
+            if (e) {
+                const ePct = Math.max(0, (e.hp / e.maxHp) * 100);
+                document.getElementById('enemy-hp-bar').style.width = ePct + '%';
+                document.getElementById('enemy-hp-bar').className = 'hp-bar' + (ePct <= 25 ? ' low' : ePct <= 50 ? ' mid' : '');
+                document.getElementById('enemy-hp-text').textContent = `${Math.max(0, e.hp)} / ${e.maxHp}`;
+                document.getElementById('enemy-name').textContent = `${e.isBoss ? '👑' : '👹'} ${e.name}`;
+                document.getElementById('enemy-atk').textContent = e.atk;
+                document.getElementById('enemy-def').textContent = e.def;
+                document.getElementById('enemy-agi').textContent = e.agi;
+                document.getElementById('enemy-card').className = 'fighter enemy' + (e.isBoss ? ' boss' : '');
+            }
+
+            document.getElementById('souls-count').textContent = metaState.souls;
+
+            // Equipment
+            for (const slot of ['weapon', 'armor', 'ring']) {
+                const el = document.getElementById(`slot-${slot}`);
+                const item = metaState.equipment[slot];
+                if (item) {
+                    const rarityClass = `rarity-${item.rarity.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-')}`;
+                    const percentStats = ['crit', 'dodge', 'lifesteal'];
+                    const statLines = Object.entries(item.stats)
+                        .filter(([, v]) => v > 0)
+                        .map(([k, v]) => {
+                            const icons = { hp: '❤️', atk: '⚔️', def: '️', agi: '🏃', crit: '🎯', dodge: '', lifesteal: '🧛' };
+                            const suffix = percentStats.includes(k) ? '%' : '';
+                            return `<span class="equip-stat-line">${icons[k] || ''} +${v}${suffix} ${k.toUpperCase()}</span>`;
+                        }).join('');
+                    const passiveLine = item.passive ? `<span class="equip-stat-line" style="color:#fbbf24">✨ ${item.passive.label}</span>` : '';
+                    el.className = `equip-slot ${slot} filled ${rarityClass}`;
+                    el.innerHTML = `<div class="equip-name">${item.name}</div><div class="equip-stats">${item.rarity} | ilvl ${Math.floor(calcIlvl(item))}</div>${statLines}${passiveLine}`;
+                } else {
+                    el.className = `equip-slot ${slot}`;
+                    el.innerHTML = `${slot === 'weapon' ? '🗡️' : slot === 'armor' ? '🛡️' : '💍'} Vacío`;
+                }
+            }
+
+            // Upgrades
+            const grid = document.getElementById('upgrade-grid');
+            grid.innerHTML = '';
+            for (const [key, u] of Object.entries(metaState.upgrades)) {
+                const isMaxed = u.maxLevel && u.level >= u.maxLevel;
+                const cost = isMaxed ? 'MAX' : getUpgradeCost(key);
+                const levelText = u.maxLevel ? `Nvl: ${u.level}/${u.maxLevel}` : `Nvl: ${u.level}`;
+                
+                // Calcular acumulado
+                let cumulative = '';
+                if (u.level > 0) {
+                    const parts = [];
+                    if (u.flat) parts.push(`+${u.flat * u.level}`);
+                    if (u.percent) parts.push(`+${Math.round(u.percent * u.level * 100)}%`);
+                    cumulative = parts.length ? ` (${parts.join(' ')})` : '';
+                }
+                
+                const btn = document.createElement('button');
+                btn.className = 'upgrade-btn';
+                btn.disabled = isMaxed || metaState.souls < cost;
+                btn.onclick = () => !isMaxed && buyUpgrade(key);
+                btn.innerHTML = `<span>${u.icon} ${u.label}</span><span class="level">${levelText}${cumulative}</span><span class="cost">${isMaxed ? '✅ MAX' : `💀 ${cost}`}</span>`;
+                grid.appendChild(btn);
+            }
+        }
+
+        function updateButtons() {
+            document.getElementById('btn-start').disabled = runState.active;
+            document.getElementById('btn-restart').disabled = !runState.active;
+        }
+
+        // ============================================
+        // 8. UTILIDADES Y UI
+        // ============================================
+        function addLog(text, type = '') {
+            const log = document.getElementById('combat-log');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry ' + type;
+            entry.textContent = text;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+            while (log.children.length > 50) log.removeChild(log.firstChild);
+        }
+
+        function flashElement(id) {
+            const el = document.getElementById(id);
+            el.classList.add('hit');
+            setTimeout(() => el.classList.remove('hit'), 100);
+        }
+
+        function spawnFloat(containerId, text, type) {
+            const container = document.getElementById(containerId);
+            const el = document.createElement('div');
+            el.className = `float-num ${type}`;
+            el.textContent = text;
+            el.style.top = '40%';
+            container.appendChild(el);
+            setTimeout(() => el.remove(), 800);
+        }
+
+        function showTutorial() { document.getElementById('tutorial-overlay').classList.add('visible'); }
+        function closeTutorial() {
+            document.getElementById('tutorial-overlay').classList.remove('visible');
+            localStorage.setItem('torre_tutorial_seen', 'true');
+        }
+
+        // Init
+        render(); updateButtons();
+        if (!localStorage.getItem('torre_tutorial_seen')) showTutorial();
+    </script>
+</body>
+</html>

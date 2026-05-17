@@ -1,0 +1,10 @@
+# Archivos temporales y del sistema
+Thumbs.db
+.DS_Store
+
+# ZIPs y binarios
+*.zip
+
+# Editores
+.vscode/
+.idea/
