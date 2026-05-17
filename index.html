@@ -583,7 +583,7 @@
         // 3. CONSTANTES Y POOLS
         // ============================================
         const ENEMY_NAMES = ['Slime', 'Esqueleto', 'Murciélago', 'Goblin', 'Araña', 'Fantasma', 'Orco', 'Troll'];
-        const BOSS_NAMES = ['Guardián', 'Señor de la Torre', 'Dragón', 'Lich', 'Titán', 'Demonio'];
+        const BOSS_NAMES = ['Guardián', 'Señor de la Torre', 'Dragón', 'Lich', 'Titán', 'Demonio', 'El Segador', 'El Devorador de Mundos', 'El Primigenio', 'El Enterrador'];
 
         const LEVEL_CHOICES = BALANCE.levelUp.choices;
 
@@ -934,6 +934,7 @@
                 metaState.unlockedEquipment = true;
                 addLog('🔓 ¡SISTEMA DE EQUIPO DESBLOQUEADO!', 'victory');
                 document.getElementById('equip-section').classList.remove('locked');
+                document.querySelector('#equip-section h2').textContent = '🎒 Equipo (Desbloqueado)';
             }
 
             runState.floor++;
@@ -1022,7 +1023,10 @@
             runState.active = true; runState.floor = 1; runState.level = 1; runState.xp = 0; runState.xpToNext = BALANCE.levelUp.xpBase;
             runState.runBonuses = { hp: 0, atk: 0, def: 0, agi: 0 };
             document.getElementById('combat-log').innerHTML = '';
-            if (metaState.unlockedEquipment) document.getElementById('equip-section').classList.remove('locked');
+            if (metaState.unlockedEquipment) {
+                document.getElementById('equip-section').classList.remove('locked');
+                document.querySelector('#equip-section h2').textContent = '🎒 Equipo (Desbloqueado)';
+            }
             addLog('🗼 Nueva run iniciada', 'system');
             startCombat();
             updateButtons();
