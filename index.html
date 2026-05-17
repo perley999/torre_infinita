@@ -528,12 +528,27 @@
             equipment: {
                 dropBaseChance: 15,
                 slots: ['weapon', 'armor', 'ring'],
-            rarities: [
-                { name: 'Poco común', weights: [70, 0, 0, 0],  statMult: 1.0 },
-                { name: 'Raro',         weights: [25, 60, 0, 0], statMult: 1.5 },
-                { name: 'Épico',        weights: [5, 30, 0, 0],  statMult: 2.0 },
-                { name: 'Legendario',   weights: [0, 10, 0, 0],  statMult: 3.0 },
-            ],
+                // Stat pools per slot
+                statPools: {
+                    weapon: { primary: ['atk'], secondary: ['crit', 'lifesteal', 'pen', 'critDamage', 'bossDamage'] },
+                    armor: { primary: ['def'], secondary: ['hp', 'dodge', 'hpRegen', 'thorns'] },
+                    ring: { primary: ['hp', 'atk', 'def', 'agi'], secondary: ['hp', 'atk', 'def', 'agi', 'crit', 'dodge', 'pen', 'critDamage', 'bossDamage', 'hpRegen', 'thorns', 'soulBonus'] },
+                },
+                // Budget multipliers per stat type
+                budgetMult: {
+                    crit: 1.5, lifesteal: 1.5, dodge: 1.5,
+                    pen: 1.5, critDamage: 1.5,
+                    bossDamage: 1.2, hpRegen: 1.2, thorns: 1.2,
+                    soulBonus: 1.0,
+                    flat: 0.4, // hp, atk, def, agi as secondary
+                    primary: 1.0, // atk, def as primary
+                },
+                rarities: [
+                    { name: 'Poco común', weights: [70, 0, 0, 0],  statMult: 1.0 },
+                    { name: 'Raro',         weights: [25, 60, 0, 0], statMult: 1.5 },
+                    { name: 'Épico',        weights: [5, 30, 0, 0],  statMult: 2.0 },
+                    { name: 'Legendario',   weights: [0, 10, 0, 0],  statMult: 3.0 },
+                ],
                 budgetBase: 5,
             },
 
@@ -549,6 +564,11 @@
                 dodgeCap: 40, dodgeK: 80,
                 blockCap: 50, blockK: 100,
                 lifestealCap: 25,
+                // New stat caps with diminishing returns
+                penCap: 50, penK: 100,
+                critDmgBase: 50, critDmgCap: 600, critDmgK: 200,
+                thornsCap: 100, thornsK: 150,
+                bossDmgCap: 100, bossDmgK: 150,
             },
 
             // --- SOULS ---
@@ -747,6 +767,8 @@
             // Lifesteal is flat from equipment only (no base stat)
             let equipLifesteal = 0;
             let equipCritMult = 0, equipDodgeMult = 0;
+            let equipPen = 0, equipCritDmg = 0, equipBossDmg = 0;
+            let equipHpRegen = 0, equipThorns = 0, equipSoulBonus = 0;
             for (const slot of ['weapon', 'armor', 'ring']) {
                 const item = metaState.equipment[slot];
                 if (item) {
@@ -757,6 +779,12 @@
                     equipLifesteal += item.stats.lifesteal || 0;
                     equipCritMult += item.stats.crit || 0;
                     equipDodgeMult += item.stats.dodge || 0;
+                    equipPen += item.stats.pen || 0;
+                    equipCritDmg += item.stats.critDamage || 0;
+                    equipBossDmg += item.stats.bossDamage || 0;
+                    equipHpRegen += item.stats.hpRegen || 0;
+                    equipThorns += item.stats.thorns || 0;
+                    equipSoulBonus += item.stats.soulBonus || 0;
                 }
             }
 
@@ -775,6 +803,12 @@
                 lifesteal: equipLifesteal,
                 critMult: equipCritMult,
                 dodgeMult: equipDodgeMult,
+                pen: equipPen,
+                critDamage: equipCritDmg,
+                bossDamage: equipBossDmg,
+                hpRegen: equipHpRegen,
+                thorns: equipThorns,
+                soulBonus: equipSoulBonus,
             };
         }
 
@@ -794,8 +828,26 @@
             };
         }
 
+        // Diminishing returns: cap × (raw / (raw + K))
+        function diminishingReturns(raw, cap, k) {
+            return cap * (raw / (raw + k));
+        }
+
         function calcIlvl(item) {
-            return (item.stats.atk || 0) + (item.stats.def || 0) + (item.stats.hp || 0) * 0.5 + (item.stats.agi || 0) * 2;
+            const s = item.stats;
+            return (s.atk || 0) * 1.0
+                 + (s.def || 0) * 1.0
+                 + (s.hp || 0) * 0.5
+                 + (s.agi || 0) * 2.0
+                 + (s.crit || 0) * 0.5
+                 + (s.lifesteal || 0) * 0.5
+                 + (s.dodge || 0) * 0.5
+                 + (s.pen || 0) * 0.5
+                 + (s.critDamage || 0) * 0.4
+                 + (s.bossDamage || 0) * 0.35
+                 + (s.hpRegen || 0) * 0.4
+                 + (s.thorns || 0) * 0.35
+                 + (s.soulBonus || 0) * 0.2;
         }
 
         // ============================================
@@ -807,7 +859,7 @@
                 ? [0, 60, 30, 10]
                 : [70, 25, 5, 0];
             let rand = Math.random() * 100;
-            let rarity = 'Común';
+            let rarity = 'Poco común';
             for (let i = 0; i < rarities.length; i++) {
                 rand -= weights[i];
                 if (rand <= 0) { rarity = rarities[i]; break; }
@@ -818,33 +870,29 @@
             const rarityData = BALANCE.equipment.rarities.find(r => r.name === rarity);
             const budget = Math.floor(BALANCE.equipment.budgetBase * Math.log2(floor + 1) * rarityData.statMult);
 
-            // Definir pools de stats por slot
-            const statPools = {
-                weapon: { primary: ['atk'], secondary: ['crit', 'lifesteal'] },
-                armor: { primary: ['def'], secondary: ['hp', 'dodge'] },
-                ring: { primary: ['hp', 'atk', 'def', 'agi'], secondary: ['hp', 'atk', 'def', 'agi', 'crit', 'dodge'] },
-            };
+            // Stat pools & budget multipliers from BALANCE
+            const statPools = BALANCE.equipment.statPools;
+            const budgetMult = BALANCE.equipment.budgetMult;
+            const pool = statPools[slot];
 
             // Stats según rareza
             const numSecondary = rarity === 'Poco común' ? 0 : rarity === 'Raro' ? 1 : rarity === 'Épico' ? 1 : 2;
             const hasPassive = ['Épico', 'Legendario'].includes(rarity);
-            const multStats = ['crit', 'dodge']; // These are multipliers over base, get higher values
-            
-            const pool = statPools[slot];
+
             const stats = {};
             const usedStats = new Set();
 
             // 1. Elegir primario
             const primaryStat = pool.primary[Math.floor(Math.random() * pool.primary.length)];
-            stats[primaryStat] = Math.floor(budget * (0.8 + Math.random() * 0.4));
+            stats[primaryStat] = Math.floor(budget * budgetMult.primary * (0.8 + Math.random() * 0.4));
             usedStats.add(primaryStat);
 
-            // 2. Elegir secundarios (sin repetir) — multiplier stats get higher values
+            // 2. Elegir secundarios (sin repetir) — cada stat tiene su propio multiplicador
             const availableSecondary = pool.secondary.filter(s => !usedStats.has(s));
             for (let i = 0; i < numSecondary && availableSecondary.length > 0; i++) {
                 const idx = Math.floor(Math.random() * availableSecondary.length);
                 const secStat = availableSecondary.splice(idx, 1)[0];
-                const mult = multStats.includes(secStat) ? 3.0 : 0.4;
+                const mult = budgetMult[secStat] ?? budgetMult.flat;
                 stats[secStat] = Math.floor(budget * mult * (0.7 + Math.random() * 0.6));
                 usedStats.add(secStat);
             }
@@ -890,6 +938,12 @@
             p.critMult = stats.critMult;
             p.dodgeMult = stats.dodgeMult;
             p.lifesteal = stats.lifesteal;
+            p.pen = stats.pen;
+            p.critDamage = stats.critDamage;
+            p.bossDamage = stats.bossDamage;
+            p.hpRegen = stats.hpRegen;
+            p.thorns = stats.thorns;
+            p.soulBonus = stats.soulBonus;
             p.attackTimer = speedToInterval(p.agi);
 
             const eStats = calcEnemyStats(runState.floor);
@@ -932,6 +986,27 @@
             const totalLifesteal = Math.min(BALANCE.combat.lifestealCap,
                 p.lifesteal + (metaState.equipment.weapon?.passive?.id === 'lifesteal' ? 5 : 0));
 
+            // Diminishing returns for percentage stats
+            const effPen = diminishingReturns(p.pen || 0, BALANCE.combat.penCap, BALANCE.combat.penK);
+            const effCritDmg = diminishingReturns(p.critDamage || 0, BALANCE.combat.critDmgCap, BALANCE.combat.critDmgK);
+            const effBossDmg = diminishingReturns(p.bossDamage || 0, BALANCE.combat.bossDmgCap, BALANCE.combat.bossDmgK);
+            const effThorns = diminishingReturns(p.thorns || 0, BALANCE.combat.thornsCap, BALANCE.combat.thornsK);
+            const effHpRegen = diminishingReturns(p.hpRegen || 0, 50, 150); // 50% max regen cap
+
+            // HP Regeneration (each second = 10 ticks)
+            if (effHpRegen > 0 && p.tickCount === undefined) p.tickCount = 0;
+            if (effHpRegen > 0) {
+                p.tickCount = (p.tickCount || 0) + 1;
+                if (p.tickCount >= 10) {
+                    p.tickCount = 0;
+                    const regen = Math.floor(p.maxHp * effHpRegen / 100);
+                    if (regen > 0 && p.hp < p.maxHp) {
+                        p.hp = Math.min(p.maxHp, p.hp + regen);
+                        spawnFloat('player-floats', `+${regen}`, 'heal');
+                    }
+                }
+            }
+
             // Jugador ataca
             p.attackTimer -= BALANCE.combat.tickMs;
             if (p.attackTimer <= 0) {
@@ -942,13 +1017,24 @@
                 if (Math.random() < 0.10 && metaState.abilities.includes('frenzy')) attacks = 3;
 
                 for (let i = 0; i < attacks; i++) {
-                    let dmg = calcDamage(p.atk, e.def);
+                    // Apply penetration: ignore % of enemy DEF
+                    const effectiveDef = e.isBoss && e.def > 0 ? Math.floor(e.def * (1 - effPen / 100)) : e.def;
+                    let dmg = calcDamage(p.atk, effectiveDef);
                     let type = 'normal';
                     
                     if (isFirstAttack && metaState.abilities.includes('first_strike')) dmg = Math.floor(dmg * 1.25);
-                    if (Math.random() * 100 < totalCrit) { dmg *= 2; type = 'crit'; }
+                    // Crit: base 1.5x + bonus from equipment (capped at 650% total = 6.5x)
+                    if (Math.random() * 100 < totalCrit) {
+                        const critMult = 1.5 + effCritDmg / 100; // 1.5 base + up to 6.0 from gear
+                        dmg = Math.floor(dmg * critMult);
+                        type = 'crit';
+                    }
                     if (metaState.abilities.includes('execute') && e.hp < e.maxHp * 0.2) dmg *= 2;
                     if (metaState.abilities.includes('brutal') && Math.random() < 0.10) { dmg *= 3; type = 'crit'; }
+                    // Boss damage bonus
+                    if (e.isBoss && effBossDmg > 0) {
+                        dmg = Math.floor(dmg * (1 + effBossDmg / 100));
+                    }
 
                     e.hp -= dmg;
                     spawnFloat('enemy-floats', `-${dmg}`, type);
@@ -992,6 +1078,15 @@
                 p.hp -= dmg;
                 spawnFloat('player-floats', `-${dmg}`, type);
                 flashElement('player-card');
+
+                // Thorns: return % of damage received to attacker
+                if (effThorns > 0) {
+                    const thornsDmg = Math.floor(dmg * effThorns / 100);
+                    if (thornsDmg > 0) {
+                        e.hp -= thornsDmg;
+                        spawnFloat('enemy-floats', `-${thornsDmg} (T)`, 'crit');
+                    }
+                }
 
                 // Contraataque
                 if (metaState.abilities.includes('counter') && Math.random() < 0.20) {
@@ -1041,7 +1136,12 @@
         function playerDied() {
             clearInterval(combatLoop); combatLoop = null;
             runState.active = false;
-            const souls = Math.floor(runState.floor * BALANCE.souls.baseMult + (runState.floor * metaState.upgrades.souls.level * metaState.upgrades.souls.flat));
+            let souls = Math.floor(runState.floor * BALANCE.souls.baseMult + (runState.floor * metaState.upgrades.souls.level * metaState.upgrades.souls.flat));
+            // Soul bonus from equipment (diminishing returns)
+            if (runState.player.soulBonus > 0) {
+                const effSoulBonus = diminishingReturns(runState.player.soulBonus, 100, 200);
+                souls = Math.floor(souls * (1 + effSoulBonus / 100));
+            }
             metaState.souls += souls;
             metaState.maxFloor = Math.max(metaState.maxFloor, runState.floor);
             addLog(`💀 Caíste en el piso ${runState.floor}. +${souls} almas.`, 'death');
@@ -1198,12 +1298,21 @@
                 const item = metaState.equipment[slot];
                 if (item) {
                     const rarityClass = `rarity-${item.rarity.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-')}`;
-                    const percentStats = ['crit', 'dodge', 'lifesteal'];
-                    const statLabels = { crit: 'CRIT', dodge: 'EVA', lifesteal: 'Lifesteal' };
+                    const percentStats = ['crit', 'dodge', 'lifesteal', 'pen', 'critDamage', 'bossDamage', 'hpRegen', 'thorns', 'soulBonus'];
+                    const statLabels = {
+                        crit: 'CRIT', dodge: 'EVA', lifesteal: 'Lifesteal',
+                        pen: 'PEN', critDamage: 'CRIT DMG', bossDamage: 'VS BOSS',
+                        hpRegen: 'HP REGEN', thorns: 'THORNS', soulBonus: 'SOULS',
+                    };
                     const statLines = Object.entries(item.stats)
                         .filter(([, v]) => v > 0)
                         .map(([k, v]) => {
-                            const icons = { hp: '❤️', atk: '⚔️', def: '🛡️', agi: '🏃', crit: '🎯', dodge: '💨', lifesteal: '🧛' };
+                            const icons = {
+                                hp: '❤️', atk: '⚔️', def: '🛡️', agi: '🏃',
+                                crit: '🎯', dodge: '💨', lifesteal: '🧛',
+                                pen: '💥', critDamage: '💢', bossDamage: '👑',
+                                hpRegen: '💚', thorns: '🌵', soulBonus: '✨',
+                            };
                             const label = percentStats.includes(k) ? statLabels[k] : k.toUpperCase();
                             return `<span class="equip-stat-line">${icons[k] || ''} +${v} ${label}</span>`;
                         }).join('');
