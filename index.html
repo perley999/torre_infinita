@@ -181,7 +181,23 @@
             flex-wrap: wrap;
             color: #7c3aed;
         }
-        #player-advanced-stats span { background: #1a0a2e; }
+        .advanced-toggle {
+            width: 100%;
+            text-align: center;
+            cursor: pointer;
+            padding: 2px 0;
+            font-size: 0.65rem;
+            color: #6b7280;
+            user-select: none;
+        }
+        .advanced-toggle:hover { color: #a78bfa; }
+        #advanced-stats-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 4px;
+        }
+        #advanced-stats-content span { background: #1a0a2e; padding: 2px 4px; border-radius: 4px; }
 
         /* ============================================
            FLOATING NUMBERS
@@ -412,13 +428,18 @@
                     <span>💨 EVA <b id="player-dodge">1%</b></span>
                 </div>
                 <div class="derived-stats" id="player-advanced-stats">
-                    <span>💥 PEN <b id="player-pen">0%</b></span>
-                    <span>💢 CRIT DMG <b id="player-crit-dmg">+50%</b></span>
-                    <span>👑 VS BOSS <b id="player-boss-dmg">+0%</b></span>
-                    <span>💚 REGEN <b id="player-hp-regen">0%</b></span>
-                    <span>🌵 THORNS <b id="player-thorns">0%</b></span>
-                    <span>🧛 LIFESTEAL <b id="player-lifesteal">0%</b></span>
-                    <span>✨ SOULS <b id="player-soul-bonus">+0%</b></span>
+                    <div class="advanced-toggle" onclick="toggleAdvancedStats()">
+                        <span id="advanced-toggle-label">▼ Stats avanzados</span>
+                    </div>
+                    <div id="advanced-stats-content" style="display:none">
+                        <span>💥 PEN <b id="player-pen">0%</b></span>
+                        <span>💢 CRIT DMG <b id="player-crit-dmg">+50%</b></span>
+                        <span>👑 VS BOSS <b id="player-boss-dmg">+0%</b></span>
+                        <span>💚 REGEN <b id="player-hp-regen">0%</b></span>
+                        <span>🌵 THORNS <b id="player-thorns">0%</b></span>
+                        <span>🧛 LIFESTEAL <b id="player-lifesteal">0%</b></span>
+                        <span>✨ SOULS <b id="player-soul-bonus">+0%</b></span>
+                    </div>
                 </div>
             </div>
             <div class="fighter enemy" id="enemy-card">
@@ -582,7 +603,7 @@
                 critCap: 70, critK: 100,
                 dodgeCap: 40, dodgeK: 80,
                 blockCap: 50, blockK: 100,
-                lifestealCap: 25,
+                lifestealCap: 25, lifestealK: 80,
                 // New stat caps with diminishing returns
                 penCap: 50, penK: 100,
                 critDmgBase: 50, critDmgCap: 600, critDmgK: 200,
@@ -759,7 +780,8 @@
         function getDerivedStats(atk, def, agi) {
             const c = BALANCE.combat;
             // Diminishing returns: cap × (stat / (stat + K))
-            const crit = Math.floor(c.critCap * (atk / (atk + c.critK)));
+            // Crit base is now flat 1% (no longer derived from ATK)
+            const crit = 1;
             const block = Math.floor(c.blockCap * (def / (def + c.blockK)));
             const dodge = Math.floor(c.dodgeCap * (agi / (agi + c.dodgeK)));
             return { crit, block, dodge };
@@ -996,14 +1018,16 @@
             const critBonus = metaState.upgrades.crit.level * metaState.upgrades.crit.percent * 100;
             // Equipment multipliers apply over base derived stats
             const baseCrit = derived.crit + critBonus;
-            const totalCrit = Math.min(BALANCE.combat.critCap,
-                Math.floor(baseCrit * (1 + p.critMult / 100)) + (metaState.abilities.includes('precise') ? 15 : 0));
+            const rawCrit = baseCrit * (1 + p.critMult / 100) + (metaState.abilities.includes('precise') ? 15 : 0);
+            const totalCrit = Math.floor(diminishingReturns(rawCrit, BALANCE.combat.critCap, BALANCE.combat.critK));
             const baseDodge = derived.dodge;
-            const totalDodge = Math.min(BALANCE.combat.dodgeCap,
-                Math.floor(baseDodge * (1 + p.dodgeMult / 100)));
-            // Lifesteal: flat from equipment only, capped at 25%
-            const totalLifesteal = Math.min(BALANCE.combat.lifestealCap,
-                p.lifesteal + (metaState.equipment.weapon?.passive?.id === 'lifesteal' ? 5 : 0));
+            const rawDodge = baseDodge * (1 + p.dodgeMult / 100);
+            const totalDodge = Math.floor(diminishingReturns(rawDodge, BALANCE.combat.dodgeCap, BALANCE.combat.dodgeK));
+            // Block: diminishing returns on derived block
+            const totalBlock = Math.floor(diminishingReturns(derived.block, BALANCE.combat.blockCap, BALANCE.combat.blockK));
+            // Lifesteal: diminishing returns on flat equipment + passive
+            const rawLifesteal = p.lifesteal + (metaState.equipment.weapon?.passive?.id === 'lifesteal' ? 5 : 0);
+            const totalLifesteal = diminishingReturns(rawLifesteal, BALANCE.combat.lifestealCap, BALANCE.combat.lifestealK);
 
             // Diminishing returns for percentage stats
             const effPen = diminishingReturns(p.pen || 0, BALANCE.combat.penCap, BALANCE.combat.penK);
@@ -1089,7 +1113,7 @@
                 if (e.isBoss && Math.random() < 0.10) { dmg *= 2; type = 'crit'; }
 
                 // Block check
-                if (Math.random() * 100 < derived.block) {
+                if (Math.random() * 100 < totalBlock) {
                     dmg = Math.floor(dmg * 0.5);
                     type = 'block';
                 }
@@ -1287,12 +1311,17 @@
             document.getElementById('player-def').textContent = p.def;
             document.getElementById('player-agi').textContent = p.agi;
             const critBonus = metaState.upgrades.crit.level * metaState.upgrades.crit.percent * 100;
-            const totalCrit = Math.min(BALANCE.combat.critCap,
-                Math.floor((derived.crit + critBonus) * (1 + p.critMult / 100)));
-            const totalDodge = Math.min(BALANCE.combat.dodgeCap,
-                Math.floor(derived.dodge * (1 + p.dodgeMult / 100)));
+            // Apply diminishing returns consistently with combatTick
+            const rawCrit = (derived.crit + critBonus) * (1 + p.critMult / 100) + (metaState.abilities.includes('precise') ? 15 : 0);
+            const totalCrit = Math.floor(diminishingReturns(rawCrit, BALANCE.combat.critCap, BALANCE.combat.critK));
+            const rawDodge = derived.dodge * (1 + p.dodgeMult / 100);
+            const totalDodge = Math.floor(diminishingReturns(rawDodge, BALANCE.combat.dodgeCap, BALANCE.combat.dodgeK));
+            const totalBlock = Math.floor(diminishingReturns(derived.block, BALANCE.combat.blockCap, BALANCE.combat.blockK));
+            const rawLifesteal = p.lifesteal + (metaState.equipment.weapon?.passive?.id === 'lifesteal' ? 5 : 0);
+            const totalLifesteal = diminishingReturns(rawLifesteal, BALANCE.combat.lifestealCap, BALANCE.combat.lifestealK);
+
             document.getElementById('player-crit').textContent = totalCrit + '%';
-            document.getElementById('player-block').textContent = derived.block + '%';
+            document.getElementById('player-block').textContent = totalBlock + '%';
             document.getElementById('player-dodge').textContent = totalDodge + '%';
 
             // Advanced stats with diminishing returns
@@ -1302,8 +1331,6 @@
             const effThorns = diminishingReturns(p.thorns || 0, BALANCE.combat.thornsCap, BALANCE.combat.thornsK);
             const effHpRegen = diminishingReturns(p.hpRegen || 0, 15, 150);
             const effSoulBonus = diminishingReturns(p.soulBonus || 0, 100, 200);
-            const totalLifesteal = Math.min(BALANCE.combat.lifestealCap,
-                p.lifesteal + (metaState.equipment.weapon?.passive?.id === 'lifesteal' ? 5 : 0));
 
             document.getElementById('player-pen').textContent = effPen.toFixed(1) + '%';
             document.getElementById('player-crit-dmg').textContent = '+' + (BALANCE.combat.critDmgBase + effCritDmg).toFixed(1) + '%';
@@ -1423,6 +1450,17 @@
         }
 
         function showTutorial() { document.getElementById('tutorial-overlay').classList.add('visible'); }
+        function toggleAdvancedStats() {
+            const content = document.getElementById('advanced-stats-content');
+            const label = document.getElementById('advanced-toggle-label');
+            if (content.style.display === 'none') {
+                content.style.display = 'flex';
+                label.textContent = '▲ Stats avanzados';
+            } else {
+                content.style.display = 'none';
+                label.textContent = '▼ Stats avanzados';
+            }
+        }
         function closeTutorial() {
             document.getElementById('tutorial-overlay').classList.remove('visible');
             localStorage.setItem('torre_tutorial_seen', 'true');
