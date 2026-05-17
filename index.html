@@ -173,6 +173,16 @@
         }
         .derived-stats span { background: #111; padding: 2px 4px; border-radius: 4px; }
 
+        /* Advanced Stats */
+        #player-advanced-stats {
+            margin-top: 4px;
+            padding-top: 4px;
+            border-top: 1px solid #1e293b;
+            flex-wrap: wrap;
+            color: #7c3aed;
+        }
+        #player-advanced-stats span { background: #1a0a2e; }
+
         /* ============================================
            FLOATING NUMBERS
            ============================================ */
@@ -401,6 +411,15 @@
                     <span>🛡️ BLOQ <b id="player-block">1%</b></span>
                     <span>💨 EVA <b id="player-dodge">1%</b></span>
                 </div>
+                <div class="derived-stats" id="player-advanced-stats">
+                    <span>💥 PEN <b id="player-pen">0%</b></span>
+                    <span>💢 CRIT DMG <b id="player-crit-dmg">+50%</b></span>
+                    <span>👑 VS BOSS <b id="player-boss-dmg">+0%</b></span>
+                    <span>💚 REGEN <b id="player-hp-regen">0%</b></span>
+                    <span>🌵 THORNS <b id="player-thorns">0%</b></span>
+                    <span>🧛 LIFESTEAL <b id="player-lifesteal">0%</b></span>
+                    <span>✨ SOULS <b id="player-soul-bonus">+0%</b></span>
+                </div>
             </div>
             <div class="fighter enemy" id="enemy-card">
                 <div class="floating-container" id="enemy-floats"></div>
@@ -560,7 +579,7 @@
                 speedMin: 750,
                 minDamage: 1,
                 // Diminishing returns: cap × (stat / (stat + K))
-                critCap: 50, critK: 100,
+                critCap: 70, critK: 100,
                 dodgeCap: 40, dodgeK: 80,
                 blockCap: 50, blockK: 100,
                 lifestealCap: 25,
@@ -991,7 +1010,7 @@
             const effCritDmg = diminishingReturns(p.critDamage || 0, BALANCE.combat.critDmgCap, BALANCE.combat.critDmgK);
             const effBossDmg = diminishingReturns(p.bossDamage || 0, BALANCE.combat.bossDmgCap, BALANCE.combat.bossDmgK);
             const effThorns = diminishingReturns(p.thorns || 0, BALANCE.combat.thornsCap, BALANCE.combat.thornsK);
-            const effHpRegen = diminishingReturns(p.hpRegen || 0, 50, 150); // 50% max regen cap
+            const effHpRegen = diminishingReturns(p.hpRegen || 0, 15, 150); // 15% max regen cap
 
             // HP Regeneration (each second = 10 ticks)
             if (effHpRegen > 0 && p.tickCount === undefined) p.tickCount = 0;
@@ -1275,6 +1294,24 @@
             document.getElementById('player-crit').textContent = totalCrit + '%';
             document.getElementById('player-block').textContent = derived.block + '%';
             document.getElementById('player-dodge').textContent = totalDodge + '%';
+
+            // Advanced stats with diminishing returns
+            const effPen = diminishingReturns(p.pen || 0, BALANCE.combat.penCap, BALANCE.combat.penK);
+            const effCritDmg = diminishingReturns(p.critDamage || 0, BALANCE.combat.critDmgCap, BALANCE.combat.critDmgK);
+            const effBossDmg = diminishingReturns(p.bossDamage || 0, BALANCE.combat.bossDmgCap, BALANCE.combat.bossDmgK);
+            const effThorns = diminishingReturns(p.thorns || 0, BALANCE.combat.thornsCap, BALANCE.combat.thornsK);
+            const effHpRegen = diminishingReturns(p.hpRegen || 0, 15, 150);
+            const effSoulBonus = diminishingReturns(p.soulBonus || 0, 100, 200);
+            const totalLifesteal = Math.min(BALANCE.combat.lifestealCap,
+                p.lifesteal + (metaState.equipment.weapon?.passive?.id === 'lifesteal' ? 5 : 0));
+
+            document.getElementById('player-pen').textContent = effPen.toFixed(1) + '%';
+            document.getElementById('player-crit-dmg').textContent = '+' + (BALANCE.combat.critDmgBase + effCritDmg).toFixed(1) + '%';
+            document.getElementById('player-boss-dmg').textContent = '+' + effBossDmg.toFixed(1) + '%';
+            document.getElementById('player-hp-regen').textContent = effHpRegen.toFixed(1) + '%';
+            document.getElementById('player-thorns').textContent = effThorns.toFixed(1) + '%';
+            document.getElementById('player-lifesteal').textContent = totalLifesteal.toFixed(1) + '%';
+            document.getElementById('player-soul-bonus').textContent = '+' + effSoulBonus.toFixed(1) + '%';
 
             // Enemy
             const e = runState.enemy;
