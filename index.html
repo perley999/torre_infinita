@@ -502,7 +502,7 @@
                 hp:   { baseCost: 10, scale: 1.5, flat: 3, percent: 0.05, label: '+3 HP +5%', icon: '❤️' },
                 atk:  { baseCost: 10, scale: 1.5, flat: 2, percent: 0.05, label: '+2 ATK +5%', icon: '⚔️' },
                 def:  { baseCost: 15, scale: 1.5, flat: 1, percent: 0.05, label: '+1 DEF +5%', icon: '🛡️' },
-                agi:  { baseCost: 20, scale: 1.6, flat: 0, percent: 0.02, label: '+2% AGI', icon: '🏃' },
+                agi:  { baseCost: 20, scale: 1.6, flat: 1, percent: 0.02, label: '+1 AGI +2%', icon: '🏃' },
                 souls:{ baseCost: 25, scale: 1.7, flat: 1, percent: 0, label: '+1 alma/piso', icon: '💀', maxLevel: 10 },
                 crit: { baseCost: 30, scale: 1.8, flat: 0, percent: 0.02, label: '+2% Crítico', icon: '🎯', maxLevel: 15 },
                 drop: { baseCost: 40, scale: 2.0, flat: 0, percent: 0.05, label: '+5% Drop', icon: '🎁', maxLevel: 10 },
@@ -540,7 +540,11 @@
                 speedPerAgi: 100,
                 speedMin: 750,
                 minDamage: 1,
-                lifestealCap: 20,
+                // Diminishing returns: cap × (stat / (stat + K))
+                critCap: 50, critK: 100,
+                dodgeCap: 40, dodgeK: 80,
+                blockCap: 50, blockK: 100,
+                lifestealCap: 25,
             },
 
             // --- SOULS ---
@@ -634,11 +638,12 @@
         }
 
         function getDerivedStats(atk, def, agi) {
-            return {
-                crit: Math.min(50, Math.floor(atk / 10)),
-                block: Math.min(50, Math.floor(def / 5)),
-                dodge: Math.min(40, Math.floor(agi / 8)),
-            };
+            const c = BALANCE.combat;
+            // Diminishing returns: cap × (stat / (stat + K))
+            const crit = Math.floor(c.critCap * (atk / (atk + c.critK)));
+            const block = Math.floor(c.blockCap * (def / (def + c.blockK)));
+            const dodge = Math.floor(c.dodgeCap * (agi / (agi + c.dodgeK)));
+            return { crit, block, dodge };
         }
 
         function calcPlayerStats() {
@@ -658,8 +663,10 @@
             let def = metaDef + r.def;
             let agi = metaAgi + r.agi;
 
-            // Equipment bonuses
-            let equipCrit = 0, equipDodge = 0, equipLifesteal = 0;
+            // Equipment bonuses: flat stats + percent multipliers over base
+            // Lifesteal is flat from equipment only (no base stat)
+            let equipLifesteal = 0;
+            let equipCritMult = 0, equipDodgeMult = 0;
             for (const slot of ['weapon', 'armor', 'ring']) {
                 const item = metaState.equipment[slot];
                 if (item) {
@@ -667,9 +674,9 @@
                     atk += item.stats.atk || 0;
                     def += item.stats.def || 0;
                     agi += item.stats.agi || 0;
-                    equipCrit += item.stats.crit || 0;
-                    equipDodge += item.stats.dodge || 0;
                     equipLifesteal += item.stats.lifesteal || 0;
+                    equipCritMult += item.stats.crit || 0;
+                    equipDodgeMult += item.stats.dodge || 0;
                 }
             }
 
@@ -685,9 +692,9 @@
                 atk: Math.floor(atk),
                 def: Math.floor(def),
                 agi: Math.floor(agi),
-                crit: equipCrit,
-                dodge: equipDodge,
                 lifesteal: equipLifesteal,
+                critMult: equipCritMult,
+                dodgeMult: equipDodgeMult,
             };
         }
 
@@ -741,6 +748,7 @@
             // Stats según rareza
             const numSecondary = rarity === 'Poco común' ? 0 : rarity === 'Raro' ? 1 : rarity === 'Épico' ? 1 : 2;
             const hasPassive = ['Épico', 'Legendario'].includes(rarity);
+            const multStats = ['crit', 'dodge']; // These are multipliers over base, get higher values
             
             const pool = statPools[slot];
             const stats = {};
@@ -751,12 +759,13 @@
             stats[primaryStat] = Math.floor(budget * (0.8 + Math.random() * 0.4));
             usedStats.add(primaryStat);
 
-            // 2. Elegir secundarios (sin repetir)
+            // 2. Elegir secundarios (sin repetir) — multiplier stats get higher values
             const availableSecondary = pool.secondary.filter(s => !usedStats.has(s));
             for (let i = 0; i < numSecondary && availableSecondary.length > 0; i++) {
                 const idx = Math.floor(Math.random() * availableSecondary.length);
                 const secStat = availableSecondary.splice(idx, 1)[0];
-                stats[secStat] = Math.floor(budget * 0.4 * (0.7 + Math.random() * 0.6));
+                const mult = multStats.includes(secStat) ? 3.0 : 0.4;
+                stats[secStat] = Math.floor(budget * mult * (0.7 + Math.random() * 0.6));
                 usedStats.add(secStat);
             }
 
@@ -798,8 +807,8 @@
             p.atk = stats.atk;
             p.def = stats.def;
             p.agi = stats.agi;
-            p.crit = stats.crit;
-            p.dodge = stats.dodge;
+            p.critMult = stats.critMult;
+            p.dodgeMult = stats.dodgeMult;
             p.lifesteal = stats.lifesteal;
             p.attackTimer = speedToInterval(p.agi);
 
@@ -832,8 +841,16 @@
             const e = runState.enemy;
             const derived = getDerivedStats(p.atk, p.def, p.agi);
             const critBonus = metaState.upgrades.crit.level * metaState.upgrades.crit.percent * 100;
-            const totalCrit = Math.min(50, derived.crit + critBonus + p.crit + (metaState.abilities.includes('precise') ? 15 : 0));
-            const totalDodge = Math.min(40, derived.dodge + p.dodge);
+            // Equipment multipliers apply over base derived stats
+            const baseCrit = derived.crit + critBonus;
+            const totalCrit = Math.min(BALANCE.combat.critCap,
+                Math.floor(baseCrit * (1 + p.critMult / 100)) + (metaState.abilities.includes('precise') ? 15 : 0));
+            const baseDodge = derived.dodge;
+            const totalDodge = Math.min(BALANCE.combat.dodgeCap,
+                Math.floor(baseDodge * (1 + p.dodgeMult / 100)));
+            // Lifesteal: flat from equipment only, capped at 25%
+            const totalLifesteal = Math.min(BALANCE.combat.lifestealCap,
+                p.lifesteal + (metaState.equipment.weapon?.passive?.id === 'lifesteal' ? 5 : 0));
 
             // Jugador ataca
             p.attackTimer -= BALANCE.combat.tickMs;
@@ -858,9 +875,8 @@
                     flashElement('enemy-card');
                     
                     // Lifesteal (stats + passive), capped at BALANCE.combat.lifestealCap
-                    const lifestealPct = Math.min(BALANCE.combat.lifestealCap, p.lifesteal + (metaState.equipment.weapon?.passive?.id === 'lifesteal' ? 5 : 0));
-                    if (lifestealPct > 0) {
-                        const heal = Math.floor(dmg * lifestealPct / 100);
+                    if (totalLifesteal > 0) {
+                        const heal = Math.floor(dmg * totalLifesteal / 100);
                         if (heal > 0) {
                             p.hp = Math.min(p.maxHp, p.hp + heal);
                             spawnFloat('player-floats', `+${heal}`, 'heal');
@@ -1068,9 +1084,14 @@
             document.getElementById('player-atk').textContent = p.atk;
             document.getElementById('player-def').textContent = p.def;
             document.getElementById('player-agi').textContent = p.agi;
-            document.getElementById('player-crit').textContent = Math.min(50, derived.crit + Math.floor(metaState.upgrades.crit.level * metaState.upgrades.crit.percent * 100)) + '%';
+            const critBonus = metaState.upgrades.crit.level * metaState.upgrades.crit.percent * 100;
+            const totalCrit = Math.min(BALANCE.combat.critCap,
+                Math.floor((derived.crit + critBonus) * (1 + p.critMult / 100)));
+            const totalDodge = Math.min(BALANCE.combat.dodgeCap,
+                Math.floor(derived.dodge * (1 + p.dodgeMult / 100)));
+            document.getElementById('player-crit').textContent = totalCrit + '%';
             document.getElementById('player-block').textContent = derived.block + '%';
-            document.getElementById('player-dodge').textContent = derived.dodge + '%';
+            document.getElementById('player-dodge').textContent = totalDodge + '%';
 
             // Enemy
             const e = runState.enemy;
@@ -1095,12 +1116,13 @@
                 if (item) {
                     const rarityClass = `rarity-${item.rarity.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-')}`;
                     const percentStats = ['crit', 'dodge', 'lifesteal'];
+                    const statLabels = { crit: 'CRIT', dodge: 'EVA', lifesteal: 'ROBO' };
                     const statLines = Object.entries(item.stats)
                         .filter(([, v]) => v > 0)
                         .map(([k, v]) => {
                             const icons = { hp: '❤️', atk: '⚔️', def: '🛡️', agi: '🏃', crit: '🎯', dodge: '💨', lifesteal: '🧛' };
-                            const suffix = percentStats.includes(k) ? '%' : '';
-                            return `<span class="equip-stat-line">${icons[k] || ''} +${v}${suffix} ${k.toUpperCase()}</span>`;
+                            const label = percentStats.includes(k) ? statLabels[k] : k.toUpperCase();
+                            return `<span class="equip-stat-line">${icons[k] || ''} +${v} ${label}</span>`;
                         }).join('');
                     const passiveLine = item.passive ? `<span class="equip-stat-line" style="color:#fbbf24">✨ ${item.passive.label}</span>` : '';
                     el.className = `equip-slot ${slot} filled ${rarityClass}`;
