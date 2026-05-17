@@ -503,7 +503,7 @@
                 atk:  { baseCost: 10, scale: 1.5, flat: 2, percent: 0.05, label: '+2 ATK +5%', icon: '⚔️' },
                 def:  { baseCost: 15, scale: 1.5, flat: 1, percent: 0.05, label: '+1 DEF +5%', icon: '🛡️' },
                 agi:  { baseCost: 20, scale: 1.6, flat: 0, percent: 0.02, label: '+2% AGI', icon: '🏃' },
-                souls:{ baseCost: 25, scale: 1.7, flat: 1, percent: 0, label: '+1 alma/piso', icon: '💀' },
+                souls:{ baseCost: 25, scale: 1.7, flat: 1, percent: 0, label: '+1 alma/piso', icon: '💀', maxLevel: 10 },
                 crit: { baseCost: 30, scale: 1.8, flat: 0, percent: 0.02, label: '+2% Crítico', icon: '🎯', maxLevel: 15 },
                 drop: { baseCost: 40, scale: 2.0, flat: 0, percent: 0.05, label: '+5% Drop', icon: '🎁', maxLevel: 10 },
             },
@@ -530,7 +530,7 @@
                 { name: 'Épico',        weights: [5, 30, 0, 0],  statMult: 2.0 },
                 { name: 'Legendario',   weights: [0, 10, 0, 0],  statMult: 3.0 },
             ],
-                budgetPerFloor: 1.0,
+                budgetBase: 5,
             },
 
             // --- COMBAT ---
@@ -540,6 +540,7 @@
                 speedPerAgi: 100,
                 speedMin: 750,
                 minDamage: 1,
+                lifestealCap: 20,
             },
 
             // --- SOULS ---
@@ -728,7 +729,7 @@
             const slots = BALANCE.equipment.slots;
             const slot = slots[Math.floor(Math.random() * slots.length)];
             const rarityData = BALANCE.equipment.rarities.find(r => r.name === rarity);
-            const budget = Math.floor(floor * BALANCE.equipment.budgetPerFloor * (1 + rarity.length * 0.5));
+            const budget = Math.floor(BALANCE.equipment.budgetBase * Math.log2(floor + 1) * rarityData.statMult);
 
             // Definir pools de stats por slot
             const statPools = {
@@ -856,8 +857,8 @@
                     spawnFloat('enemy-floats', `-${dmg}`, type);
                     flashElement('enemy-card');
                     
-                    // Lifesteal (stats + passive)
-                    const lifestealPct = p.lifesteal + (metaState.equipment.weapon?.passive?.id === 'lifesteal' ? 5 : 0);
+                    // Lifesteal (stats + passive), capped at BALANCE.combat.lifestealCap
+                    const lifestealPct = Math.min(BALANCE.combat.lifestealCap, p.lifesteal + (metaState.equipment.weapon?.passive?.id === 'lifesteal' ? 5 : 0));
                     if (lifestealPct > 0) {
                         const heal = Math.floor(dmg * lifestealPct / 100);
                         if (heal > 0) {
@@ -1093,7 +1094,7 @@
                     const statLines = Object.entries(item.stats)
                         .filter(([, v]) => v > 0)
                         .map(([k, v]) => {
-                            const icons = { hp: '❤️', atk: '⚔️', def: '️', agi: '🏃', crit: '🎯', dodge: '', lifesteal: '🧛' };
+                            const icons = { hp: '❤️', atk: '⚔️', def: '🛡️', agi: '🏃', crit: '🎯', dodge: '💨', lifesteal: '🧛' };
                             const suffix = percentStats.includes(k) ? '%' : '';
                             return `<span class="equip-stat-line">${icons[k] || ''} +${v}${suffix} ${k.toUpperCase()}</span>`;
                         }).join('');

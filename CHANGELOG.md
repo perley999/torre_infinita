@@ -2,6 +2,13 @@
 
 Todos los cambios notables en este proyecto.
 
+## [Unreleased]
+
+### Cambiado
+- Equipamiento: budget de stats ahora usa fórmula logarítmica `budgetBase × log2(floor + 1) × statMult` en vez de lineal por piso.
+- Equipamiento: corregido bug donde `rarity.length` (longitud del string) se usaba como multiplicador, haciendo que "Poco común" y "Legendario" tuvieran el mismo budget.
+- `budgetPerFloor: 1.0` → `budgetBase: 5` con curva logarítmica.
+
 ## [0.2.0] - 2026-05-17
 
 ### Añadido

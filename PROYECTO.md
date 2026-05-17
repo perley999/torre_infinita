@@ -22,10 +22,17 @@
   - `combat` → fórmula de velocidad, tick rate, daño mínimo
   - `souls` → fórmula de recompensa
 
+### Equipamiento con budget logarítmico
+- **Decisión**: El budget de stats por pieza usa `budgetBase × log2(floor + 1) × statMult(rareza)` en vez de lineal por piso.
+- **Por qué**: El modelo lineal (`floor × budgetPerFloor`) hacía que el equipo eclipsara TODA otra fuente de progresión. Un "Poco común" en piso 20 daba +140 ATK vs 10 ATK base. Con logaritmo, crece rápido al inicio pero se aplana naturalmente.
+- **Bug corregido**: El multiplicador anterior usaba `rarity.length` (longitud del string), haciendo que "Poco común" (12 letras) y "Legendario" (12 letras) tuvieran el mismo budget. Ahora usa `statMult` explícito: `[1.0, 1.5, 2.0, 3.0]`.
+- **Budget base**: 5 (ajustable desde `BALANCE.equipment.budgetBase`).
+- **Curva resultante**: Piso 1→5, Piso 10→17, Piso 50→28, Piso 100→33, Piso 200→38 (Poco común). El equipo aporta ~20-40% sobre stats totales, no 1000%.
+
 ### Separación de responsabilidades de stats
 - **Niveles de run** = flat (impacto inmediato, siempre se nota)
 - **Meta progreso (almas)** = flat mínimo + percentual (early game se siente, late game escala)
-- **Equipamiento** = flat + stats propios (ecosistema independiente)
+- **Equipamiento** = budget logarítmico × multiplicador de rareza (boost significativo pero no dominante)
 
 ### Combate por velocidad (no turnos alternos)
 - **Decisión**: Cada fighter tiene un timer que baja según su velocidad. Cuando llega a 0, ataca y se resetea.
@@ -73,6 +80,16 @@
 | Crítico | +2% Crítico | 30 almas | ×1.8 | 15 |
 | Drop | +5% Drop | 40 almas | ×2.0 | 10 |
 
+### Equipamiento (budget logarítmico)
+| Rareza | statMult | Stats por pieza | Pasiva |
+|--------|----------|-----------------|--------|
+| Poco común | 1.0 | 1 stat | No |
+| Raro | 1.5 | 2 stats | No |
+| Épico | 2.0 | 2 stats | Sí |
+| Legendario | 3.0 | 3 stats | Sí |
+
+**Fórmula**: `budget = budgetBase(5) × log2(floor + 1) × statMult`
+
 ### Enemigos
 - 8 nombres rotativos para enemigos normales
 - 6 nombres rotativos para jefes
@@ -81,7 +98,7 @@
 
 ## Pendientes / Ideas futuras
 - [ ] Persistencia con localStorage (almas y mejoras se pierden al recargar)
-- [ ] Sistema de equipo con rarezas (común, raro, épico, legendario)
+- [x] Sistema de equipo con rarezas y budget logarítmico
 - [ ] Daño flotante animado
 - [ ] Idle real (auto-advance cuando no estás)
 - [ ] Múltiples dungeons/torres con efectos diferentes
