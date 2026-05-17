@@ -8,3 +8,6 @@ Thumbs.db
 # Editores
 .vscode/
 .idea/
+
+# Docs internos para beta testing
+BETA-GUIA.md
