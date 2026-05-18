@@ -743,7 +743,7 @@
             runState.level = 1;
             runState.xp = 0;
             runState.xpToNext = BALANCE.levelUp.xpBase;
-            runState.runBonuses = { hp: 5, atk: 1, def: 1, agi: 1 };
+            runState.runBonuses = { hp: 0, atk: 0, def: 0, agi: 0 };
             runState.enemy = null;
             document.getElementById('combat-log').innerHTML = '';
             document.getElementById('equip-section').classList.add('locked');
@@ -760,7 +760,7 @@
             level: 1,
             xp: 0,
             xpToNext: BALANCE.levelUp.xpBase,
-            runBonuses: { hp: 5, atk: 1, def: 1, agi: 1 },
+            runBonuses: { hp: 0, atk: 0, def: 0, agi: 0 },
             player: { hp: 0, maxHp: 0, atk: 0, def: 0, agi: 0, attackTimer: 0 },
             enemy: null,
             combatInterval: BALANCE.combat.tickMs,
@@ -1397,7 +1397,7 @@
         function startRun() {
             if (runState.active) return;
             runState.active = true; runState.floor = 1; runState.level = 1; runState.xp = 0; runState.xpToNext = BALANCE.levelUp.xpBase;
-            runState.runBonuses = { hp: 5, atk: 1, def: 1, agi: 1 };
+            runState.runBonuses = { hp: 0, atk: 0, def: 0, agi: 0 };
             document.getElementById('combat-log').innerHTML = '';
             if (metaState.unlockedEquipment) {
                 document.getElementById('equip-section').classList.remove('locked');
