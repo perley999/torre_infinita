@@ -9,6 +9,14 @@ Todos los cambios notables en este proyecto.
 - Equipamiento: corregido bug donde `rarity.length` (longitud del string) se usaba como multiplicador, haciendo que "Poco común" y "Legendario" tuvieran el mismo budget.
 - `budgetPerFloor: 1.0` → `budgetBase: 5` con curva logarítmica.
 
+## [0.2.1] - 2026-05-18
+
+### Cambiado
+- **Meta upgrades rework**: el % de HP, ATK, DEF y AGI ahora es un **multiplicador global** que se aplica al final sobre todas las fuentes flat (base + run + equipo). Ya no aplica solo sobre la stat base.
+- **Meta upgrades simplificadas**: eliminado el componente flat de HP, ATK, DEF y AGI. Ahora solo tienen %.
+- Las mejoras de run (elecciones de nivel) y el equipo ahora escalan con el % de meta — más invertís en meta, más rinden.
+- Impacto visual: los botones de mejora ya no muestran acumulado flat para stats (solo %).
+
 ## [0.2.0] - 2026-05-17
 
 ### Añadido

@@ -541,12 +541,12 @@
                 abilityLevels: [5, 10, 15, 20],
             },
 
-            // --- META PROGRESSION (flat mínimo + %) ---
+            // --- META PROGRESSION (% global sobre todo lo flat) ---
             metaUpgrades: {
-                hp:   { baseCost: 10, scale: 1.5, flat: 3, percent: 0.05, label: '+3 HP +5%', icon: '❤️' },
-                atk:  { baseCost: 10, scale: 1.5, flat: 2, percent: 0.05, label: '+2 ATK +5%', icon: '⚔️' },
-                def:  { baseCost: 15, scale: 1.5, flat: 1, percent: 0.05, label: '+1 DEF +5%', icon: '🛡️' },
-                agi:  { baseCost: 20, scale: 1.6, flat: 1, percent: 0.02, label: '+1 AGI +2%', icon: '🏃' },
+                hp:   { baseCost: 10, scale: 1.5, percent: 0.05, label: '+5% HP', icon: '❤️' },
+                atk:  { baseCost: 10, scale: 1.5, percent: 0.05, label: '+5% ATK', icon: '⚔️' },
+                def:  { baseCost: 15, scale: 1.5, percent: 0.05, label: '+5% DEF', icon: '🛡️' },
+                agi:  { baseCost: 20, scale: 1.6, percent: 0.02, label: '+2% AGI', icon: '🏃' },
                 souls:{ baseCost: 25, scale: 1.7, flat: 1, percent: 0, label: '+1 alma/piso', icon: '💀', maxLevel: 10 },
                 crit: { baseCost: 30, scale: 1.8, flat: 0, percent: 0.01, label: '+1% Crítico', icon: '🎯', maxLevel: 15 },
                 drop: { baseCost: 40, scale: 2.0, flat: 0, percent: 0.05, label: '+5% Drop', icon: '🎁', maxLevel: 10 },
@@ -721,6 +721,8 @@
             enemy: null,
             combatInterval: BALANCE.combat.tickMs,
             pendingChoice: null,
+            furyCounter: 0,
+            toughCounter: 0,
         };
 
         // ============================================
@@ -754,12 +756,23 @@
             ]
         };
 
-        const ITEM_PASSIVES = [
-            { id: 'venom', label: 'Veneno', desc: 'Aplica veneno al atacar (2 dmg/turno x3).' },
-            { id: 'burn', label: 'Quemadura', desc: 'Aplica quemadura (3% HP enemigo/turno x2).' },
-            { id: 'lifesteal', label: 'Robo de Vida', desc: 'Recupera 5% del daño causado como HP.' },
-            { id: 'block_mastery', label: 'Maestría Bloqueo', desc: '+10% probabilidad de bloqueo.' },
-        ];
+        const MASTERIES = {
+            weapon: [
+                { id: 'crit_mastery', label: 'Maestría Crítica', values: [5, 10, 15] },
+                { id: 'vampiric', label: 'Maestría Vampírica', values: [5, 7.5, 10] },
+                { id: 'fury', label: 'Maestría Furiosa', thresholds: [7, 5, 3] },
+            ],
+            armor: [
+                { id: 'block_mastery', label: 'Maestría Bloqueo', values: [2.5, 5, 7.5] },
+                { id: 'regen_mastery', label: 'Maestría Regenerativa', values: [5, 10, 15] },
+                { id: 'tough_mastery', label: 'Maestría Resistente', values: [5, 10, 15] },
+            ],
+            ring: [
+                { id: 'dodge_mastery', label: 'Maestría Evasiva', values: [2.5, 5, 7.5] },
+                { id: 'pen_mastery', label: 'Maestría Perforante', values: [5, 7.5, 10] },
+                { id: 'fortune_mastery', label: 'Maestría Afortunada', values: [10, 20, 30] },
+            ],
+        };
 
         // ============================================
         // 4. CÁLCULOS
@@ -791,18 +804,12 @@
             const u = metaState.upgrades;
             const base = BALANCE.player;
 
-            // Meta upgrades: flat + percent
-            const metaHp = base.hp * (1 + u.hp.percent * u.hp.level) + u.hp.flat * u.hp.level;
-            const metaAtk = base.atk * (1 + u.atk.percent * u.atk.level) + u.atk.flat * u.atk.level;
-            const metaDef = base.def * (1 + u.def.percent * u.def.level) + u.def.flat * u.def.level;
-            const metaAgi = base.agi * (1 + u.agi.percent * u.agi.level) + u.agi.flat * u.agi.level;
-
-            // Run level bonuses (flat)
+            // 1. Sum ALL flat sources: base + run bonuses + equipment
             const r = runState.runBonuses;
-            let hp = metaHp + r.hp;
-            let atk = metaAtk + r.atk;
-            let def = metaDef + r.def;
-            let agi = metaAgi + r.agi;
+            let hp = base.hp + r.hp;
+            let atk = base.atk + r.atk;
+            let def = base.def + r.def;
+            let agi = base.agi + r.agi;
 
             // Equipment bonuses: flat stats + percent multipliers over base
             // Lifesteal is flat from equipment only (no base stat)
@@ -829,7 +836,13 @@
                 }
             }
 
-            // Passive abilities
+            // 2. Meta percent multiplier (global — amplifica TODO lo flat)
+            hp *= (1 + u.hp.percent * u.hp.level);
+            atk *= (1 + u.atk.percent * u.atk.level);
+            def *= (1 + u.def.percent * u.def.level);
+            agi *= (1 + u.agi.percent * u.agi.level);
+
+            // 3. Passive abilities
             if (metaState.abilities.includes('domination')) {
                 hp *= 1.15; atk *= 1.15; def *= 1.15; agi *= 1.15;
             }
@@ -879,7 +892,7 @@
             return (s.atk || 0) * 1.0
                  + (s.def || 0) * 1.0
                  + (s.hp || 0) * 0.5
-                 + (s.agi || 0) * 2.0
+                 + (s.agi || 0) * 1.5
                  + (s.crit || 0) * 0.5
                  + (s.lifesteal || 0) * 0.5
                  + (s.dodge || 0) * 0.5
@@ -888,7 +901,8 @@
                  + (s.bossDamage || 0) * 0.35
                  + (s.hpRegen || 0) * 0.4
                  + (s.thorns || 0) * 0.35
-                 + (s.soulBonus || 0) * 0.2;
+                 + (s.soulBonus || 0) * 0.2
+                 + (item.mastery ? item.mastery.level * 3 : 0);
         }
 
         // ============================================
@@ -918,7 +932,8 @@
 
             // Stats según rareza
             const numSecondary = rarity === 'Poco común' ? 0 : rarity === 'Raro' ? 1 : rarity === 'Épico' ? 1 : 2;
-            const hasPassive = ['Épico', 'Legendario'].includes(rarity);
+            const hasMastery = ['Raro', 'Épico', 'Legendario'].includes(rarity);
+            const masteryLevel = rarity === 'Raro' ? 1 : rarity === 'Épico' ? 2 : rarity === 'Legendario' ? 3 : 0;
 
             const stats = {};
             const usedStats = new Set();
@@ -938,14 +953,19 @@
                 usedStats.add(secStat);
             }
 
-            // 3. Pasiva (si aplica)
-            const passive = hasPassive ? ITEM_PASSIVES[Math.floor(Math.random() * ITEM_PASSIVES.length)] : null;
+            // 3. Maestría (si aplica)
+            const masteryPool = MASTERIES[slot] || [];
+            let mastery = null;
+            if (hasMastery && masteryPool.length > 0) {
+                const picked = masteryPool[Math.floor(Math.random() * masteryPool.length)];
+                mastery = { id: picked.id, level: masteryLevel, label: picked.label };
+            }
 
             const item = {
                 id: Date.now() + Math.random(),
                 name: `${slot === 'weapon' ? 'Arma' : slot === 'armor' ? 'Armadura' : 'Anillo'}`,
                 slot, rarity, stats,
-                passive,
+                mastery,
             };
 
             return item;
@@ -987,6 +1007,42 @@
             p.soulBonus = stats.soulBonus;
             p.attackTimer = speedToInterval(p.agi);
 
+            // Masteries: flat bonuses sobre stats base
+            runState.masteryFlatCrit = 0;
+            runState.masteryFlatLifesteal = 0;
+            runState.masteryFlatBlock = 0;
+            runState.masteryFlatRegen = 0;
+            runState.masteryToughPct = 0;
+            runState.masteryFlatDodge = 0;
+            runState.masteryFlatPen = 0;
+            runState.masteryFortuneChance = 0;
+            const weaponMastery = metaState.equipment.weapon?.mastery;
+            if (weaponMastery) {
+                const masteryDef = MASTERIES.weapon.find(m => m.id === weaponMastery.id);
+                if (masteryDef) {
+                    if (masteryDef.id === 'crit_mastery') runState.masteryFlatCrit = masteryDef.values[weaponMastery.level - 1];
+                    if (masteryDef.id === 'vampiric') runState.masteryFlatLifesteal = masteryDef.values[weaponMastery.level - 1];
+                }
+            }
+            const armorMastery = metaState.equipment.armor?.mastery;
+            if (armorMastery) {
+                const masteryDef = MASTERIES.armor.find(m => m.id === armorMastery.id);
+                if (masteryDef) {
+                    if (masteryDef.id === 'block_mastery') runState.masteryFlatBlock = masteryDef.values[armorMastery.level - 1];
+                    if (masteryDef.id === 'regen_mastery') runState.masteryFlatRegen = masteryDef.values[armorMastery.level - 1];
+                    if (masteryDef.id === 'tough_mastery') runState.masteryToughPct = masteryDef.values[armorMastery.level - 1];
+                }
+            }
+            const ringMastery = metaState.equipment.ring?.mastery;
+            if (ringMastery) {
+                const masteryDef = MASTERIES.ring.find(m => m.id === ringMastery.id);
+                if (masteryDef) {
+                    if (masteryDef.id === 'dodge_mastery') runState.masteryFlatDodge = masteryDef.values[ringMastery.level - 1];
+                    if (masteryDef.id === 'pen_mastery') runState.masteryFlatPen = masteryDef.values[ringMastery.level - 1];
+                    if (masteryDef.id === 'fortune_mastery') runState.masteryFortuneChance = masteryDef.values[ringMastery.level - 1];
+                }
+            }
+
             const eStats = calcEnemyStats(runState.floor);
             runState.enemy = {
                 ...eStats,
@@ -1019,18 +1075,17 @@
             // Equipment multipliers apply over base derived stats
             const baseCrit = derived.crit + critBonus;
             const rawCrit = baseCrit * (1 + p.critMult / 100) + (metaState.abilities.includes('precise') ? 15 : 0);
-            const totalCrit = Math.floor(diminishingReturns(rawCrit, BALANCE.combat.critCap, BALANCE.combat.critK));
+            const totalCrit = Math.floor(diminishingReturns(rawCrit, BALANCE.combat.critCap, BALANCE.combat.critK)) + (runState.masteryFlatCrit || 0);
             const baseDodge = derived.dodge;
             const rawDodge = baseDodge * (1 + p.dodgeMult / 100);
-            const totalDodge = Math.floor(diminishingReturns(rawDodge, BALANCE.combat.dodgeCap, BALANCE.combat.dodgeK));
-            // Block: diminishing returns on derived block
-            const totalBlock = Math.floor(diminishingReturns(derived.block, BALANCE.combat.blockCap, BALANCE.combat.blockK));
-            // Lifesteal: diminishing returns on flat equipment + passive
-            const rawLifesteal = p.lifesteal + (metaState.equipment.weapon?.passive?.id === 'lifesteal' ? 5 : 0);
-            const totalLifesteal = diminishingReturns(rawLifesteal, BALANCE.combat.lifestealCap, BALANCE.combat.lifestealK);
+            const totalDodge = Math.floor(diminishingReturns(rawDodge, BALANCE.combat.dodgeCap, BALANCE.combat.dodgeK)) + (runState.masteryFlatDodge || 0);
+            // Block: diminishing returns on derived block + flat maestría
+            const totalBlock = Math.floor(diminishingReturns(derived.block, BALANCE.combat.blockCap, BALANCE.combat.blockK)) + (runState.masteryFlatBlock || 0);
+            // Lifesteal: diminishing returns on flat equipment + maestría (pre-DR)
+            const totalLifesteal = diminishingReturns((p.lifesteal || 0) + (runState.masteryFlatLifesteal || 0), BALANCE.combat.lifestealCap, BALANCE.combat.lifestealK);
 
             // Diminishing returns for percentage stats
-            const effPen = diminishingReturns(p.pen || 0, BALANCE.combat.penCap, BALANCE.combat.penK);
+            const effPen = diminishingReturns(p.pen || 0, BALANCE.combat.penCap, BALANCE.combat.penK) + (runState.masteryFlatPen || 0);
             const effCritDmg = diminishingReturns(p.critDamage || 0, BALANCE.combat.critDmgCap, BALANCE.combat.critDmgK);
             const effBossDmg = diminishingReturns(p.bossDamage || 0, BALANCE.combat.bossDmgCap, BALANCE.combat.bossDmgK);
             const effThorns = diminishingReturns(p.thorns || 0, BALANCE.combat.thornsCap, BALANCE.combat.thornsK);
@@ -1046,6 +1101,19 @@
                     if (regen > 0 && p.hp < p.maxHp) {
                         p.hp = Math.min(p.maxHp, p.hp + regen);
                         spawnFloat('player-floats', `+${regen}`, 'heal');
+                    }
+                }
+            }
+
+            // Maestría Regeneración: cura plana cada 2 segundos (20 ticks)
+            if (runState.masteryFlatRegen > 0) {
+                if (p.regenFlatTick === undefined) p.regenFlatTick = 0;
+                p.regenFlatTick++;
+                if (p.regenFlatTick >= 20) {
+                    p.regenFlatTick = 0;
+                    if (p.hp < p.maxHp) {
+                        p.hp = Math.min(p.maxHp, p.hp + runState.masteryFlatRegen);
+                        spawnFloat('player-floats', `+${runState.masteryFlatRegen}`, 'heal');
                     }
                 }
             }
@@ -1071,6 +1139,18 @@
                         const critMult = 1.5 + effCritDmg / 100; // 1.5 base + up to 6.0 from gear
                         dmg = Math.floor(dmg * critMult);
                         type = 'crit';
+                    }
+                    // Maestría Furiosa: contador por ataque del héroe, proc en el mismo golpe
+                    const furyMastery = metaState.equipment.weapon?.mastery;
+                    if (furyMastery?.id === 'fury') {
+                        const thresholds = [7, 5, 3];
+                        const threshold = thresholds[furyMastery.level - 1];
+                        runState.furyCounter++;
+                        if (runState.furyCounter >= threshold) {
+                            runState.furyCounter = 0;
+                            dmg = Math.floor(dmg * 2);
+                            spawnFloat('enemy-floats', 'FURIA!', 'crit');
+                        }
                     }
                     if (metaState.abilities.includes('execute') && e.hp < e.maxHp * 0.2) dmg *= 2;
                     if (metaState.abilities.includes('brutal') && Math.random() < 0.10) { dmg *= 3; type = 'crit'; }
@@ -1116,6 +1196,18 @@
                 if (Math.random() * 100 < totalBlock) {
                     dmg = Math.floor(dmg * 0.5);
                     type = 'block';
+                }
+
+                // Maestría Resistente: contador + reducción en el MISMO ataque cada 5 golpes
+                const toughMastery = metaState.equipment.armor?.mastery;
+                if (toughMastery?.id === 'tough_mastery') {
+                    runState.toughCounter++;
+                    if (runState.toughCounter >= 5) {
+                        runState.toughCounter = 0;
+                        const reduction = runState.masteryToughPct;
+                        dmg = Math.floor(dmg * (1 - reduction / 100));
+                        spawnFloat('player-floats', '🛡️RESISTE!', 'block');
+                    }
                 }
 
                 p.hp -= dmg;
@@ -1184,6 +1276,11 @@
             if (runState.player.soulBonus > 0) {
                 const effSoulBonus = diminishingReturns(runState.player.soulBonus, 100, 200);
                 souls = Math.floor(souls * (1 + effSoulBonus / 100));
+            }
+            // Maestría Afortunada: chance de duplicar almas
+            if (runState.masteryFortuneChance > 0 && Math.random() * 100 < runState.masteryFortuneChance) {
+                souls = Math.floor(souls * 2);
+                addLog('🍀 ¡Maestría Afortunada duplica las almas!', 'loot');
             }
             metaState.souls += souls;
             metaState.maxFloor = Math.max(metaState.maxFloor, runState.floor);
@@ -1276,6 +1373,8 @@
         function restartRun() {
             if (combatLoop) clearInterval(combatLoop);
             runState.active = false; runState.floor = 1; runState.enemy = null;
+            runState.furyCounter = 0;
+            runState.toughCounter = 0;
             document.getElementById('combat-log').innerHTML = '';
             addLog('🔄 Run reiniciada', 'system');
             render(); updateButtons();
@@ -1313,19 +1412,18 @@
             const critBonus = metaState.upgrades.crit.level * metaState.upgrades.crit.percent * 100;
             // Apply diminishing returns consistently with combatTick
             const rawCrit = (derived.crit + critBonus) * (1 + p.critMult / 100) + (metaState.abilities.includes('precise') ? 15 : 0);
-            const totalCrit = Math.floor(diminishingReturns(rawCrit, BALANCE.combat.critCap, BALANCE.combat.critK));
+            const totalCrit = Math.floor(diminishingReturns(rawCrit, BALANCE.combat.critCap, BALANCE.combat.critK)) + (runState.masteryFlatCrit || 0);
             const rawDodge = derived.dodge * (1 + p.dodgeMult / 100);
-            const totalDodge = Math.floor(diminishingReturns(rawDodge, BALANCE.combat.dodgeCap, BALANCE.combat.dodgeK));
-            const totalBlock = Math.floor(diminishingReturns(derived.block, BALANCE.combat.blockCap, BALANCE.combat.blockK));
-            const rawLifesteal = p.lifesteal + (metaState.equipment.weapon?.passive?.id === 'lifesteal' ? 5 : 0);
-            const totalLifesteal = diminishingReturns(rawLifesteal, BALANCE.combat.lifestealCap, BALANCE.combat.lifestealK);
+            const totalDodge = Math.floor(diminishingReturns(rawDodge, BALANCE.combat.dodgeCap, BALANCE.combat.dodgeK)) + (runState.masteryFlatDodge || 0);
+            const totalBlock = Math.floor(diminishingReturns(derived.block, BALANCE.combat.blockCap, BALANCE.combat.blockK)) + (runState.masteryFlatBlock || 0);
+            const totalLifesteal = diminishingReturns((p.lifesteal || 0) + (runState.masteryFlatLifesteal || 0), BALANCE.combat.lifestealCap, BALANCE.combat.lifestealK);
 
             document.getElementById('player-crit').textContent = totalCrit + '%';
             document.getElementById('player-block').textContent = totalBlock + '%';
             document.getElementById('player-dodge').textContent = totalDodge + '%';
 
             // Advanced stats with diminishing returns
-            const effPen = diminishingReturns(p.pen || 0, BALANCE.combat.penCap, BALANCE.combat.penK);
+            const effPen = diminishingReturns(p.pen || 0, BALANCE.combat.penCap, BALANCE.combat.penK) + (runState.masteryFlatPen || 0);
             const effCritDmg = diminishingReturns(p.critDamage || 0, BALANCE.combat.critDmgCap, BALANCE.combat.critDmgK);
             const effBossDmg = diminishingReturns(p.bossDamage || 0, BALANCE.combat.bossDmgCap, BALANCE.combat.bossDmgK);
             const effThorns = diminishingReturns(p.thorns || 0, BALANCE.combat.thornsCap, BALANCE.combat.thornsK);
@@ -1380,9 +1478,10 @@
                             const label = percentStats.includes(k) ? statLabels[k] : k.toUpperCase();
                             return `<span class="equip-stat-line">${icons[k] || ''} +${v} ${label}</span>`;
                         }).join('');
-                    const passiveLine = item.passive ? `<span class="equip-stat-line" style="color:#fbbf24">✨ ${item.passive.label}</span>` : '';
+                    const masteryStars = item.mastery ? '⭐'.repeat(item.mastery.level) : '';
+                    const masteryLine = item.mastery ? `<span class="equip-stat-line" style="color:#fbbf24">${masteryStars} ${item.mastery.label}</span>` : '';
                     el.className = `equip-slot ${slot} filled ${rarityClass}`;
-                    el.innerHTML = `<div class="equip-name">${item.name}</div><div class="equip-stats">${item.rarity} | ilvl ${Math.floor(calcIlvl(item))}</div>${statLines}${passiveLine}`;
+                    el.innerHTML = `<div class="equip-name">${item.name}</div><div class="equip-stats">${item.rarity} | ilvl ${Math.floor(calcIlvl(item))}</div>${statLines}${masteryLine}`;
                 } else {
                     el.className = `equip-slot ${slot}`;
                     el.innerHTML = `${slot === 'weapon' ? '🗡️' : slot === 'armor' ? '🛡️' : '💍'} Vacío`;
