@@ -570,7 +570,7 @@
             // --- RUN LEVEL (flat por level up) ---
             levelUp: {
                 choices: [
-                    { id: 'hp',  label: '+5 HP',  flat: 5, desc: 'Aumenta tu vida máxima en 5.' },
+                    { id: 'hp',  label: '+10 HP',  flat: 10, desc: 'Aumenta tu vida máxima en 10.' },
                     { id: 'atk', label: '+1 ATK', flat: 1, desc: 'Aumenta tu ataque en 1.' },
                     { id: 'def', label: '+1 DEF', flat: 1, desc: 'Aumenta tu defensa en 1.' },
                     { id: 'agi', label: '+1 AGI', flat: 1, desc: 'Aumenta tu agilidad en 1.' },
@@ -1344,11 +1344,11 @@
                 runState.level++;
 
                 // Auto-apply all stats on every level up
-                runState.runBonuses.hp  += 5;
+                runState.runBonuses.hp  += 10;
                 runState.runBonuses.atk += 1;
                 runState.runBonuses.def += 1;
                 runState.runBonuses.agi += 1;
-                addLog(`⬆️ ¡Nivel ${runState.level}! ❤️+5 HP ⚔️+1 ATK 🛡️+1 DEF 🏃+1 AGI`, 'system');
+                addLog(`⬆️ ¡Nivel ${runState.level}! ❤️+10 HP ⚔️+1 ATK 🛡️+1 DEF 🏃+1 AGI`, 'system');
 
                 runState.xpToNext = BALANCE.levelUp.xpScale * runState.level;
 
