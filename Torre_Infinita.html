@@ -570,10 +570,10 @@
             // --- RUN LEVEL (flat por level up) ---
             levelUp: {
                 choices: [
-                    { id: 'hp',  label: '+10 HP',  flat: 10, desc: 'Aumenta tu vida máxima en 10.' },
-                    { id: 'atk', label: '+2 ATK', flat: 2, desc: 'Aumenta tu ataque en 2.' },
-                    { id: 'def', label: '+2 DEF', flat: 2, desc: 'Aumenta tu defensa en 2.' },
-                    { id: 'agi', label: '+2 AGI', flat: 2, desc: 'Aumenta tu agilidad en 2.' },
+                    { id: 'hp',  label: '+5 HP',  flat: 5, desc: 'Aumenta tu vida máxima en 5.' },
+                    { id: 'atk', label: '+1 ATK', flat: 1, desc: 'Aumenta tu ataque en 1.' },
+                    { id: 'def', label: '+1 DEF', flat: 1, desc: 'Aumenta tu defensa en 1.' },
+                    { id: 'agi', label: '+1 AGI', flat: 1, desc: 'Aumenta tu agilidad en 1.' },
                 ],
                 xpBase: 10,
                 xpScale: 10,
@@ -743,7 +743,7 @@
             runState.level = 1;
             runState.xp = 0;
             runState.xpToNext = BALANCE.levelUp.xpBase;
-            runState.runBonuses = { hp: 10, atk: 2, def: 2, agi: 2 };
+            runState.runBonuses = { hp: 5, atk: 1, def: 1, agi: 1 };
             runState.enemy = null;
             document.getElementById('combat-log').innerHTML = '';
             document.getElementById('equip-section').classList.add('locked');
@@ -760,7 +760,7 @@
             level: 1,
             xp: 0,
             xpToNext: BALANCE.levelUp.xpBase,
-            runBonuses: { hp: 10, atk: 2, def: 2, agi: 2 },
+            runBonuses: { hp: 5, atk: 1, def: 1, agi: 1 },
             player: { hp: 0, maxHp: 0, atk: 0, def: 0, agi: 0, attackTimer: 0 },
             enemy: null,
             combatInterval: BALANCE.combat.tickMs,
@@ -1344,11 +1344,11 @@
                 runState.level++;
 
                 // Auto-apply all stats on every level up
-                runState.runBonuses.hp  += 10;
-                runState.runBonuses.atk += 2;
-                runState.runBonuses.def += 2;
-                runState.runBonuses.agi += 2;
-                addLog(`⬆️ ¡Nivel ${runState.level}! ❤️+10 HP ⚔️+2 ATK 🛡️+2 DEF 🏃+2 AGI`, 'system');
+                runState.runBonuses.hp  += 5;
+                runState.runBonuses.atk += 1;
+                runState.runBonuses.def += 1;
+                runState.runBonuses.agi += 1;
+                addLog(`⬆️ ¡Nivel ${runState.level}! ❤️+5 HP ⚔️+1 ATK 🛡️+1 DEF 🏃+1 AGI`, 'system');
 
                 runState.xpToNext = BALANCE.levelUp.xpScale * runState.level;
 
@@ -1397,7 +1397,7 @@
         function startRun() {
             if (runState.active) return;
             runState.active = true; runState.floor = 1; runState.level = 1; runState.xp = 0; runState.xpToNext = BALANCE.levelUp.xpBase;
-            runState.runBonuses = { hp: 10, atk: 2, def: 2, agi: 2 };
+            runState.runBonuses = { hp: 5, atk: 1, def: 1, agi: 1 };
             document.getElementById('combat-log').innerHTML = '';
             if (metaState.unlockedEquipment) {
                 document.getElementById('equip-section').classList.remove('locked');
