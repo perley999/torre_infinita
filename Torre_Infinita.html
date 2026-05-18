@@ -912,7 +912,7 @@
             const isBoss = floor % 10 === 0;
             const b = isBoss ? BALANCE.enemy.boss : BALANCE.enemy.normal;
             const s = isBoss ? BALANCE.enemy.scale.boss : BALANCE.enemy.scale.normal;
-            const bossMult = isBoss ? BALANCE.enemy.bossHpMult : 1;
+            const bossMult = isBoss ? (floor === 10 ? 1.5 : BALANCE.enemy.bossHpMult) : 1;
             const agiScale = BALANCE.enemy.agiScale;
 
             return {
