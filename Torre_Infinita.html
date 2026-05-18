@@ -566,7 +566,7 @@
 
             // --- EQUIPMENT ---
             equipment: {
-                dropBaseChance: 15,
+                dropBaseChance: 30,
                 slots: ['weapon', 'armor', 'ring'],
                 // Stat pools per slot
                 statPools: {
@@ -897,7 +897,7 @@
         function generateItem(floor, isBoss) {
             const rarities = BALANCE.equipment.rarities.map(r => r.name);
             const weights = isBoss
-                ? [0, 60, 30, 10]
+                ? [0, 65, 30, 5]
                 : [70, 25, 5, 0];
             let rand = Math.random() * 100;
             let rarity = 'Poco común';
