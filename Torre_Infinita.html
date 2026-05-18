@@ -417,6 +417,20 @@
 
         .fighter.hit { animation: flash 0.1s ease; }
         @keyframes flash { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        /* === EQUIP COMPARISON MODAL === */
+        .equip-compare-modal { max-width: 650px !important; }
+        .equip-compare-container { display: flex; gap: 16px; align-items: stretch; margin: 12px 0; }
+        .equip-compare-panel { flex: 1; background: #111118; border-radius: 8px; padding: 12px; border: 1px solid #2a2a4a; display: flex; flex-direction: column; gap: 4px; }
+        .equip-compare-panel.old { border-color: #7a3a6a; }
+        .equip-compare-panel.new { border-color: #3a8a5a; }
+        .equip-compare-panel .equip-name { text-align: center; font-size: 0.85rem; }
+        .equip-compare-panel .equip-stats { text-align: center; font-size: 0.7rem; }
+        .equip-compare-panel .equip-stat-line { text-align: center; }
+        .equip-compare-panel .mastery-line { text-align: center; font-size: 0.7rem; color: #fbbf24; }
+        .equip-compare-vs { display: flex; align-items: center; font-weight: 700; color: #6b4a6a; font-size: 1.1rem; flex-shrink: 0; }
+        .equip-compare-buttons { display: flex; gap: 8px; margin-top: 12px; }
+        .equip-compare-buttons .choice-btn { flex: 1; text-align: center; }
     </style>
 </head>
 <body>
@@ -558,6 +572,31 @@
         </div>
     </div>
 
+    <!-- Equipment Comparison Modal -->
+    <div class="modal-overlay" id="equip-compare-overlay">
+        <div class="modal equip-compare-modal">
+            <h2>⚖️ ¡Equipo mejorado!</h2>
+            <p>Encontraste un objeto mejor. ¿Con cuál te quedas?</p>
+            <div class="equip-compare-container">
+                <div class="equip-compare-panel old" id="equip-compare-old">
+                    <div class="equip-compare-header" style="color:#c084fc;font-weight:700;text-align:center;font-size:0.85rem;margin-bottom:6px;">🗡️ Actual</div>
+                </div>
+                <div class="equip-compare-vs">VS</div>
+                <div class="equip-compare-panel new" id="equip-compare-new">
+                    <div class="equip-compare-header" style="color:#4ade80;font-weight:700;text-align:center;font-size:0.85rem;margin-bottom:6px;">✨ Nuevo</div>
+                </div>
+            </div>
+            <div class="equip-compare-buttons">
+                <button class="choice-btn" onclick="resolveEquipComparison(false)">
+                    <span class="title">🗡️ Quedarse con el actual</span>
+                </button>
+                <button class="choice-btn" onclick="resolveEquipComparison(true)">
+                    <span class="title">⚡ Equipar el nuevo</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ============================================
         // 1. BALANCE CENTRALIZADO
@@ -596,12 +635,28 @@
             enemy: {
                 normal: { hp: 10, atk: 3, def: 1, agi: 6 },
                 boss:   { hp: 50, atk: 8, def: 3, agi: 7 },
-                scale: {
-                    normal: { hp: 1.10, atk: 1.08, def: 1.05 },
-                    boss:   { hp: 1.08, atk: 1.07, def: 1.06 },
+                // Escalado por TIERS (cada 10 pisos = un salto de dificultad)
+                tierScale: {
+                    normal: { hp: 2.2, atk: 2.0, def: 1.8 },
+                    boss:   { hp: 1.8, atk: 1.7, def: 1.6 },
                 },
-                agiScale: 1.02, // ambos tipos usan la misma escala de agilidad
-                bossHpMult: 2,
+                // Escalado SUAVE dentro del mismo tier (piso a piso)
+                subScale: {
+                    normal: { hp: 1.06, atk: 1.05, def: 1.04 },
+                    boss:   { hp: 1.04, atk: 1.05, def: 1.04 },
+                },
+                agiScale: 1.02,
+                bossHpMult: 1.6,
+                // Stats FIJOS para primera vez en piso 10 (caso especial: sin equipo)
+                // Suficientemente duro para matarte la primera vez,
+                // pero vencible tras 2-3 runs de meta-progresión.
+                firstBoss: { hp: 150, atk: 15, def: 5 },
+                // Escalado dinámico en PRIMER intento vs cada jefe (20+)
+                dynamicBoss: {
+                    hpMult: 2.5,
+                    atkMult: 1.3,
+                    defMult: 1.2,
+                },
             },
 
             // --- EQUIPMENT ---
@@ -669,6 +724,8 @@
             equipment: { weapon: null, armor: null, ring: null },
             abilities: [],
             upgrades: {},
+            bossAttempted: [], // pisos de jefe YA intentados (persistente entre runs)
+            bossStats: {},    // stats guardadas del PRIMER intento de cada jefe
         };
 
         // Inicializar upgrades desde BALANCE
@@ -687,6 +744,8 @@
                 equipment: metaState.equipment,
                 abilities: metaState.abilities,
                 upgrades: {},
+                bossAttempted: metaState.bossAttempted,
+                bossStats: metaState.bossStats,
             };
             for (const [key, u] of Object.entries(metaState.upgrades)) {
                 data.upgrades[key] = { level: u.level };
@@ -712,6 +771,8 @@
                 metaState.unlockedEquipment = data.unlockedEquipment ?? false;
                 metaState.equipment = data.equipment ?? { weapon: null, armor: null, ring: null };
                 metaState.abilities = data.abilities ?? [];
+                metaState.bossAttempted = data.bossAttempted ?? [];
+                metaState.bossStats = data.bossStats ?? {};
                 if (data.upgrades) {
                     for (const [key, saved] of Object.entries(data.upgrades)) {
                         if (metaState.upgrades[key]) {
@@ -734,6 +795,8 @@
             metaState.unlockedEquipment = false;
             metaState.equipment = { weapon: null, armor: null, ring: null };
             metaState.abilities = [];
+            metaState.bossAttempted = [];
+            metaState.bossStats = {};
             for (const key of Object.keys(metaState.upgrades)) {
                 metaState.upgrades[key].level = 0;
             }
@@ -828,8 +891,13 @@
             return Math.floor(u.baseCost * Math.pow(u.scale, u.level));
         }
 
-        function calcDamage(atk, def) {
-            return Math.max(BALANCE.combat.minDamage, atk - def);
+        function calcDamage(atk, def, k) {
+            // Defensa relativa: DR = DEF / (DEF + ATK × K)
+            // La DEF siempre reduce un %, nunca anula el daño por completo
+            // K controla eficacia de DEF (más K = DEF más efectiva)
+            const K = k ?? 0.6;
+            const dr = def / (def + atk * K);
+            return Math.max(BALANCE.combat.minDamage, Math.floor(atk * (1 - dr)));
         }
 
         function getDerivedStats(atk, def, agi) {
@@ -908,20 +976,31 @@
             };
         }
 
-        function calcEnemyStats(floor) {
+        function calcEnemyStats(floor, playerStats, isFirstBossAttempt) {
             const isBoss = floor % 10 === 0;
             const b = isBoss ? BALANCE.enemy.boss : BALANCE.enemy.normal;
-            const s = isBoss ? BALANCE.enemy.scale.boss : BALANCE.enemy.scale.normal;
-            const bossMult = isBoss ? (floor === 10 ? 1.6 : BALANCE.enemy.bossHpMult) : 1;
-            const agiScale = BALANCE.enemy.agiScale;
+            const t = isBoss ? BALANCE.enemy.tierScale.boss : BALANCE.enemy.tierScale.normal;
+            const s = isBoss ? BALANCE.enemy.subScale.boss : BALANCE.enemy.subScale.normal;
+            const tier = Math.floor((floor - 1) / 10);
+            const sub = ((floor - 1) % 10) + 1;
 
-            return {
-                hp: Math.floor(b.hp * Math.pow(s.hp, floor - 1) * bossMult),
-                atk: Math.floor(b.atk * Math.pow(s.atk, floor - 1)),
-                def: Math.floor(b.def * Math.pow(s.def, floor - 1)),
-                agi: Math.floor(b.agi * Math.pow(agiScale, floor - 1)),
-                isBoss,
-            };
+            let hp = Math.floor(b.hp * Math.pow(t.hp, tier) * Math.pow(s.hp, sub - 1));
+            let atk = Math.floor(b.atk * Math.pow(t.atk, tier) * Math.pow(s.atk, sub - 1));
+            let def = Math.floor(b.def * Math.pow(t.def, tier) * Math.pow(s.def, sub - 1));
+            const agi = Math.floor(b.agi * Math.pow(BALANCE.enemy.agiScale, floor - 1));
+
+            if (isBoss) {
+                hp = Math.floor(hp * BALANCE.enemy.bossHpMult);
+                // Dificultad dinámica en el PRIMER intento: el jefe escala con tus stats
+                if (isFirstBossAttempt && playerStats) {
+                    const d = BALANCE.enemy.dynamicBoss;
+                    hp = Math.max(hp, Math.floor(playerStats.maxHp * d.hpMult));
+                    atk = Math.max(atk, Math.floor(playerStats.atk * d.atkMult));
+                    def = Math.max(def, Math.floor(playerStats.def * d.defMult));
+                }
+            }
+
+            return { hp, atk, def, agi, isBoss };
         }
 
         // Diminishing returns: cap × (raw / (raw + K))
@@ -1015,13 +1094,19 @@
 
         function tryEquip(item) {
             const current = metaState.equipment[item.slot];
-            if (!current || calcIlvl(item) > calcIlvl(current)) {
+            if (!current) {
+                // Sin equipo previo: auto-equipar
                 metaState.equipment[item.slot] = item;
                 addLog(`✨ ¡Equipo mejorado! ${item.name}`, 'loot');
                 render();
                 return true;
             }
-            return false;
+            if (calcIlvl(item) <= calcIlvl(current)) {
+                return false;
+            }
+            // Mejor objeto encontrado → mostrar comparación
+            showEquipComparison(current, item);
+            return null; // pendiente, el jugador decide
         }
 
         // ============================================
@@ -1085,7 +1170,46 @@
                 }
             }
 
-            const eStats = calcEnemyStats(runState.floor);
+            // ¿Primer intento contra este jefe (persistente entre runs)?
+            const isBossFloor = runState.floor % 10 === 0;
+            const isFirstBossAttempt = isBossFloor
+                && !metaState.bossAttempted.includes(runState.floor);
+            if (isFirstBossAttempt) {
+                metaState.bossAttempted.push(runState.floor);
+                saveGame();
+            }
+
+            // Stats del jefe: guardamos las del PRIMER intento y las reusamos siempre.
+            // Así el jefe no se vuelve más fácil tras la primera vez.
+            let eStats;
+            if (isBossFloor && metaState.bossStats[runState.floor]) {
+                // Stats ya guardadas del primer intento → reusar
+                eStats = metaState.bossStats[runState.floor];
+            } else if (isBossFloor && runState.floor === 10 && isFirstBossAttempt) {
+                // Piso 10: primer jefe, stats fijos (sin equipo)
+                const fb = BALANCE.enemy.firstBoss;
+                eStats = {
+                    hp: fb.hp, atk: fb.atk, def: fb.def,
+                    agi: Math.floor(7 * Math.pow(BALANCE.enemy.agiScale, 9)),
+                    isBoss: true,
+                };
+                metaState.bossStats[10] = eStats;
+                saveGame();
+            } else if (isBossFloor && isFirstBossAttempt) {
+                // P20+: primer intento con escalado dinámico → guardar stats
+                eStats = calcEnemyStats(runState.floor, runState.player, true);
+                metaState.bossStats[runState.floor] = eStats;
+                saveGame();
+            } else {
+                // Enemigos normales o fallback
+                eStats = calcEnemyStats(runState.floor, runState.player, false);
+                // Migración: si es jefe ya intentado pero sin stats guardadas (save viejo),
+                // capturamos las stats actuales para mantener consistencia
+                if (isBossFloor && !metaState.bossStats[runState.floor]) {
+                    metaState.bossStats[runState.floor] = eStats;
+                    saveGame();
+                }
+            }
             runState.enemy = {
                 ...eStats,
                 maxHp: eStats.hp,
@@ -1288,12 +1412,18 @@
             addLog(`+${xpGain} XP`, 'system');
 
             // Drop de equipo
+            let equipPending = false;
             if (metaState.unlockedEquipment) {
                 const dropChance = BALANCE.equipment.dropBaseChance + (metaState.upgrades.drop.level * metaState.upgrades.drop.percent * 100);
                 if (Math.random() * 100 < dropChance || runState.enemy.isBoss) {
                     const item = generateItem(runState.floor, runState.enemy.isBoss);
                     addLog(`🎁 Drop: ${item.name}`, 'loot');
-                    if (tryEquip(item)) saveGame();
+                    const result = tryEquip(item);
+                    if (result === null) {
+                        equipPending = true; // esperando decisión del jugador
+                    } else if (result) {
+                        saveGame();
+                    }
                 }
             }
 
@@ -1305,6 +1435,8 @@
                 document.querySelector('#equip-section h2').textContent = '🎒 Equipo (Desbloqueado)';
                 saveGame();
             }
+
+            if (equipPending) return; // el modal de comparación reanudará después
 
             runState.floor++;
             checkLevelUp();
@@ -1389,6 +1521,78 @@
             document.getElementById('choice-overlay').classList.remove('visible');
             runState.pendingChoice = null;
             if (runState.active) startCombat();
+        }
+
+        // ============================================
+        // 6b. COMPARACIÓN DE EQUIPO
+        // ============================================
+        let pendingEquipOldItem = null;
+        let pendingEquipNewItem = null;
+
+        function buildEquipPanelHTML(item) {
+            const rarityClass = `rarity-${item.rarity.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-')}`;
+            const percentStats = ['crit', 'dodge', 'lifesteal', 'pen', 'critDamage', 'bossDamage', 'hpRegen', 'thorns', 'soulBonus'];
+            const statLabels = {
+                crit: 'CRIT', dodge: 'EVA', lifesteal: 'Lifesteal',
+                pen: 'PEN', critDamage: 'CRIT DMG', bossDamage: 'VS BOSS',
+                hpRegen: 'HP REGEN', thorns: 'THORNS', soulBonus: 'SOULS',
+            };
+            const icons = {
+                hp: '❤️', atk: '⚔️', def: '🛡️', agi: '🏃',
+                crit: '🎯', dodge: '💨', lifesteal: '🧛',
+                pen: '💥', critDamage: '💢', bossDamage: '👑',
+                hpRegen: '💚', thorns: '🌵', soulBonus: '✨',
+            };
+
+            const nameHTML = `<div class="equip-name ${rarityClass}">${item.name}</div>`;
+            const rarityHTML = `<div class="equip-stats">${item.rarity} &nbsp;|&nbsp; ilvl ${Math.floor(calcIlvl(item))}</div>`;
+
+            const statLines = Object.entries(item.stats)
+                .filter(([, v]) => v > 0)
+                .map(([k, v]) => {
+                    const label = percentStats.includes(k) ? statLabels[k] : k.toUpperCase();
+                    return `<span class="equip-stat-line">${icons[k] || ''} +${v} ${label}</span>`;
+                }).join('');
+
+            const masteryStars = item.mastery ? '⭐'.repeat(item.mastery.level) : '';
+            const masteryLine = item.mastery ? `<span class="mastery-line">${masteryStars} ${item.mastery.label}</span>` : '';
+
+            return nameHTML + rarityHTML + statLines + masteryLine;
+        }
+
+        function showEquipComparison(oldItem, newItem) {
+            pendingEquipOldItem = oldItem;
+            pendingEquipNewItem = newItem;
+
+            document.getElementById('equip-compare-old').innerHTML
+                = `<div class="equip-compare-header" style="color:#c084fc;font-weight:700;text-align:center;font-size:0.85rem;margin-bottom:6px;">🗡️ Actual</div>`
+                + buildEquipPanelHTML(oldItem);
+
+            document.getElementById('equip-compare-new').innerHTML
+                = `<div class="equip-compare-header" style="color:#4ade80;font-weight:700;text-align:center;font-size:0.85rem;margin-bottom:6px;">✨ Nuevo</div>`
+                + buildEquipPanelHTML(newItem);
+
+            document.getElementById('equip-compare-overlay').classList.add('visible');
+        }
+
+        function resolveEquipComparison(equipNew) {
+            document.getElementById('equip-compare-overlay').classList.remove('visible');
+
+            if (equipNew) {
+                metaState.equipment[pendingEquipNewItem.slot] = pendingEquipNewItem;
+                addLog(`✨ ¡Equipo mejorado! ${pendingEquipNewItem.name}`, 'loot');
+            } else {
+                addLog(`ℹ️ Te quedaste con tu ${pendingEquipOldItem.name}.`, 'system');
+            }
+            render();
+            saveGame();
+
+            pendingEquipOldItem = null;
+            pendingEquipNewItem = null;
+
+            // Continuar la run (floor++ y checkLevelUp se difirieron)
+            runState.floor++;
+            checkLevelUp();
         }
 
         // ============================================
