@@ -310,6 +310,35 @@
         .rarity-epico { color: #a78bfa; }
         .rarity-legendario { color: #f59e0b; }
 
+        /* === ACCUMULATED STATS === */
+        .acc-stats-section {
+            background: #1a1a2e;
+            border-radius: 12px;
+            padding: 12px;
+            border: 1px solid #2a2a4a;
+        }
+        .acc-stats-section h2 { font-size: 0.9rem; color: #a78bfa; margin-bottom: 8px; text-align: center; }
+        .acc-stats-grid {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .acc-stat {
+            background: #111118;
+            border-radius: 8px;
+            padding: 8px 12px;
+            text-align: center;
+            font-size: 0.85rem;
+            font-weight: 600;
+            min-width: 80px;
+        }
+        .acc-stat.hp   { color: #22c55e; border: 1px solid #1a3a1a; }
+        .acc-stat.atk  { color: #ef4444; border: 1px solid #3a1a1a; }
+        .acc-stat.def  { color: #3b82f6; border: 1px solid #1a1a3a; }
+        .acc-stat.agi  { color: #a78bfa; border: 1px solid #2a1a3a; }
+        .acc-stat .label { font-size: 0.65rem; font-weight: 400; color: #9ca3af; display: block; margin-bottom: 2px; }
+
         /* ============================================
            UPGRADES & CONTROLS
            ============================================ */
@@ -478,6 +507,17 @@
             </div>
         </div>
 
+        <!-- Accumulated Stats -->
+        <div class="acc-stats-section">
+            <h2>📊 Estadísticas acumuladas</h2>
+            <div class="acc-stats-grid">
+                <div class="acc-stat hp">  <span class="label">❤️ HP</span>  <span id="acc-hp">+0</span>  </div>
+                <div class="acc-stat atk"> <span class="label">⚔️ ATK</span> <span id="acc-atk">+0</span>  </div>
+                <div class="acc-stat def"> <span class="label">🛡️ DEF</span> <span id="acc-def">+0</span>  </div>
+                <div class="acc-stat agi"> <span class="label">🏃 AGI</span> <span id="acc-agi">+0</span>  </div>
+            </div>
+        </div>
+
         <!-- Meta Upgrades -->
         <div class="upgrades-section">
             <h2>⬆️ Mejoras Permanentes</h2>
@@ -501,7 +541,7 @@
             <h2>🗼 Bienvenido a la Torre Infinita</h2>
             <p>Tu héroe sube una torre infinita. Combate automático, jefes cada 10 pisos y mejoras permanentes.</p>
             <p><strong>Novedades en esta versión:</strong><br>
-            • Sistema de niveles (1-20) con mejoras en cada subida.<br>
+            • Sistema de niveles (1-20) con mejoras automáticas por nivel.<br>
             • Habilidades especiales en niveles 5, 10, 15, 20.<br>
             • Equipo desbloqueado tras derrotar al primer jefe.<br>
             • Estadísticas derivadas: Crítico, Bloqueo, Evasión.</p>
@@ -530,7 +570,7 @@
             // --- RUN LEVEL (flat por level up) ---
             levelUp: {
                 choices: [
-                    { id: 'hp',  label: '+8 HP',  flat: 8, desc: 'Aumenta tu vida máxima en 8.' },
+                    { id: 'hp',  label: '+10 HP',  flat: 10, desc: 'Aumenta tu vida máxima en 10.' },
                     { id: 'atk', label: '+2 ATK', flat: 2, desc: 'Aumenta tu ataque en 2.' },
                     { id: 'def', label: '+2 DEF', flat: 2, desc: 'Aumenta tu defensa en 2.' },
                     { id: 'agi', label: '+2 AGI', flat: 2, desc: 'Aumenta tu agilidad en 2.' },
@@ -700,6 +740,10 @@
             if (combatLoop) clearInterval(combatLoop);
             runState.active = false;
             runState.floor = 1;
+            runState.level = 1;
+            runState.xp = 0;
+            runState.xpToNext = BALANCE.levelUp.xpBase;
+            runState.runBonuses = { hp: 10, atk: 2, def: 2, agi: 2 };
             runState.enemy = null;
             document.getElementById('combat-log').innerHTML = '';
             document.getElementById('equip-section').classList.add('locked');
@@ -716,7 +760,7 @@
             level: 1,
             xp: 0,
             xpToNext: BALANCE.levelUp.xpBase,
-            runBonuses: { hp: 0, atk: 0, def: 0, agi: 0 },
+            runBonuses: { hp: 10, atk: 2, def: 2, agi: 2 },
             player: { hp: 0, maxHp: 0, atk: 0, def: 0, agi: 0, attackTimer: 0 },
             enemy: null,
             combatInterval: BALANCE.combat.tickMs,
@@ -730,8 +774,6 @@
         // ============================================
         const ENEMY_NAMES = ['Slime', 'Esqueleto', 'Murciélago', 'Goblin', 'Araña', 'Fantasma', 'Orco', 'Troll'];
         const BOSS_NAMES = ['Guardián', 'Señor de la Torre', 'Dragón', 'Lich', 'Titán', 'Demonio', 'El Segador', 'El Devorador de Mundos', 'El Primigenio', 'El Enterrador'];
-
-        const LEVEL_CHOICES = BALANCE.levelUp.choices;
 
         const ABILITY_POOLS = {
             5: [
@@ -1300,28 +1342,24 @@
             if (runState.xp >= runState.xpToNext) {
                 runState.xp -= runState.xpToNext;
                 runState.level++;
+
+                // Auto-apply all stats on every level up
+                runState.runBonuses.hp  += 10;
+                runState.runBonuses.atk += 2;
+                runState.runBonuses.def += 2;
+                runState.runBonuses.agi += 2;
+                addLog(`⬆️ ¡Nivel ${runState.level}! ❤️+10 HP ⚔️+2 ATK 🛡️+2 DEF 🏃+2 AGI`, 'system');
+
                 runState.xpToNext = BALANCE.levelUp.xpScale * runState.level;
-                addLog(`⬆️ ¡Nivel ${runState.level}!`, 'system');
 
                 if (BALANCE.levelUp.abilityLevels.includes(runState.level)) {
                     showAbilityChoice();
                 } else {
-                    showStatChoice();
+                    startCombat();
                 }
             } else {
                 startCombat();
             }
-        }
-
-        function showStatChoice() {
-            runState.pendingChoice = 'level';
-            const choices = LEVEL_CHOICES.sort(() => 0.5 - Math.random()).slice(0, 3);
-            renderChoices('¡Nivel Arriba!', 'Elige una mejora:', choices.map(c => ({
-                label: c.label, desc: c.desc, action: () => { 
-                    runState.runBonuses[c.id] += c.flat; 
-                    closeChoice(); 
-                }
-            })));
         }
 
         function showAbilityChoice() {
@@ -1359,7 +1397,7 @@
         function startRun() {
             if (runState.active) return;
             runState.active = true; runState.floor = 1; runState.level = 1; runState.xp = 0; runState.xpToNext = BALANCE.levelUp.xpBase;
-            runState.runBonuses = { hp: 0, atk: 0, def: 0, agi: 0 };
+            runState.runBonuses = { hp: 10, atk: 2, def: 2, agi: 2 };
             document.getElementById('combat-log').innerHTML = '';
             if (metaState.unlockedEquipment) {
                 document.getElementById('equip-section').classList.remove('locked');
@@ -1453,6 +1491,13 @@
             }
 
             document.getElementById('souls-count').textContent = metaState.souls;
+
+            // Accumulated stats from leveling
+            const r = runState.runBonuses;
+            document.getElementById('acc-hp').textContent = `+${r.hp}`;
+            document.getElementById('acc-atk').textContent = `+${r.atk}`;
+            document.getElementById('acc-def').textContent = `+${r.def}`;
+            document.getElementById('acc-agi').textContent = `+${r.agi}`;
 
             // Equipment
             for (const slot of ['weapon', 'armor', 'ring']) {

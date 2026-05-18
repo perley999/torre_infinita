@@ -9,6 +9,13 @@ Todos los cambios notables en este proyecto.
 - Equipamiento: corregido bug donde `rarity.length` (longitud del string) se usaba como multiplicador, haciendo que "Poco común" y "Legendario" tuvieran el mismo budget.
 - `budgetPerFloor: 1.0` → `budgetBase: 5` con curva logarítmica.
 
+## [0.2.2] - 2026-05-18
+
+### Cambiado
+- **Nivel automático**: al subir de nivel ya no hay pantalla de elección de stat. Se suman **+10 HP, +2 ATK, +2 DEF, +2 AGI** automáticamente.
+- Las habilidades de nivel 5, 10, 15, 20 se mantienen como pantalla de elección.
+- Nuevo bloque **"📊 Estadísticas acumuladas"** debajo del equipo que muestra las stats ganadas por nivel durante la run.
+
 ## [0.2.1] - 2026-05-18
 
 ### Cambiado
