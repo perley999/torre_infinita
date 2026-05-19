@@ -2,6 +2,29 @@
 
 Todos los cambios notables en este proyecto.
 
+## [0.3.0] - 2026-05-19
+
+### Añadido
+- **Sistema de DoTs en combate**: 5 talentos de daño over time implementados
+  - **Hemorragia**: probabilidad de aplicar sangrado (3-5 daño/tick × 3 ticks)
+  - **Furia Ardiente**: aura que quema al enemigo cada segundo (chance por nivel)
+  - **Hoja Tóxica**: envenenar con DoT + reducción de DEF plana
+  - **Marca de Muerte**: vulnerabilidad multiplicativa (+10-20% daño recibido)
+  - **Desgaste**: cada 5s el enemigo pierde % de ATK y DEF (acumulativo, con tope)
+- **Maestro Elemental**: sinergia heroica — +20-40% daño vs enemigos con DoT + ticks extra
+- **UI de debuffs activos**: badges con colores y barra de progreso en la tarjeta del enemigo
+- **UI de talentos activos**: badges en el HUD con colores por pool (ofensivo=rojo, defensivo=azul, estado=verde, sustain=verde claro, heroico=dorado con glow)
+- **Piel de Piedra**: al recibir golpe ≥20% HP máx, escudo temporal que absorbe daño
+
+### Cambiado
+- **Nivel de héroe persistente**: nivel, XP y stats acumuladas ya no se pierden al morir (guardado en `metaState` / localStorage)
+- **Talentos ligados a pisos**: se eligen cada 5 pisos (5, 10, 15, 20...) en vez de por nivel de héroe
+- **Pools de talento**: ofensivo + defensivo + estado/sustain en cada milestone; heroico adicional cada 20 pisos (20, 40, 60...)
+- **Estado y sustain fusionados** para selección de talentos
+
+### Corregido
+- **Bug crítico**: `startRun()` congelaba la pantalla por `t('escudo_vital')` sin `t` definido en scope de `startCombat()`
+
 ## [0.2.5] - 2026-05-19
 
 ### Cambiado

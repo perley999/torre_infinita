@@ -15,3 +15,6 @@ BETA-GUIA.md
 # Analizador de progresión (herramienta auxiliar)
 ANALIZADOR-PROGRESION.md
 analizador-progresion.html
+
+# SDD artifacts (auto-generados)
+.atl/

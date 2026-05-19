@@ -418,6 +418,84 @@
         .fighter.hit { animation: flash 0.1s ease; }
         @keyframes flash { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
+        /* === ENEMY DEBUFFS === */
+        .enemy-debuffs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 8px;
+            min-height: 0;
+        }
+        .enemy-debuffs:empty { display: none; }
+        .debuff-badge {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            background: #1a0a2e;
+            border: 1px solid #4a2a6a;
+            border-radius: 6px;
+            padding: 3px 6px;
+            font-size: 0.6rem;
+            color: #c084fc;
+            min-width: 50px;
+        }
+        .debuff-badge .debuff-icon { font-size: 0.8rem; line-height: 1; }
+        .debuff-badge .debuff-name { font-weight: 600; font-size: 0.55rem; margin: 1px 0; }
+        .debuff-badge .debuff-bar {
+            width: 100%;
+            height: 3px;
+            background: #2a1a3e;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .debuff-badge .debuff-bar-fill {
+            height: 100%;
+            background: #a78bfa;
+            transition: width 0.1s ease;
+        }
+        .debuff-badge.dot { border-color: #ef4444; color: #f87171; }
+        .debuff-badge.dot .debuff-bar-fill { background: #ef4444; }
+        .debuff-badge.vulnerability { border-color: #f59e0b; color: #fbbf24; }
+        .debuff-badge.vulnerability .debuff-bar-fill { background: #f59e0b; }
+        .debuff-badge.stat_drain { border-color: #22c55e; color: #4ade80; }
+        .debuff-badge.stat_drain .debuff-bar-fill { background: #22c55e; }
+
+        /* === TALENT BADGES === */
+        .talents-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            padding: 6px 12px;
+            background: #111118;
+            border-radius: 8px;
+            border: 1px solid #2a2a4a;
+            margin: 8px 0;
+            min-height: 0;
+        }
+        .talents-row:empty { display: none; }
+
+        .talent-badge {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            background: #1a0a2e;
+            border-radius: 6px;
+            padding: 3px 6px;
+            font-size: 0.6rem;
+            min-width: 50px;
+        }
+        .talent-badge .talent-icon { font-size: 0.8rem; }
+        .talent-badge .talent-name { color: #e5e7eb; font-weight: 500; }
+        .talent-badge .talent-level { font-size: 0.5rem; color: #9ca3af; }
+
+        /* Pool-specific border colors */
+        .talent-badge[data-pool="ofensivo"] { border: 1px solid #ef4444; color: #fca5a5; }
+        .talent-badge[data-pool="defensivo"] { border: 1px solid #3b82f6; color: #93c5fd; }
+        .talent-badge[data-pool="estado"] { border: 1px solid #22c55e; color: #86efac; }
+        .talent-badge[data-pool="sustain"] { border: 1px solid #22c55e; color: #86efac; }
+        .talent-badge[data-pool="utilitario"] { border: 1px solid #a855f7; color: #d8b4fe; }
+        .talent-badge[data-pool="heroico"] { border: 1px solid #f59e0b; color: #fcd34d; box-shadow: 0 0 4px rgba(245, 158, 11, 0.3); }
+
         /* === EQUIP COMPARISON MODAL === */
         .equip-compare-modal { max-width: 650px !important; }
         .equip-compare-container { display: flex; gap: 16px; align-items: stretch; margin: 12px 0; }
@@ -497,8 +575,12 @@
                     <span>🛡️ <b id="enemy-def">1</b></span>
                     <span>🏃 <b id="enemy-agi">8</b></span>
                 </div>
+                <div id="enemy-debuffs" class="enemy-debuffs"></div>
             </div>
         </div>
+
+        <!-- Talent Display -->
+        <div class="talents-row" id="talents-row"></div>
 
         <!-- Log -->
         <div class="combat-log" id="combat-log">
@@ -616,7 +698,7 @@
                 ],
                 xpBase: 10,
                 xpScale: 10,
-                maxLevel: 20,
+                maxLevel: Infinity,
                 abilityLevels: [5, 10, 15, 20],
             },
 
@@ -629,6 +711,7 @@
                 souls:{ baseCost: 25, scale: 1.7, flat: 1, percent: 0, label: '+1 alma/piso', icon: '💀', maxLevel: 10 },
                 crit: { baseCost: 30, scale: 1.8, flat: 0, percent: 0.02, label: '+2% Crítico', icon: '🎯', maxLevel: 15 },
                 drop: { baseCost: 40, scale: 2.0, flat: 0, percent: 0.05, label: '+5% Drop', icon: '🎁', maxLevel: 10 },
+                pen:  { baseCost: 35, scale: 1.9, flat: 0, percent: 0.01, label: '+1% Penetración', icon: '💥', maxLevel: 10 },
             },
 
             // --- ENEMIES ---
@@ -710,6 +793,9 @@
             souls: {
                 baseMult: 2,
             },
+
+            // --- DoT COMBAT ---
+            furiaArdiente: { baseDamage: 3 },
         };
 
         const SAVE_KEY = 'torre_infinita_save_v1';
@@ -725,6 +811,9 @@
             upgrades: {},
             bossAttempted: [], // pisos de jefe YA intentados (persistente entre runs)
             bossStats: {},    // stats guardadas del PRIMER intento de cada jefe
+            heroLevel: 1,     // Nivel persistente del héroe (no se resetea al morir)
+            heroXp: 0,        // XP persistente del héroe
+            heroBonuses: { hp: 0, atk: 0, def: 0, agi: 0 }, // Stats acumuladas por nivel
         };
 
         // Inicializar upgrades desde BALANCE
@@ -744,6 +833,9 @@
                 upgrades: {},
                 bossAttempted: metaState.bossAttempted,
                 bossStats: metaState.bossStats,
+                heroLevel: metaState.heroLevel,
+                heroXp: metaState.heroXp,
+                heroBonuses: metaState.heroBonuses,
             };
             for (const [key, u] of Object.entries(metaState.upgrades)) {
                 data.upgrades[key] = { level: u.level };
@@ -770,6 +862,9 @@
                 metaState.equipment = data.equipment ?? { weapon: null, armor: null, ring: null };
                 metaState.bossAttempted = data.bossAttempted ?? [];
                 metaState.bossStats = data.bossStats ?? {};
+                metaState.heroLevel = data.heroLevel ?? 1;
+                metaState.heroXp = data.heroXp ?? 0;
+                metaState.heroBonuses = data.heroBonuses ?? { hp: 0, atk: 0, def: 0, agi: 0 };
                 if (data.upgrades) {
                     for (const [key, saved] of Object.entries(data.upgrades)) {
                         if (metaState.upgrades[key]) {
@@ -793,6 +888,9 @@
             metaState.equipment = { weapon: null, armor: null, ring: null };
             metaState.bossAttempted = [];
             metaState.bossStats = {};
+            metaState.heroLevel = 1;
+            metaState.heroXp = 0;
+            metaState.heroBonuses = { hp: 0, atk: 0, def: 0, agi: 0 };
             for (const key of Object.keys(metaState.upgrades)) {
                 metaState.upgrades[key].level = 0;
             }
@@ -827,36 +925,133 @@
             furyCounter: 0,
             toughCounter: 0,
             abilities: [], // Talentos activos en esta run (se resetean al morir/reiniciar)
+            talentLevels: {}, // { talentId: nivel (1, 2, 3) } — rastrea progreso de cada talento
+            enemyDebuffs: [], // Debuffs activos sobre el enemigo (DoT, vulnerabilidad, etc.)
         };
 
         // ============================================
-        // 3. CONSTANTES Y POOLS
+        // 3. CONSTANTES Y POOLS DE TALENTOS
         // ============================================
         const ENEMY_NAMES = ['Slime', 'Esqueleto', 'Murciélago', 'Goblin', 'Araña', 'Fantasma', 'Orco', 'Troll'];
         const BOSS_NAMES = ['Guardián', 'Señor de la Torre', 'Dragón', 'Lich', 'Titán', 'Demonio', 'El Segador', 'El Devorador de Mundos', 'El Primigenio', 'El Enterrador'];
 
-        const ABILITY_POOLS = {
-            5: [
-                { id: 'double_hit', label: 'Golpe Doble', desc: '15% probabilidad de atacar 2 veces.' },
-                { id: 'first_strike', label: 'Primer Golpe', desc: '+25% daño en el primer ataque del combate.' },
-                { id: 'bleed', label: 'Sangrado', desc: '10% prob de aplicar sangrado (3 dmg/turno x3).' },
-            ],
-            10: [
-                { id: 'counter', label: 'Contraataque', desc: '20% prob de devolver 50% del daño recibido.' },
-                { id: 'vital_shield', label: 'Escudo Vital', desc: 'Al entrar, escudo = 10% HP máximo.' },
-                { id: 'precise', label: 'Golpe Preciso', desc: 'Aumenta la prob. de golpe crítico.' },
-            ],
-            15: [
-                { id: 'brutal', label: 'Golpe Brutal', desc: '10% probabilidad de hacer 3x daño.' },
-                { id: 'execute', label: 'Ejecución', desc: 'Si enemigo <20% HP, tu daño se duplica.' },
-                { id: 'passive_frenzy', label: 'Frenesí Pasivo', desc: '+20% velocidad de ataque.' },
-            ],
-            20: [
-                { id: 'frenzy', label: 'Frenesí', desc: '10% probabilidad de atacar 3 veces.' },
-                { id: 'domination', label: 'Dominio', desc: '+15% a todos tus stats base.' },
-                { id: 'unstoppable', label: 'Imparable', desc: '-25% daño recibido y +30% velocidad.' },
-            ]
+        // Pool icons for talent display
+        const POOL_ICONS = {
+            ofensivo: '⚔️',
+            defensivo: '🛡️',
+            estado: '💀',
+            sustain: '💚',
+            utilitario: '✨',
+            heroico: '👑'
         };
+
+        // TALENT POOLS — 37 talentos en 5 bloques
+        // Cada talento: { id, label, desc, levels: [{values}, {values}, {values}] }
+        const TALENT_POOL = {
+            ofensivo: [
+                { id: 'multiataque', label: 'Multiataque', desc: 'Probabilidad de atacar múltiples veces',
+                  levels: [{ chance2: 15 }, { chance2: 20 }, { chance2: 15, chance3: 5 }] },
+                { id: 'primer_golpe', label: 'Primer Golpe', desc: 'Daño bonus en el primer ataque del combate',
+                  levels: [{ dmgMult: 1.25 }, { dmgMult: 1.40 }, { dmgMult: 1.60 }] },
+                { id: 'golpe_preciso', label: 'Golpe Preciso', desc: 'Bonus flat de prob. crítica (pre-DR)',
+                  levels: [{ flatCrit: 10 }, { flatCrit: 15 }, { flatCrit: 20 }] },
+                { id: 'golpe_brutal', label: 'Golpe Brutal', desc: 'Probabilidad de hacer ×3 daño',
+                  levels: [{ chance: 8 }, { chance: 12 }, { chance: 16 }] },
+                { id: 'ejecucion', label: 'Ejecución', desc: 'Si el enemigo tiene poco HP, tu daño se multiplica',
+                  levels: [{ threshold: 0.20, mult: 2 }, { threshold: 0.25, mult: 2.5 }, { threshold: 0.30, mult: 3 }] },
+                { id: 'canon_cristal', label: 'Cañón de Cristal', desc: 'Más daño pero más daño recibido bajo 30% HP',
+                  levels: [{ dmgBonus: 20, dmgTaken: 10 }, { dmgBonus: 30, dmgTaken: 15 }, { dmgBonus: 40, dmgTaken: 20 }] },
+                { id: 'maestria_critica', label: 'Maestría Crítica', desc: 'Cada N ataques = golpe crítico garantizado',
+                  levels: [{ everyN: 9 }, { everyN: 7 }, { everyN: 5 }] },
+                { id: 'golpe_penetrante', label: 'Golpe Penetrante', desc: 'Tus ataques ignoran % de la DEF del enemigo',
+                  levels: [{ penPct: 10 }, { penPct: 15 }, { penPct: 20 }] },
+                { id: 'furia_creciente', label: 'Furia Creciente', desc: 'Cada ataque consecutivo hace +X% daño (máx acumulativo)',
+                  levels: [{ perHit: 3, maxStack: 15 }, { perHit: 4, maxStack: 20 }, { perHit: 5, maxStack: 25 }] },
+                { id: 'eco_combate', label: 'Eco de Combate', desc: 'Chance de que tu ataque se repita al % del daño',
+                  levels: [{ chance: 15, dmgPct: 40 }, { chance: 20, dmgPct: 50 }, { chance: 25, dmgPct: 60 }] },
+            ],
+            defensivo: [
+                { id: 'contraataque', label: 'Contraataque', desc: 'Al recibir daño, probabilidad de devolver % del daño',
+                  levels: [{ chance: 15, dmgPct: 40 }, { chance: 20, dmgPct: 50 }, { chance: 25, dmgPct: 60 }] },
+                { id: 'escudo_vital', label: 'Escudo Vital', desc: 'Al entrar en combate, escudo = % de tu HP máximo',
+                  levels: [{ shieldPct: 8 }, { shieldPct: 12 }, { shieldPct: 16 }] },
+                { id: 'indestructible', label: 'Indestructible', desc: 'Reducción de daño a costa de menos daño propio',
+                  levels: [{ dmgReduction: 15, selfDmgPenalty: 10 }, { dmgReduction: 22, selfDmgPenalty: 15 }, { dmgReduction: 30, selfDmgPenalty: 20 }] },
+                { id: 'reflejos_felinos', label: 'Reflejos Felinos', desc: 'Probabilidad de dodge aumentada (flat)',
+                  levels: [{ flatDodge: 8 }, { flatDodge: 12 }, { flatDodge: 16 }] },
+                { id: 'sangre_gigante', label: 'Sangre de Gigante', desc: 'Más HP máximo pero menos velocidad de ataque',
+                  levels: [{ hpBonus: 15, speedPenalty: 10 }, { hpBonus: 25, speedPenalty: 15 }, { hpBonus: 35, speedPenalty: 20 }] },
+                { id: 'piel_piedra', label: 'Piel de Piedra', desc: 'Al recibir un golpe >20% HP máx, ganás escudo temporal',
+                  levels: [{ shieldPct: 10, cooldown: 15 }, { shieldPct: 15, cooldown: 12 }, { shieldPct: 20, cooldown: 10 }] },
+                { id: 'furia_ardiente', label: 'Furia Ardiente', desc: 'Aura: cada segundo, probabilidad de quemar al enemigo (no se acumula)',
+                  levels: [{ chancePerSec: 20 }, { chancePerSec: 30 }, { chancePerSec: 40 }] },
+                { id: 'escudo_magico', label: 'Escudo Mágico', desc: 'Cada N ataques del enemigo, el próximo golpe se reduce',
+                  levels: [{ everyN: 4, reduction: 30 }, { everyN: 3, reduction: 40 }, { everyN: 3, reduction: 50 }] },
+                { id: 'veterano_batalla', label: 'Veterano de Batalla', desc: 'Cada 5 pisos completados, +reducción de daño acumulativa',
+                  levels: [{ per5Floors: 3, maxDr: 15 }, { per5Floors: 4, maxDr: 20 }, { per5Floors: 5, maxDr: 25 }] },
+                { id: 'reflejo_rapido', label: 'Reflejo Rápido', desc: 'Al esquivar, tu próximo golpe hace daño bonus',
+                  levels: [{ dmgBonus: 20 }, { dmgBonus: 30 }, { dmgBonus: 40 }] },
+            ],
+            estado: [
+                { id: 'hemorragia', label: 'Hemorragia', desc: 'Probabilidad de aplicar sangrado al enemigo',
+                  levels: [{ chance: 10, dmgPerTick: 3, ticks: 3 }, { chance: 14, dmgPerTick: 4, ticks: 3 }, { chance: 18, dmgPerTick: 5, ticks: 3 }] },
+                { id: 'marca_muerte', label: 'Marca de Muerte', desc: 'Tus ataques aplican vulnerabilidad: enemigo recibe +daño',
+                  levels: [{ vulnPct: 10, duration: 3 }, { vulnPct: 15, duration: 4 }, { vulnPct: 20, duration: 5 }] },
+                { id: 'golpe_cegador', label: 'Golpe Cegador', desc: 'Probabilidad de cegar al enemigo: falla su próximo ataque',
+                  levels: [{ chance: 8 }, { chance: 12 }, { chance: 16 }] },
+                { id: 'hoja_toxica', label: 'Hoja Tóxica', desc: 'Probabilidad de envenenar: DoT + reduce DEF del enemigo',
+                  levels: [{ chance: 12, dmgPerTick: 2, ticks: 3, defReduction: 5 }, { chance: 15, dmgPerTick: 3, ticks: 3, defReduction: 8 }, { chance: 18, dmgPerTick: 4, ticks: 3, defReduction: 10 }] },
+                { id: 'golpe_helado', label: 'Golpe Helado', desc: 'Probabilidad de congelar al boss (no ataca 2s). CD 15s',
+                  levels: [{ chance: 10 }, { chance: 15 }, { chance: 20 }] },
+                { id: 'toque_helado', label: 'Toque Helado', desc: 'Tus ataques ralentizan la velocidad del enemigo',
+                  levels: [{ slowPct: 10, duration: 5 }, { slowPct: 15, duration: 6 }, { slowPct: 20, duration: 8 }] },
+                { id: 'desgaste', label: 'Desgaste', desc: 'Cada 5s en combate, el enemigo pierde % de ATK y DEF (acumulativo)',
+                  levels: [{ perTick: 2, maxStack: 10 }, { perTick: 3, maxStack: 15 }, { perTick: 4, maxStack: 20 }] },
+            ],
+            sustain: [
+                { id: 'toque_runico', label: 'Toque Rúnico', desc: 'Cada 5to ataque, curás % de tu HP máximo',
+                  levels: [{ healPct: 5 }, { healPct: 8 }, { healPct: 12 }] },
+                { id: 'asalto_vampirico', label: 'Asalto Vampírico', desc: 'Lifesteal flat que se aplica a TODAS las fuentes de daño',
+                  levels: [{ flatLifesteal: 5 }, { flatLifesteal: 8 }, { flatLifesteal: 12 }] },
+                { id: 'fortaleza', label: 'Fortaleza', desc: 'Cuando tu HP <50%, recibís menos daño',
+                  levels: [{ dmgReduction: 10 }, { dmgReduction: 15 }, { dmgReduction: 20 }] },
+                { id: 'regeneracion', label: 'Regeneración', desc: 'Regenerás HP plano cada 2 segundos durante el combate',
+                  levels: [{ hpPer2s: 3 }, { hpPer2s: 5 }, { hpPer2s: 8 }] },
+                { id: 'segundo_aliento', label: 'Segundo Aliento', desc: 'Cuando tu HP baja del 25%, curás burst de vida (una vez por combate)',
+                  levels: [{ healPct: 15 }, { healPct: 20 }, { healPct: 25 }] },
+            ],
+            heroico: [
+                { id: 'dominio', label: 'Dominio', desc: 'Bonus a todos tus stats base (HP, ATK, DEF, AGI)',
+                  levels: [{ statBonus: 10 }, { statBonus: 15 }, { statBonus: 20 }] },
+                { id: 'legado_heroe', label: 'Legado del Héroe', desc: 'Cada boss derrotado en esta run, +stats a todos tus stats',
+                  levels: [{ perBoss: 5 }, { perBoss: 6 }, { perBoss: 7 }] },
+                { id: 'trinidad', label: 'Trinidad', desc: 'Bonus a prob. crítica, dodge y bloqueo',
+                  levels: [{ flatEach: 8 }, { flatEach: 12 }, { flatEach: 16 }] },
+                { id: 'maestro_elemental', label: 'Maestro Elemental', desc: 'Más daño vs enemigos con DoT + tus DoT duran más',
+                  levels: [{ dmgBonus: 20, extraTicks: 1 }, { dmgBonus: 30, extraTicks: 1 }, { dmgBonus: 40, extraTicks: 2 }] },
+                { id: 'resurreccion', label: 'Resurrección', desc: 'Revivís una vez por combate con % de HP',
+                  levels: [{ healPct: 20, cooldown: 60 }, { healPct: 30, cooldown: 45 }, { healPct: 40, cooldown: 30 }] },
+            ],
+        };
+
+        // Helper: obtener todos los talentos de un pool como array plano
+        function getAllTalents() {
+            const all = [];
+            for (const pool of Object.values(TALENT_POOL)) {
+                for (const t of pool) all.push(t);
+            }
+            return all;
+        }
+
+        // Helper: encontrar un talento por ID (incluye pool)
+        function findTalent(id) {
+            const pools = ['ofensivo', 'defensivo', 'estado', 'sustain', 'heroico'];
+            for (const pool of pools) {
+                const found = TALENT_POOL[pool]?.find(t => t.id === id);
+                if (found) return { ...found, pool };
+            }
+            return null;
+        }
 
         const MASTERIES = {
             weapon: [
@@ -924,6 +1119,10 @@
             let equipCritMult = 0, equipDodgeMult = 0;
             let equipPen = 0, equipCritDmg = 0, equipBossDmg = 0;
             let equipHpRegen = 0, equipThorns = 0, equipSoulBonus = 0;
+
+            // Meta upgrade: Penetración (+1% flat por nivel)
+            if (u.pen) equipPen += u.pen.percent * u.pen.level * 100; // 0.01 * level → 1, 2, 3...
+
             for (const slot of ['weapon', 'armor', 'ring']) {
                 const item = metaState.equipment[slot];
                 if (item) {
@@ -949,12 +1148,35 @@
             def *= (1 + u.def.percent * u.def.level);
             agi *= (1 + u.agi.percent * u.agi.level);
 
-            // 3. Passive abilities
-            if (runState.abilities.includes('domination')) {
-                hp *= 1.15; atk *= 1.15; def *= 1.15; agi *= 1.15;
+            // 3. Talentos pasivos que modifican stats
+            const tl = runState.talentLevels;
+            const t = (id) => tl[id] || 0; // nivel del talento (0 = no elegido)
+
+            // Dominio: +X% a todos los stats base
+            if (t('dominio') > 0) {
+                const bonus = TALENT_POOL.heroico.find(x => x.id === 'dominio').levels[t('dominio') - 1].statBonus / 100;
+                hp *= (1 + bonus); atk *= (1 + bonus); def *= (1 + bonus); agi *= (1 + bonus);
             }
-            if (runState.abilities.includes('passive_frenzy')) agi *= 1.2;
-            if (runState.abilities.includes('unstoppable')) { agi *= 1.3; }
+
+            // Sangre de Gigante: +X% HP, -X% velocidad
+            let speedPenaltyPct = 0;
+            if (t('sangre_gigante') > 0) {
+                const d = TALENT_POOL.defensivo.find(x => x.id === 'sangre_gigante').levels[t('sangre_gigante') - 1];
+                hp *= (1 + d.hpBonus / 100);
+                speedPenaltyPct = d.speedPenalty;
+            }
+
+            // Legado del Héroe: +X% por boss derrotado
+            let legacyBonus = 0;
+            if (t('legado_heroe') > 0) {
+                const perBoss = TALENT_POOL.heroico.find(x => x.id === 'legado_heroe').levels[t('legado_heroe') - 1].perBoss;
+                const bossesKilled = runState.bossesKilledThisRun || 0;
+                legacyBonus = perBoss * bossesKilled;
+                hp *= (1 + legacyBonus / 100);
+                atk *= (1 + legacyBonus / 100);
+                def *= (1 + legacyBonus / 100);
+                agi *= (1 + legacyBonus / 100);
+            }
 
             return {
                 maxHp: Math.floor(hp),
@@ -962,7 +1184,7 @@
                 def: Math.floor(def),
                 agi: Math.floor(agi),
                 lifesteal: equipLifesteal,
-                critRating: equipCritMult, // Rating de crit del equipo (se convierte a % con ratio 13)
+                critRating: equipCritMult,
                 dodgeMult: equipDodgeMult,
                 pen: equipPen,
                 critDamage: equipCritDmg,
@@ -970,6 +1192,8 @@
                 hpRegen: equipHpRegen,
                 thorns: equipThorns,
                 soulBonus: equipSoulBonus,
+                // Talent-derived stats (used by combatTick and render)
+                speedPenaltyPct: speedPenaltyPct,
             };
         }
 
@@ -998,6 +1222,147 @@
             }
 
             return { hp, atk, def, agi, isBoss };
+        }
+
+        // ============================================
+        // 4b. DEBUFF SYSTEM
+        // ============================================
+
+        // T3 — clearDebuffs()
+        function clearDebuffs() {
+            // Restore DEF if Hoja Tóxica was active
+            const toxica = runState.enemyDebuffs.find(d => d.id === 'hoja_toxica');
+            if (toxica && toxica.originalDef !== undefined && runState.enemy) {
+                runState.enemy.def = toxica.originalDef;
+            }
+            runState.enemyDebuffs = [];
+        }
+
+        // T4 — applyDebuff()
+        function applyDebuff(def) {
+            // def: { id, type, ticksLeft, duration, dmgPerTick, defReduction?, stack?, maxStack?, perTick?, vulnPct? }
+            const existing = runState.enemyDebuffs.find(d => d.id === def.id);
+
+            if (existing) {
+                // Desgaste: acumular stacks
+                if (def.type === 'stat_drain') {
+                    existing.stack = Math.min(existing.stack + (def.stack || 1), existing.maxStack);
+                    existing.ticksLeft = existing.duration; // refresh timer
+                } else {
+                    // Otros debuffs: refresh ticks/duration, no stack
+                    existing.ticksLeft = def.ticksLeft;
+                    existing.duration = def.duration;
+                }
+                return;
+            }
+
+            // Nuevo debuff: agregar
+            const newDebuff = { ...def };
+
+            // Maestro Elemental: extra ticks en DoTs
+            const tl = runState.talentLevels || {};
+            if ((def.type === 'dot' || def.type === 'def_reduction') && tl['maestro_elemental']) {
+                const me = TALENT_POOL.heroico.find(x => x.id === 'maestro_elemental').levels[tl['maestro_elemental'] - 1];
+                newDebuff.ticksLeft = (def.ticksLeft || 0) + me.extraTicks;
+                newDebuff.duration = (def.duration || 0) + me.extraTicks;
+            }
+
+            runState.enemyDebuffs.push(newDebuff);
+        }
+
+        // T5 — processDebuffs()
+        function processDebuffs() {
+            const tl = runState.talentLevels || {};
+            const t = (id) => tl[id] || 0;
+            const e = runState.enemy;
+            if (!e) return;
+
+            // Track which debuffs to remove
+            const toRemove = [];
+
+            for (let i = 0; i < runState.enemyDebuffs.length; i++) {
+                const db = runState.enemyDebuffs[i];
+
+                if (db.type === 'dot') {
+                    // DoT damage every 1 second (10 ticks of 100ms)
+                    if (db._dotTickCounter === undefined) db._dotTickCounter = 0;
+                    db._dotTickCounter++;
+                    if (db._dotTickCounter >= 10) {
+                        db._dotTickCounter = 0;
+                        db.ticksLeft--;
+                        if (db.dmgPerTick > 0) {
+                            e.hp -= db.dmgPerTick;
+                            spawnFloat('enemy-floats', `-${db.dmgPerTick} (DoT)`, 'crit');
+                            // DoT damage does NOT trigger lifesteal, on-hit talents, or on-hit effects
+                        }
+                    }
+                    if (db.ticksLeft <= 0) {
+                        toRemove.push(i);
+                        // Restore DEF if this debuff had defReduction
+                        if (db.defReduction && db.originalDef !== undefined) {
+                            e.def = db.originalDef;
+                        }
+                        continue;
+                    }
+                    // Apply DEF reduction for hoja_toxica type
+                    if (db.defReduction && db.originalDef === undefined) {
+                        db.originalDef = e.def;
+                    }
+                    if (db.defReduction && db.originalDef !== undefined) {
+                        e.def = Math.max(0, db.originalDef - db.defReduction);
+                    }
+                } else if (db.type === 'vulnerability') {
+                    // Decrement ticksLeft every tick
+                    db.ticksLeft--;
+                    if (db.ticksLeft <= 0) {
+                        toRemove.push(i);
+                    }
+                } else if (db.type === 'stat_drain') {
+                    // Desgaste: add stack every 5 seconds (50 ticks)
+                    if (db._tickCounter === undefined) db._tickCounter = 0;
+                    db._tickCounter++;
+                    if (db._tickCounter >= 50) {
+                        db._tickCounter = 0;
+                        if (db.stack < db.maxStack) {
+                            db.stack = Math.min(db.stack + 1, db.maxStack);
+                            db.ticksLeft = db.duration; // refresh duration
+                        }
+                    }
+                    db.ticksLeft--;
+                    if (db.ticksLeft <= 0) {
+                        toRemove.push(i);
+                    }
+                }
+            }
+
+            // Remove expired debuffs (reverse order to preserve indices)
+            for (let i = toRemove.length - 1; i >= 0; i--) {
+                runState.enemyDebuffs.splice(toRemove[i], 1);
+            }
+
+            // Desgaste: apply stat drain from stacks
+            const desgaste = runState.enemyDebuffs.find(d => d.type === 'stat_drain');
+            if (desgaste && t('desgaste') > 0) {
+                const d = TALENT_POOL.estado.find(x => x.id === 'desgaste').levels[t('desgaste') - 1];
+                const drainPct = d.perTick * desgaste.stack / 100;
+                // Apply multiplicative drain on base stats (stored in baseAtk/baseDef)
+                if (desgaste.baseAtk === undefined) {
+                    desgaste.baseAtk = e.atk;
+                    desgaste.baseDef = e.def;
+                }
+                e.atk = Math.max(1, Math.floor(desgaste.baseAtk * (1 - drainPct)));
+                e.def = Math.max(0, Math.floor(desgaste.baseDef * (1 - drainPct)));
+            }
+        }
+
+        // T6 — getActiveDebuffIds()
+        function getActiveDebuffIds() {
+            return runState.enemyDebuffs.map(d => d.id);
+        }
+
+        // Helper: check if a specific debuff type is active
+        function hasActiveDebuff(type) {
+            return runState.enemyDebuffs.some(d => d.type === type);
         }
 
         // Diminishing returns: cap × (raw / (raw + K))
@@ -1215,9 +1580,30 @@
             };
 
             // Escudo Vital
-            if (runState.abilities.includes('vital_shield')) {
-                p.maxHp += Math.floor(stats.maxHp * 0.1);
-                p.hp += Math.floor(stats.maxHp * 0.1);
+            const tl = runState.talentLevels || {};
+            const t = (id) => tl[id] || 0;
+            if (t('escudo_vital') > 0) {
+                const shieldPct = TALENT_POOL.defensivo.find(x => x.id === 'escudo_vital').levels[t('escudo_vital') - 1].shieldPct;
+                const shield = Math.floor(stats.maxHp * shieldPct / 100);
+                p.maxHp += shield;
+                p.hp += shield;
+            }
+
+            // W1 — Clear debuffs at start of each combat (safety for edge cases)
+            runState.enemyDebuffs = [];
+
+            // T11 — Desgaste: initialize stat_drain debuff at combat start
+            if (t('desgaste') > 0) {
+                const d = TALENT_POOL.estado.find(x => x.id === 'desgaste').levels[t('desgaste') - 1];
+                applyDebuff({
+                    id: 'desgaste',
+                    type: 'stat_drain',
+                    stack: 0,
+                    maxStack: d.maxStack,
+                    perTick: d.perTick,
+                    ticksLeft: 9999, // indefinite duration, stacks grow over time
+                    duration: 9999,
+                });
             }
 
             isFirstAttack = true;
@@ -1231,20 +1617,59 @@
         function combatTick() {
             if (!runState.active || !runState.enemy || runState.pendingChoice) return;
 
+            // T5 — Process debuffs at TOP of combatTick
+            processDebuffs();
+
+            // Piel de Piedra: decrement shield ticks
+            if (runState.piedraShield && runState.piedraShield.ticksLeft > 0) {
+                runState.piedraShield.ticksLeft--;
+                if (runState.piedraShield.ticksLeft <= 0) {
+                    runState.piedraShield.amount = 0;
+                    runState.piedraShield.ticksLeft = 0;
+                }
+            }
+
             const p = runState.player;
             const e = runState.enemy;
             const derived = getDerivedStats(p.atk, p.def, p.agi);
             // Equipment crit rating converts to % with ratio 13 (linear conversion)
             const equipCritPct = (p.critRating || 0) / 13;
             const baseCrit = derived.crit + equipCritPct;
-            const rawCrit = baseCrit + (runState.abilities.includes('precise') ? 15 : 0);
+
+            // Talento: Golpe Preciso (flat crit pre-DR)
+            const tl = runState.talentLevels;
+            const t = (id) => tl[id] || 0;
+            let preciseBonus = 0;
+            if (t('golpe_preciso') > 0) {
+                preciseBonus = TALENT_POOL.ofensivo.find(x => x.id === 'golpe_preciso').levels[t('golpe_preciso') - 1].flatCrit;
+            }
+
+            // Talento: Maestría Crítica (crit garantizado cada N ataques)
+            let masteryCritFlat = runState.masteryFlatCrit || 0;
+            if (t('maestria_critica') > 0) {
+                const everyN = TALENT_POOL.ofensivo.find(x => x.id === 'maestria_critica').levels[t('maestria_critica') - 1].everyN;
+                if (!runState.critMasteryCounter) runState.critMasteryCounter = 0;
+                runState.critMasteryCounter++;
+                if (runState.critMasteryCounter >= everyN) {
+                    runState.critMasteryCounter = 0;
+                    masteryCritFlat = 100; // garantizado
+                }
+            }
+
+            const rawCrit = baseCrit + preciseBonus;
             const critBonus = metaState.upgrades.crit.level * metaState.upgrades.crit.percent * 100;
-            const totalCrit = Math.floor(diminishingReturns(rawCrit, BALANCE.combat.critCap, BALANCE.combat.critK)) + (runState.masteryFlatCrit || 0) + critBonus;
+            const totalCrit = Math.floor(diminishingReturns(rawCrit, BALANCE.combat.critCap, BALANCE.combat.critK)) + masteryCritFlat + critBonus;
+
+            // Talento: Trinidad (flat crit, dodge, block)
+            let trinityFlat = 0;
+            if (t('trinidad') > 0) {
+                trinityFlat = TALENT_POOL.heroico.find(x => x.id === 'trinidad').levels[t('trinidad') - 1].flatEach;
+            }
+
             const baseDodge = derived.dodge;
             const rawDodge = baseDodge * (1 + p.dodgeMult / 100);
-            const totalDodge = Math.floor(diminishingReturns(rawDodge, BALANCE.combat.dodgeCap, BALANCE.combat.dodgeK)) + (runState.masteryFlatDodge || 0);
-            // Block: diminishing returns on derived block + flat maestría
-            const totalBlock = Math.floor(diminishingReturns(derived.block, BALANCE.combat.blockCap, BALANCE.combat.blockK)) + (runState.masteryFlatBlock || 0);
+            const totalDodge = Math.floor(diminishingReturns(rawDodge, BALANCE.combat.dodgeCap, BALANCE.combat.dodgeK)) + (runState.masteryFlatDodge || 0) + (t('reflejos_felinos') > 0 ? TALENT_POOL.defensivo.find(x => x.id === 'reflejos_felinos').levels[t('reflejos_felinos') - 1].flatDodge : 0) + trinityFlat;
+            const totalBlock = Math.floor(diminishingReturns(derived.block, BALANCE.combat.blockCap, BALANCE.combat.blockK)) + (runState.masteryFlatBlock || 0) + trinityFlat;
             // Lifesteal: diminishing returns on flat equipment + maestría (pre-DR)
             const totalLifesteal = diminishingReturns((p.lifesteal || 0) + (runState.masteryFlatLifesteal || 0), BALANCE.combat.lifestealCap, BALANCE.combat.lifestealK);
 
@@ -1282,28 +1707,72 @@
                 }
             }
 
+            // T8 — Furia Ardiente: 1-second timer, direct damage (not a debuff)
+            if (t('furia_ardiente') > 0) {
+                if (p.furiaArdienteTick === undefined) p.furiaArdienteTick = 0;
+                p.furiaArdienteTick++;
+                if (p.furiaArdienteTick >= 10) { // 10 ticks = 1 second
+                    p.furiaArdienteTick = 0;
+                    const fa = TALENT_POOL.defensivo.find(x => x.id === 'furia_ardiente').levels[t('furia_ardiente') - 1];
+                    if (Math.random() * 100 < fa.chancePerSec) {
+                        const fireDmg = BALANCE.furiaArdiente.baseDamage;
+                        e.hp -= fireDmg;
+                        spawnFloat('enemy-floats', `-${fireDmg} (🔥)`, 'crit');
+                    }
+                }
+            }
+
             // Jugador ataca
             p.attackTimer -= BALANCE.combat.tickMs;
             if (p.attackTimer <= 0) {
                 p.attackTimer = speedToInterval(p.agi);
                 
                 let attacks = 1;
-                if (Math.random() < 0.15 && runState.abilities.includes('double_hit')) attacks = 2;
-                if (Math.random() < 0.10 && runState.abilities.includes('frenzy')) attacks = 3;
+                // Talento: Multiataque
+                if (t('multiataque') > 0) {
+                    const m = TALENT_POOL.ofensivo.find(x => x.id === 'multiataque').levels[t('multiataque') - 1];
+                    if (Math.random() * 100 < (m.chance3 || 0)) attacks = 3;
+                    else if (Math.random() * 100 < m.chance2) attacks = 2;
+                }
 
                 for (let i = 0; i < attacks; i++) {
                     // Apply penetration: ignore % of enemy DEF
-                    const effectiveDef = e.isBoss && e.def > 0 ? Math.floor(e.def * (1 - effPen / 100)) : e.def;
+                    let penPct = effPen;
+                    if (t('golpe_penetrante') > 0) {
+                        penPct += TALENT_POOL.ofensivo.find(x => x.id === 'golpe_penetrante').levels[t('golpe_penetrante') - 1].penPct;
+                    }
+                    const effectiveDef = Math.max(0, Math.floor(e.def * (1 - penPct / 100)));
                     let dmg = calcDamage(p.atk, effectiveDef);
                     let type = 'normal';
                     
-                    if (isFirstAttack && runState.abilities.includes('first_strike')) dmg = Math.floor(dmg * 1.25);
+                    // Talento: Primer Golpe
+                    if (isFirstAttack && t('primer_golpe') > 0) {
+                        const mult = TALENT_POOL.ofensivo.find(x => x.id === 'primer_golpe').levels[t('primer_golpe') - 1].dmgMult;
+                        dmg = Math.floor(dmg * mult);
+                    }
+
+                    // Talento: Furia Creciente
+                    if (t('furia_creciente') > 0) {
+                        const f = TALENT_POOL.ofensivo.find(x => x.id === 'furia_creciente').levels[t('furia_creciente') - 1];
+                        if (!runState.furiaStacks) runState.furiaStacks = 0;
+                        runState.furiaStacks++;
+                        const bonus = Math.min(f.perHit * runState.furiaStacks, f.maxStack);
+                        if (bonus > 0) dmg = Math.floor(dmg * (1 + bonus / 100));
+                    }
+
+                    // Talento: Reflejo Rápido (bonus tras esquivar, un solo golpe)
+                    if (runState.reflejoBonus > 0) {
+                        dmg = Math.floor(dmg * (1 + runState.reflejoBonus / 100));
+                        runState.reflejoBonus = 0;
+                    }
+
                     // Crit: base 1.5x + bonus from equipment (capped at 650% total = 6.5x)
                     if (Math.random() * 100 < totalCrit) {
-                        const critMult = 1.5 + effCritDmg / 100; // 1.5 base + up to 6.0 from gear
+                        const critMult = 1.5 + effCritDmg / 100;
                         dmg = Math.floor(dmg * critMult);
                         type = 'crit';
                     }
+
                     // Maestría Furiosa: contador por ataque del héroe, proc en el mismo golpe
                     const furyMastery = metaState.equipment.weapon?.mastery;
                     if (furyMastery?.id === 'fury') {
@@ -1316,11 +1785,40 @@
                             spawnFloat('enemy-floats', 'FURIA!', 'crit');
                         }
                     }
-                    if (runState.abilities.includes('execute') && e.hp < e.maxHp * 0.2) dmg *= 2;
-                    if (runState.abilities.includes('brutal') && Math.random() < 0.10) { dmg *= 3; type = 'crit'; }
+
+                    // Talento: Golpe Brutal
+                    if (t('golpe_brutal') > 0) {
+                        const chance = TALENT_POOL.ofensivo.find(x => x.id === 'golpe_brutal').levels[t('golpe_brutal') - 1].chance;
+                        if (Math.random() * 100 < chance) { dmg *= 3; type = 'crit'; }
+                    }
+
+                    // Talento: Ejecución
+                    if (t('ejecucion') > 0) {
+                        const ex = TALENT_POOL.ofensivo.find(x => x.id === 'ejecucion').levels[t('ejecucion') - 1];
+                        if (e.hp < e.maxHp * ex.threshold) { dmg = Math.floor(dmg * ex.mult); type = 'crit'; }
+                    }
+
+                    // Talento: Cañón de Cristal (bajo 30% HP)
+                    if (t('canon_cristal') > 0 && p.hp < p.maxHp * 0.30) {
+                        const cc = TALENT_POOL.ofensivo.find(x => x.id === 'canon_cristal').levels[t('canon_cristal') - 1];
+                        dmg = Math.floor(dmg * (1 + cc.dmgBonus / 100));
+                    }
+
                     // Boss damage bonus
                     if (e.isBoss && effBossDmg > 0) {
                         dmg = Math.floor(dmg * (1 + effBossDmg / 100));
+                    }
+
+                    // T12 — Vulnerability multiplier (Marca de Muerte)
+                    const vulnDebuff = runState.enemyDebuffs.find(d => d.type === 'vulnerability');
+                    if (vulnDebuff && vulnDebuff.vulnPct) {
+                        dmg = Math.floor(dmg * (1 + vulnDebuff.vulnPct / 100));
+                    }
+
+                    // T13 — Maestro Elemental: bonus damage vs enemies with active DoT
+                    if (t('maestro_elemental') > 0 && hasActiveDebuff('dot')) {
+                        const me = TALENT_POOL.heroico.find(x => x.id === 'maestro_elemental').levels[t('maestro_elemental') - 1];
+                        dmg = Math.floor(dmg * (1 + me.dmgBonus / 100));
                     }
 
                     e.hp -= dmg;
@@ -1328,12 +1826,82 @@
                     flashElement('enemy-card');
                     
                     // Lifesteal (stats + passive), capped at BALANCE.combat.lifestealCap
-                    if (totalLifesteal > 0) {
-                        const heal = Math.floor(dmg * totalLifesteal / 100);
+                    let currentLifesteal = totalLifesteal;
+                    // Talento: Asalto Vampírico (flat lifesteal que se aplica a todo)
+                    if (t('asalto_vampirico') > 0) {
+                        const av = TALENT_POOL.sustain.find(x => x.id === 'asalto_vampirico').levels[t('asalto_vampirico') - 1];
+                        currentLifesteal = diminishingReturns(currentLifesteal + av.flatLifesteal, BALANCE.combat.lifestealCap, BALANCE.combat.lifestealK);
+                    }
+                    if (currentLifesteal > 0) {
+                        const heal = Math.floor(dmg * currentLifesteal / 100);
                         if (heal > 0) {
                             p.hp = Math.min(p.maxHp, p.hp + heal);
                             spawnFloat('player-floats', `+${heal}`, 'heal');
                         }
+                    }
+
+                    // Talento: Toque Rúnico (cura cada 5to ataque)
+                    if (t('toque_runico') > 0) {
+                        if (!runState.runeTapCounter) runState.runeTapCounter = 0;
+                        runState.runeTapCounter++;
+                        if (runState.runeTapCounter >= 5) {
+                            runState.runeTapCounter = 0;
+                            const healPct = TALENT_POOL.sustain.find(x => x.id === 'toque_runico').levels[t('toque_runico') - 1].healPct;
+                            const heal = Math.floor(p.maxHp * healPct / 100);
+                            p.hp = Math.min(p.maxHp, p.hp + heal);
+                            spawnFloat('player-floats', `+${heal} (runa)`, 'heal');
+                        }
+                    }
+
+                    // Talento: Eco de Combate (chance de repetir ataque)
+                    if (t('eco_combate') > 0) {
+                        const ec = TALENT_POOL.ofensivo.find(x => x.id === 'eco_combate').levels[t('eco_combate') - 1];
+                        if (Math.random() * 100 < ec.chance) {
+                            const echoDmg = Math.floor(dmg * ec.dmgPct / 100);
+                            e.hp -= echoDmg;
+                            spawnFloat('enemy-floats', `-${echoDmg} (eco)`, 'crit');
+                        }
+                    }
+
+                    // T7 — Hemorragia: chance to apply bleeding DoT on hit
+                    if (t('hemorragia') > 0) {
+                        const h = TALENT_POOL.estado.find(x => x.id === 'hemorragia').levels[t('hemorragia') - 1];
+                        if (Math.random() * 100 < h.chance) {
+                            applyDebuff({
+                                id: 'hemorragia',
+                                type: 'dot',
+                                dmgPerTick: h.dmgPerTick,
+                                ticksLeft: h.ticks,
+                                duration: h.ticks,
+                            });
+                        }
+                    }
+
+                    // T9 — Hoja Tóxica: chance to apply poison DoT + DEF reduction on hit
+                    if (t('hoja_toxica') > 0) {
+                        const ht = TALENT_POOL.estado.find(x => x.id === 'hoja_toxica').levels[t('hoja_toxica') - 1];
+                        if (Math.random() * 100 < ht.chance) {
+                            applyDebuff({
+                                id: 'hoja_toxica',
+                                type: 'dot',
+                                dmgPerTick: ht.dmgPerTick,
+                                ticksLeft: ht.ticks,
+                                duration: ht.ticks,
+                                defReduction: ht.defReduction,
+                            });
+                        }
+                    }
+
+                    // T10 — Marca de Muerte: always applies vulnerability on hit (no chance check)
+                    if (t('marca_muerte') > 0) {
+                        const mm = TALENT_POOL.estado.find(x => x.id === 'marca_muerte').levels[t('marca_muerte') - 1];
+                        applyDebuff({
+                            id: 'marca_muerte',
+                            type: 'vulnerability',
+                            vulnPct: mm.vulnPct,
+                            ticksLeft: mm.duration * 10, // duration in seconds → ticks (10 ticks/sec)
+                            duration: mm.duration * 10,
+                        });
                     }
                 }
                 isFirstAttack = false;
@@ -1347,6 +1915,10 @@
                 // Dodge check
                 if (Math.random() * 100 < totalDodge) {
                     spawnFloat('player-floats', 'MISS', 'miss');
+                    // Talento: Reflejo Rápido (bonus dmg tras esquivar)
+                    if (t('reflejo_rapido') > 0) {
+                        runState.reflejoBonus = TALENT_POOL.defensivo.find(x => x.id === 'reflejo_rapido').levels[t('reflejo_rapido') - 1].dmgBonus;
+                    }
                     return;
                 }
 
@@ -1374,6 +1946,64 @@
                     }
                 }
 
+                // Talento: Indestructible (reducción de daño + penalty propio)
+                if (t('indestructible') > 0) {
+                    const ind = TALENT_POOL.defensivo.find(x => x.id === 'indestructible').levels[t('indestructible') - 1];
+                    dmg = Math.floor(dmg * (1 - ind.dmgReduction / 100));
+                }
+
+                // Talento: Fortaleza (reducción bajo 50% HP)
+                if (t('fortaleza') > 0 && p.hp < p.maxHp * 0.50) {
+                    const fort = TALENT_POOL.sustain.find(x => x.id === 'fortaleza').levels[t('fortaleza') - 1];
+                    dmg = Math.floor(dmg * (1 - fort.dmgReduction / 100));
+                }
+
+                // Talento: Cañón de Cristal (más daño recibido bajo 30% HP)
+                if (t('canon_cristal') > 0 && p.hp < p.maxHp * 0.30) {
+                    const cc = TALENT_POOL.ofensivo.find(x => x.id === 'canon_cristal').levels[t('canon_cristal') - 1];
+                    dmg = Math.floor(dmg * (1 + cc.dmgTaken / 100));
+                }
+
+                // Talento: Escudo Mágico (reduce cada N ataques del enemigo)
+                if (t('escudo_magico') > 0) {
+                    const sm = TALENT_POOL.defensivo.find(x => x.id === 'escudo_magico').levels[t('escudo_magico') - 1];
+                    if (!runState.spellShieldCounter) runState.spellShieldCounter = 0;
+                    runState.spellShieldCounter++;
+                    if (runState.spellShieldCounter >= sm.everyN) {
+                        runState.spellShieldCounter = 0;
+                        dmg = Math.floor(dmg * (1 - sm.reduction / 100));
+                        spawnFloat('player-floats', '🔮ESCUDO!', 'block');
+                    }
+                }
+
+                // Talento: Veterano de Batalla (DR por pisos completados)
+                if (t('veterano_batalla') > 0) {
+                    const vb = TALENT_POOL.defensivo.find(x => x.id === 'veterano_batalla').levels[t('veterano_batalla') - 1];
+                    const floorsCompleted = Math.max(0, runState.floor - 1);
+                    const stacks = Math.floor(floorsCompleted / 5);
+                    const dr = Math.min(stacks * vb.per5Floors, vb.maxDr);
+                    if (dr > 0) dmg = Math.floor(dmg * (1 - dr / 100));
+                }
+
+                // Talento: Piel de Piedra — shield on big hits (>= 20% maxHp)
+                if (t('piel_piedra') > 0 && dmg >= p.maxHp * 0.20) {
+                    const pp = TALENT_POOL.defensivo.find(x => x.id === 'piel_piedra').levels[t('piel_piedra') - 1];
+                    const shieldAmount = Math.floor(p.maxHp * pp.shieldPct / 100);
+                    runState.piedraShield.amount = shieldAmount;
+                    runState.piedraShield.ticksLeft = pp.cooldown * 10; // seconds → ticks
+                    spawnFloat('player-floats', `🛡️+${shieldAmount}`, 'block');
+                }
+
+                // Piel de Piedra: shield absorbs damage BEFORE it hits HP
+                if (runState.piedraShield && runState.piedraShield.amount > 0) {
+                    const absorbed = Math.min(dmg, runState.piedraShield.amount);
+                    runState.piedraShield.amount -= absorbed;
+                    dmg -= absorbed;
+                    if (absorbed > 0 && dmg > 0) {
+                        spawnFloat('player-floats', `-${absorbed}🛡️`, 'block');
+                    }
+                }
+
                 p.hp -= dmg;
                 spawnFloat('player-floats', `-${dmg}`, type);
                 flashElement('player-card');
@@ -1387,11 +2017,38 @@
                     }
                 }
 
-                // Contraataque
-                if (runState.abilities.includes('counter') && Math.random() < 0.20) {
-                    const counterDmg = Math.floor(dmg * 0.5);
-                    e.hp -= counterDmg;
-                    spawnFloat('enemy-floats', `-${counterDmg} (C)`, 'crit');
+                // Talento: Contraataque
+                if (t('contraataque') > 0) {
+                    const ca = TALENT_POOL.defensivo.find(x => x.id === 'contraataque').levels[t('contraataque') - 1];
+                    if (Math.random() * 100 < ca.chance) {
+                        const counterDmg = Math.floor(dmg * ca.dmgPct / 100);
+                        e.hp -= counterDmg;
+                        spawnFloat('enemy-floats', `-${counterDmg} (C)`, 'crit');
+                    }
+                }
+            }
+
+            // Talento: Segundo Aliento (burst heal al bajar de 25% HP, una vez por combate)
+            if (t('segundo_aliento') > 0 && !runState.segundoAlientoUsed && p.hp > 0 && p.hp < p.maxHp * 0.25) {
+                runState.segundoAlientoUsed = true;
+                const sa = TALENT_POOL.sustain.find(x => x.id === 'segundo_aliento').levels[t('segundo_aliento') - 1];
+                const heal = Math.floor(p.maxHp * sa.healPct / 100);
+                p.hp = Math.min(p.maxHp, p.hp + heal);
+                addLog(`💨 ¡Segundo Aliento! +${heal} HP`, 'system');
+                spawnFloat('player-floats', `+${heal} (2A)`, 'heal');
+            }
+
+            // Talento: Regeneración (HP plano cada 2s = 20 ticks)
+            if (t('regeneracion') > 0) {
+                if (p.regenTalentTick === undefined) p.regenTalentTick = 0;
+                p.regenTalentTick++;
+                if (p.regenTalentTick >= 20) {
+                    p.regenTalentTick = 0;
+                    const hpPer2s = TALENT_POOL.sustain.find(x => x.id === 'regeneracion').levels[t('regeneracion') - 1].hpPer2s;
+                    if (p.hp < p.maxHp) {
+                        p.hp = Math.min(p.maxHp, p.hp + hpPer2s);
+                        spawnFloat('player-floats', `+${hpPer2s}`, 'heal');
+                    }
                 }
             }
 
@@ -1403,6 +2060,14 @@
         function enemyDefeated() {
             clearInterval(combatLoop); combatLoop = null;
             addLog(`¡${runState.enemy.name} derrotado!`, 'victory');
+
+            // T17 — Clear debuffs on enemy defeat
+            clearDebuffs();
+
+            // Contar bosses derrotados en esta run (para Legado del Héroe)
+            if (runState.enemy.isBoss) {
+                runState.bossesKilledThisRun = (runState.bossesKilledThisRun || 0) + 1;
+            }
 
             // XP
             const xpGain = runState.floor;
@@ -1436,11 +2101,29 @@
 
             if (equipPending) return; // el modal de comparación reanudará después
 
+            // Talento basado en piso (cada 5 pisos)
+            if (runState.floor % 5 === 0) {
+                showTalentChoice(runState.floor);
+                return; // floor++ y reanudar se difieren a closeChoice()
+            }
+
             runState.floor++;
+            runState.furiaStacks = 0; // Furia Creciente se resetea entre pisos
             checkLevelUp();
         }
 
         function playerDied() {
+            // Talento: Resurrección (revivir una vez por combate)
+            if (runState.talentLevels['resurreccion'] > 0 && !runState.hasRevived) {
+                const res = TALENT_POOL.heroico.find(x => x.id === 'resurreccion').levels[runState.talentLevels['resurreccion'] - 1];
+                runState.hasRevived = true;
+                runState.player.hp = Math.floor(runState.player.maxHp * res.healPct / 100);
+                addLog(`✨ ¡Resurrección! Reviviste con ${res.healPct}% HP.`, 'system');
+                spawnFloat('player-floats', '✨RESUCITA!', 'heal');
+                render();
+                return; // No morir, continuar combate
+            }
+
             clearInterval(combatLoop); combatLoop = null;
             runState.active = false;
             let souls = Math.floor(runState.floor * BALANCE.souls.baseMult + (runState.floor * metaState.upgrades.souls.level * metaState.upgrades.souls.flat));
@@ -1482,22 +2165,111 @@
 
                 runState.xpToNext = BALANCE.levelUp.xpScale * runState.level;
 
-                if (BALANCE.levelUp.abilityLevels.includes(runState.level)) {
-                    showAbilityChoice();
-                } else {
-                    startCombat();
-                }
+                // Persistir nivel y bonuses a metaState
+                metaState.heroLevel = runState.level;
+                metaState.heroXp = runState.xp;
+                metaState.heroBonuses = { ...runState.runBonuses };
+                saveGame();
+
+                startCombat();
             } else {
                 startCombat();
             }
         }
 
-        function showAbilityChoice() {
+        function showTalentChoice(floor) {
             runState.pendingChoice = 'ability';
-            const pool = ABILITY_POOLS[runState.level];
-            renderChoices(`¡Habilidad de Nivel ${runState.level}!`, 'Elige una habilidad especial:', pool.map(a => ({
-                label: a.label, desc: a.desc, action: () => { runState.abilities.push(a.id); closeChoice(); }
-            })));
+            const isHeroic = floor % 20 === 0;
+            const choices = [];
+
+            // Helper: elegir talento aleatorio de un pool que sea elegible
+            function pickRandom(pool) {
+                const eligible = pool.filter(t => {
+                    const currentLevel = runState.talentLevels[t.id] || 0;
+                    // Nivel 1: siempre elegible. Nivel 2/3: necesita el anterior.
+                    if (currentLevel === 0) return true; // nivel 1 siempre disponible
+                    if (currentLevel < 3) return true; // puede subir al siguiente nivel
+                    return false; // ya está en nivel 3, no mostrar
+                });
+                if (eligible.length === 0) return null;
+                return eligible[Math.floor(Math.random() * eligible.length)];
+            }
+
+            // 1. Ofensivo (siempre)
+            const ofensivo = pickRandom(TALENT_POOL.ofensivo);
+            if (ofensivo) {
+                const lvl = runState.talentLevels[ofensivo.id] || 0;
+                const nextLvl = lvl + 1;
+                const data = ofensivo.levels[nextLvl - 1];
+                choices.push({
+                    label: `${ofensivo.label} (Nv.${nextLvl})`,
+                    desc: ofensivo.desc,
+                    pool: 'ofensivo',
+                    action: () => { selectTalent(ofensivo.id, nextLvl); }
+                });
+            }
+
+            // 2. Defensivo (siempre)
+            const defensivo = pickRandom(TALENT_POOL.defensivo);
+            if (defensivo) {
+                const lvl = runState.talentLevels[defensivo.id] || 0;
+                const nextLvl = lvl + 1;
+                const data = defensivo.levels[nextLvl - 1];
+                choices.push({
+                    label: `${defensivo.label} (Nv.${nextLvl})`,
+                    desc: defensivo.desc,
+                    pool: 'defensivo',
+                    action: () => { selectTalent(defensivo.id, nextLvl); }
+                });
+            }
+
+            // 3. Estado o Sustain (combinados como 3ra opción)
+            const estadoSustain = [...TALENT_POOL.estado, ...TALENT_POOL.sustain];
+            const estadoOrSustain = pickRandom(estadoSustain);
+            if (estadoOrSustain) {
+                const lvl = runState.talentLevels[estadoOrSustain.id] || 0;
+                const nextLvl = lvl + 1;
+                const poolName = TALENT_POOL.estado.includes(estadoOrSustain) ? 'estado' : 'sustain';
+                choices.push({
+                    label: `${estadoOrSustain.label} (Nv.${nextLvl})`,
+                    desc: estadoOrSustain.desc,
+                    pool: poolName,
+                    action: () => { selectTalent(estadoOrSustain.id, nextLvl); }
+                });
+            }
+
+            // 4. Heroico (solo cada 20 niveles)
+            if (isHeroic) {
+                const heroico = pickRandom(TALENT_POOL.heroico);
+                if (heroico) {
+                    const lvl = runState.talentLevels[heroico.id] || 0;
+                    const nextLvl = lvl + 1;
+                    choices.push({
+                        label: `⭐ ${heroico.label} (Nv.${nextLvl})`,
+                        desc: heroico.desc,
+                        pool: 'heroico',
+                        action: () => { selectTalent(heroico.id, nextLvl); }
+                    });
+                }
+            }
+
+            const title = isHeroic
+                ? `¡Talento Heroico — Piso ${floor}!`
+                : `¡Talento — Piso ${floor}!`;
+            const subtitle = isHeroic
+                ? 'Elige un talento especial (¡opción heroica incluida!):'
+                : 'Elige un talento especial:';
+
+            renderChoices(title, subtitle, choices);
+        }
+
+        function selectTalent(id, level) {
+            runState.talentLevels[id] = level;
+            // También agregar a abilities para compatibilidad con código existente
+            if (!runState.abilities.includes(id)) {
+                runState.abilities.push(id);
+            }
+            closeChoice();
         }
 
         function renderChoices(title, desc, options) {
@@ -1518,7 +2290,11 @@
         function closeChoice() {
             document.getElementById('choice-overlay').classList.remove('visible');
             runState.pendingChoice = null;
-            if (runState.active) startCombat();
+            if (runState.active) {
+                runState.floor++;
+                runState.furiaStacks = 0;
+                startCombat();
+            }
         }
 
         // ============================================
@@ -1589,7 +2365,16 @@
             pendingEquipNewItem = null;
 
             // Continuar la run (floor++ y checkLevelUp se difirieron)
+            const prevFloor = runState.floor;
             runState.floor++;
+            runState.furiaStacks = 0;
+
+            // Talento basado en piso (el piso ANTES de incrementar era múltiplo de 5)
+            if (prevFloor % 5 === 0) {
+                showTalentChoice(prevFloor);
+                return;
+            }
+
             checkLevelUp();
         }
 
@@ -1598,9 +2383,23 @@
         // ============================================
         function startRun() {
             if (runState.active) return;
-            runState.active = true; runState.floor = 1; runState.level = 1; runState.xp = 0; runState.xpToNext = BALANCE.levelUp.xpBase;
-            runState.runBonuses = { hp: 0, atk: 0, def: 0, agi: 0 };
+            runState.active = true; runState.floor = 1;
+            runState.level = metaState.heroLevel;
+            runState.xp = metaState.heroXp;
+            runState.xpToNext = BALANCE.levelUp.xpScale * runState.level;
+            runState.runBonuses = { ...metaState.heroBonuses };
             runState.abilities = []; // Talentos se resetean cada run
+            runState.talentLevels = {}; // Progreso de talentos se resetea cada run
+            runState.hasRevived = false;
+            runState.furiaStacks = 0;
+            runState.critMasteryCounter = 0;
+            runState.runeTapCounter = 0;
+            runState.reflejoBonus = 0;
+            runState.spellShieldCounter = 0;
+            runState.segundoAlientoUsed = false;
+            runState.bossesKilledThisRun = 0;
+            runState.enemyDebuffs = [];
+            runState.piedraShield = { amount: 0, ticksLeft: 0 };
             document.getElementById('combat-log').innerHTML = '';
             if (metaState.unlockedEquipment) {
                 document.getElementById('equip-section').classList.remove('locked');
@@ -1617,6 +2416,21 @@
             runState.furyCounter = 0;
             runState.toughCounter = 0;
             runState.abilities = []; // Talentos se resetean al reiniciar
+            runState.talentLevels = {}; // Progreso de talentos se resetea al reiniciar
+            runState.hasRevived = false;
+            runState.furiaStacks = 0;
+            runState.critMasteryCounter = 0;
+            runState.runeTapCounter = 0;
+            runState.reflejoBonus = 0;
+            runState.spellShieldCounter = 0;
+            runState.segundoAlientoUsed = false;
+            runState.bossesKilledThisRun = 0;
+            runState.enemyDebuffs = [];
+            runState.piedraShield = { amount: 0, ticksLeft: 0 };
+            runState.level = metaState.heroLevel;
+            runState.xp = metaState.heroXp;
+            runState.xpToNext = BALANCE.levelUp.xpScale * runState.level;
+            runState.runBonuses = { ...metaState.heroBonuses };
             document.getElementById('combat-log').innerHTML = '';
             addLog('🔄 Run reiniciada', 'system');
             render(); updateButtons();
@@ -1643,35 +2457,58 @@
             document.getElementById('player-xp-bar').style.width = xpPct + '%';
             
             const p = runState.player;
-            const pPct = Math.max(0, (p.hp / p.maxHp) * 100);
+            const pPct = p.maxHp > 0 ? Math.max(0, (p.hp / p.maxHp) * 100) : 100;
             document.getElementById('player-hp-bar').style.width = pPct + '%';
             document.getElementById('player-hp-bar').className = 'hp-bar' + (pPct <= 25 ? ' low' : pPct <= 50 ? ' mid' : '');
-            document.getElementById('player-hp-text').textContent = `${Math.max(0, p.hp)} / ${p.maxHp}`;
+            const shieldDisplay = (runState.piedraShield && runState.piedraShield.amount > 0) ? ` +${runState.piedraShield.amount}🛡️` : '';
+            document.getElementById('player-hp-text').textContent = `${Math.max(0, p.hp)} / ${p.maxHp}${shieldDisplay}`;
             const derived = getDerivedStats(p.atk, p.def, p.agi);
             document.getElementById('player-atk').textContent = p.atk;
             document.getElementById('player-def').textContent = p.def;
             document.getElementById('player-agi').textContent = p.agi;
             // Equipment crit rating converts to % with ratio 13 (linear conversion)
             const equipCritPct = (p.critRating || 0) / 13;
-            const rawCrit = derived.crit + equipCritPct + (runState.abilities.includes('precise') ? 15 : 0);
+            const tl = runState.talentLevels || {};
+            const t = (id) => tl[id] || 0;
+            let preciseBonus = 0;
+            if (t('golpe_preciso') > 0) {
+                preciseBonus = TALENT_POOL.ofensivo.find(x => x.id === 'golpe_preciso').levels[t('golpe_preciso') - 1].flatCrit;
+            }
+            let trinityFlat = 0;
+            if (t('trinidad') > 0) {
+                trinityFlat = TALENT_POOL.heroico.find(x => x.id === 'trinidad').levels[t('trinidad') - 1].flatEach;
+            }
+            const rawCrit = derived.crit + equipCritPct + preciseBonus;
             const critBonus = metaState.upgrades.crit.level * metaState.upgrades.crit.percent * 100;
-            const totalCrit = Math.floor(diminishingReturns(rawCrit, BALANCE.combat.critCap, BALANCE.combat.critK)) + (runState.masteryFlatCrit || 0) + critBonus;
-            const rawDodge = derived.dodge * (1 + p.dodgeMult / 100);
-            const totalDodge = Math.floor(diminishingReturns(rawDodge, BALANCE.combat.dodgeCap, BALANCE.combat.dodgeK)) + (runState.masteryFlatDodge || 0);
-            const totalBlock = Math.floor(diminishingReturns(derived.block, BALANCE.combat.blockCap, BALANCE.combat.blockK)) + (runState.masteryFlatBlock || 0);
-            const totalLifesteal = diminishingReturns((p.lifesteal || 0) + (runState.masteryFlatLifesteal || 0), BALANCE.combat.lifestealCap, BALANCE.combat.lifestealK);
+            const totalCrit = Math.floor(diminishingReturns(rawCrit, BALANCE.combat.critCap, BALANCE.combat.critK)) + (runState.masteryFlatCrit || 0) + critBonus + trinityFlat;
+            const rawDodge = derived.dodge * (1 + (p.dodgeMult || 0) / 100);
+            let dodgeFlat = (runState.masteryFlatDodge || 0) + trinityFlat;
+            if (t('reflejos_felinos') > 0) {
+                dodgeFlat += TALENT_POOL.defensivo.find(x => x.id === 'reflejos_felinos').levels[t('reflejos_felinos') - 1].flatDodge;
+            }
+            const totalDodge = Math.floor(diminishingReturns(rawDodge, BALANCE.combat.dodgeCap, BALANCE.combat.dodgeK)) + dodgeFlat;
+            const totalBlock = Math.floor(diminishingReturns(derived.block, BALANCE.combat.blockCap, BALANCE.combat.blockK)) + (runState.masteryFlatBlock || 0) + trinityFlat;
+            let totalLifesteal = diminishingReturns(((p.lifesteal || 0) + (runState.masteryFlatLifesteal || 0)), BALANCE.combat.lifestealCap, BALANCE.combat.lifestealK);
+            if (t('asalto_vampirico') > 0) {
+                const av = TALENT_POOL.sustain.find(x => x.id === 'asalto_vampirico').levels[t('asalto_vampirico') - 1];
+                totalLifesteal = diminishingReturns(totalLifesteal + av.flatLifesteal, BALANCE.combat.lifestealCap, BALANCE.combat.lifestealK);
+            }
 
             document.getElementById('player-crit').textContent = totalCrit + '%';
             document.getElementById('player-block').textContent = totalBlock + '%';
             document.getElementById('player-dodge').textContent = totalDodge + '%';
 
             // Advanced stats with diminishing returns
-            const effPen = diminishingReturns(p.pen || 0, BALANCE.combat.penCap, BALANCE.combat.penK) + (runState.masteryFlatPen || 0);
-            const effCritDmg = diminishingReturns(p.critDamage || 0, BALANCE.combat.critDmgCap, BALANCE.combat.critDmgK);
-            const effBossDmg = diminishingReturns(p.bossDamage || 0, BALANCE.combat.bossDmgCap, BALANCE.combat.bossDmgK);
-            const effThorns = diminishingReturns(p.thorns || 0, BALANCE.combat.thornsCap, BALANCE.combat.thornsK);
-            const effHpRegen = diminishingReturns(p.hpRegen || 0, 15, 150);
-            const effSoulBonus = diminishingReturns(p.soulBonus || 0, 100, 200);
+            let penFlat = (runState.masteryFlatPen || 0);
+            if (t('golpe_penetrante') > 0) {
+                penFlat += TALENT_POOL.ofensivo.find(x => x.id === 'golpe_penetrante').levels[t('golpe_penetrante') - 1].penPct;
+            }
+            const effPen = diminishingReturns((p.pen || 0), BALANCE.combat.penCap, BALANCE.combat.penK) + penFlat;
+            const effCritDmg = diminishingReturns((p.critDamage || 0), BALANCE.combat.critDmgCap, BALANCE.combat.critDmgK);
+            const effBossDmg = diminishingReturns((p.bossDamage || 0), BALANCE.combat.bossDmgCap, BALANCE.combat.bossDmgK);
+            const effThorns = diminishingReturns((p.thorns || 0), BALANCE.combat.thornsCap, BALANCE.combat.thornsK);
+            const effHpRegen = diminishingReturns((p.hpRegen || 0), 15, 150);
+            const effSoulBonus = diminishingReturns((p.soulBonus || 0), 100, 200);
 
             document.getElementById('player-pen').textContent = effPen.toFixed(1) + '%';
             document.getElementById('player-crit-dmg').textContent = '+' + (BALANCE.combat.critDmgBase + effCritDmg).toFixed(1) + '%';
@@ -1693,6 +2530,51 @@
                 document.getElementById('enemy-def').textContent = e.def;
                 document.getElementById('enemy-agi').textContent = e.agi;
                 document.getElementById('enemy-card').className = 'fighter enemy' + (e.isBoss ? ' boss' : '');
+            }
+
+            // T16 — Render enemy debuffs
+            const debuffsContainer = document.getElementById('enemy-debuffs');
+            if (debuffsContainer) {
+                const debuffIcons = {
+                    hemorragia: '🩸', hoja_toxica: '☠️', marca_muerte: '💀',
+                    furia_ardiente: '🔥', desgaste: '📉',
+                };
+                const debuffNames = {
+                    hemorragia: 'Sangrado', hoja_toxica: 'Tóxico', marca_muerte: 'Vulnerabilidad',
+                    furia_ardiente: 'Furia', desgaste: 'Desgaste',
+                };
+                if (runState.enemyDebuffs.length > 0) {
+                    let html = '';
+                    for (const db of runState.enemyDebuffs) {
+                        const icon = debuffIcons[db.id] || '⚡';
+                        const name = debuffNames[db.id] || db.id;
+                        const pct = db.duration > 0 ? Math.max(0, (db.ticksLeft / db.duration) * 100) : 0;
+                        const extra = db.type === 'stat_drain' && db.stack ? ` x${db.stack}` : '';
+                        html += `<div class="debuff-badge ${db.type}">`;
+                        html += `<span class="debuff-icon">${icon}</span>`;
+                        html += `<span class="debuff-name">${name}${extra}</span>`;
+                        html += `<div class="debuff-bar"><div class="debuff-bar-fill" style="width:${pct}%"></div></div>`;
+                        html += `</div>`;
+                    }
+                    debuffsContainer.innerHTML = html;
+                } else {
+                    debuffsContainer.innerHTML = '';
+                }
+            }
+
+            // Active talents display
+            const talentsRow = document.getElementById('talents-row');
+            const talentKeys = Object.keys(tl);
+            if (talentKeys.length === 0) {
+                talentsRow.innerHTML = '';
+            } else {
+                talentsRow.innerHTML = talentKeys.map(id => {
+                    const talent = findTalent(id);
+                    if (!talent) return '';
+                    const level = tl[id];
+                    const icon = talent.icon || POOL_ICONS[talent.pool] || '❓';
+                    return `<div class="talent-badge" data-pool="${talent.pool}"><span class="talent-icon">${icon}</span><span class="talent-name">${talent.label}</span><span class="talent-level">Lv.${level}</span></div>`;
+                }).join('');
             }
 
             document.getElementById('souls-count').textContent = metaState.souls;
