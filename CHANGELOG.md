@@ -2,6 +2,18 @@
 
 Todos los cambios notables en este proyecto.
 
+## [0.2.5] - 2026-05-19
+
+### Cambiado
+- **Crit chance rework**: el stat de crit del equipo ahora se convierte linealmente con ratio 13 (estilo WoW). +65 crit = 5%. Ya no es multiplicador sobre base diminuto.
+- **Meta upgrade crit**: ahora da +2% por nivel (antes +1%) y se aplica **post-DR** (flat), igual que la maestría.
+- **Crit base**: cambiado de 1% a 0%. Sin mejoras ni equipo, no hay crítico.
+- **Talento Precise**: descripción genérica "Aumenta la prob. de golpe crítico" (sin revelar el +15 flat).
+
+### Corregido
+- **Talentos se resetean entre runs**: las habilidades de nivel 5/10/15/20 ahora viven en `runState.abilities` (RAM) en vez de `metaState.abilities` (localStorage). Se pierden al morir/reiniciar y se eligen de nuevo cada run.
+- **Orden UI**: bloque de almas movido justo antes de Mejoras Permanentes.
+
 ## [Unreleased]
 
 ### Cambiado

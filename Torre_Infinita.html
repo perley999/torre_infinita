@@ -505,12 +505,6 @@
             <div class="log-entry system">Bienvenido a la Torre Infinita. ¡Pulsa Iniciar!</div>
         </div>
 
-        <!-- Souls -->
-        <div class="souls-display">
-            <span class="label">💀 Almas</span>
-            <span class="value" id="souls-count">0</span>
-        </div>
-
         <!-- Equipment -->
         <div class="equipment-section locked" id="equip-section">
             <h2>🎒 Equipo (Se desbloquea tras superar piso 10)</h2>
@@ -530,6 +524,12 @@
                 <div class="acc-stat def"> <span class="label">🛡️ DEF</span> <span id="acc-def">+0</span>  </div>
                 <div class="acc-stat agi"> <span class="label">🏃 AGI</span> <span id="acc-agi">+0</span>  </div>
             </div>
+        </div>
+
+        <!-- Souls -->
+        <div class="souls-display">
+            <span class="label">💀 Almas</span>
+            <span class="value" id="souls-count">0</span>
         </div>
 
         <!-- Meta Upgrades -->
@@ -627,7 +627,7 @@
                 def:  { baseCost: 15, scale: 1.5, percent: 0.05, label: '+5% DEF', icon: '🛡️' },
                 agi:  { baseCost: 20, scale: 1.6, percent: 0.02, label: '+2% AGI', icon: '🏃' },
                 souls:{ baseCost: 25, scale: 1.7, flat: 1, percent: 0, label: '+1 alma/piso', icon: '💀', maxLevel: 10 },
-                crit: { baseCost: 30, scale: 1.8, flat: 0, percent: 0.01, label: '+1% Crítico', icon: '🎯', maxLevel: 15 },
+                crit: { baseCost: 30, scale: 1.8, flat: 0, percent: 0.02, label: '+2% Crítico', icon: '🎯', maxLevel: 15 },
                 drop: { baseCost: 40, scale: 2.0, flat: 0, percent: 0.05, label: '+5% Drop', icon: '🎁', maxLevel: 10 },
             },
 
@@ -722,7 +722,6 @@
             maxFloor: 0,
             unlockedEquipment: false,
             equipment: { weapon: null, armor: null, ring: null },
-            abilities: [],
             upgrades: {},
             bossAttempted: [], // pisos de jefe YA intentados (persistente entre runs)
             bossStats: {},    // stats guardadas del PRIMER intento de cada jefe
@@ -742,7 +741,6 @@
                 maxFloor: metaState.maxFloor,
                 unlockedEquipment: metaState.unlockedEquipment,
                 equipment: metaState.equipment,
-                abilities: metaState.abilities,
                 upgrades: {},
                 bossAttempted: metaState.bossAttempted,
                 bossStats: metaState.bossStats,
@@ -770,7 +768,6 @@
                 metaState.maxFloor = data.maxFloor ?? 0;
                 metaState.unlockedEquipment = data.unlockedEquipment ?? false;
                 metaState.equipment = data.equipment ?? { weapon: null, armor: null, ring: null };
-                metaState.abilities = data.abilities ?? [];
                 metaState.bossAttempted = data.bossAttempted ?? [];
                 metaState.bossStats = data.bossStats ?? {};
                 if (data.upgrades) {
@@ -794,7 +791,6 @@
             metaState.maxFloor = 0;
             metaState.unlockedEquipment = false;
             metaState.equipment = { weapon: null, armor: null, ring: null };
-            metaState.abilities = [];
             metaState.bossAttempted = [];
             metaState.bossStats = {};
             for (const key of Object.keys(metaState.upgrades)) {
@@ -830,6 +826,7 @@
             pendingChoice: null,
             furyCounter: 0,
             toughCounter: 0,
+            abilities: [], // Talentos activos en esta run (se resetean al morir/reiniciar)
         };
 
         // ============================================
@@ -847,7 +844,7 @@
             10: [
                 { id: 'counter', label: 'Contraataque', desc: '20% prob de devolver 50% del daño recibido.' },
                 { id: 'vital_shield', label: 'Escudo Vital', desc: 'Al entrar, escudo = 10% HP máximo.' },
-                { id: 'precise', label: 'Golpe Preciso', desc: '+15% probabilidad de crítico.' },
+                { id: 'precise', label: 'Golpe Preciso', desc: 'Aumenta la prob. de golpe crítico.' },
             ],
             15: [
                 { id: 'brutal', label: 'Golpe Brutal', desc: '10% probabilidad de hacer 3x daño.' },
@@ -903,8 +900,8 @@
         function getDerivedStats(atk, def, agi) {
             const c = BALANCE.combat;
             // Diminishing returns: cap × (stat / (stat + K))
-            // Crit base is now flat 1% (no longer derived from ATK)
-            const crit = 1;
+            // Crit base is now 0% (no longer derived from ATK)
+            const crit = 0;
             const block = Math.floor(c.blockCap * (def / (def + c.blockK)));
             const dodge = Math.floor(c.dodgeCap * (agi / (agi + c.dodgeK)));
             return { crit, block, dodge };
@@ -953,11 +950,11 @@
             agi *= (1 + u.agi.percent * u.agi.level);
 
             // 3. Passive abilities
-            if (metaState.abilities.includes('domination')) {
+            if (runState.abilities.includes('domination')) {
                 hp *= 1.15; atk *= 1.15; def *= 1.15; agi *= 1.15;
             }
-            if (metaState.abilities.includes('passive_frenzy')) agi *= 1.2;
-            if (metaState.abilities.includes('unstoppable')) { agi *= 1.3; }
+            if (runState.abilities.includes('passive_frenzy')) agi *= 1.2;
+            if (runState.abilities.includes('unstoppable')) { agi *= 1.3; }
 
             return {
                 maxHp: Math.floor(hp),
@@ -965,7 +962,7 @@
                 def: Math.floor(def),
                 agi: Math.floor(agi),
                 lifesteal: equipLifesteal,
-                critMult: equipCritMult,
+                critRating: equipCritMult, // Rating de crit del equipo (se convierte a % con ratio 13)
                 dodgeMult: equipDodgeMult,
                 pen: equipPen,
                 critDamage: equipCritDmg,
@@ -1123,7 +1120,7 @@
             p.atk = stats.atk;
             p.def = stats.def;
             p.agi = stats.agi;
-            p.critMult = stats.critMult;
+            p.critRating = stats.critRating;
             p.dodgeMult = stats.dodgeMult;
             p.lifesteal = stats.lifesteal;
             p.pen = stats.pen;
@@ -1218,7 +1215,7 @@
             };
 
             // Escudo Vital
-            if (metaState.abilities.includes('vital_shield')) {
+            if (runState.abilities.includes('vital_shield')) {
                 p.maxHp += Math.floor(stats.maxHp * 0.1);
                 p.hp += Math.floor(stats.maxHp * 0.1);
             }
@@ -1237,11 +1234,12 @@
             const p = runState.player;
             const e = runState.enemy;
             const derived = getDerivedStats(p.atk, p.def, p.agi);
+            // Equipment crit rating converts to % with ratio 13 (linear conversion)
+            const equipCritPct = (p.critRating || 0) / 13;
+            const baseCrit = derived.crit + equipCritPct;
+            const rawCrit = baseCrit + (runState.abilities.includes('precise') ? 15 : 0);
             const critBonus = metaState.upgrades.crit.level * metaState.upgrades.crit.percent * 100;
-            // Equipment multipliers apply over base derived stats
-            const baseCrit = derived.crit + critBonus;
-            const rawCrit = baseCrit * (1 + p.critMult / 100) + (metaState.abilities.includes('precise') ? 15 : 0);
-            const totalCrit = Math.floor(diminishingReturns(rawCrit, BALANCE.combat.critCap, BALANCE.combat.critK)) + (runState.masteryFlatCrit || 0);
+            const totalCrit = Math.floor(diminishingReturns(rawCrit, BALANCE.combat.critCap, BALANCE.combat.critK)) + (runState.masteryFlatCrit || 0) + critBonus;
             const baseDodge = derived.dodge;
             const rawDodge = baseDodge * (1 + p.dodgeMult / 100);
             const totalDodge = Math.floor(diminishingReturns(rawDodge, BALANCE.combat.dodgeCap, BALANCE.combat.dodgeK)) + (runState.masteryFlatDodge || 0);
@@ -1290,8 +1288,8 @@
                 p.attackTimer = speedToInterval(p.agi);
                 
                 let attacks = 1;
-                if (Math.random() < 0.15 && metaState.abilities.includes('double_hit')) attacks = 2;
-                if (Math.random() < 0.10 && metaState.abilities.includes('frenzy')) attacks = 3;
+                if (Math.random() < 0.15 && runState.abilities.includes('double_hit')) attacks = 2;
+                if (Math.random() < 0.10 && runState.abilities.includes('frenzy')) attacks = 3;
 
                 for (let i = 0; i < attacks; i++) {
                     // Apply penetration: ignore % of enemy DEF
@@ -1299,7 +1297,7 @@
                     let dmg = calcDamage(p.atk, effectiveDef);
                     let type = 'normal';
                     
-                    if (isFirstAttack && metaState.abilities.includes('first_strike')) dmg = Math.floor(dmg * 1.25);
+                    if (isFirstAttack && runState.abilities.includes('first_strike')) dmg = Math.floor(dmg * 1.25);
                     // Crit: base 1.5x + bonus from equipment (capped at 650% total = 6.5x)
                     if (Math.random() * 100 < totalCrit) {
                         const critMult = 1.5 + effCritDmg / 100; // 1.5 base + up to 6.0 from gear
@@ -1318,8 +1316,8 @@
                             spawnFloat('enemy-floats', 'FURIA!', 'crit');
                         }
                     }
-                    if (metaState.abilities.includes('execute') && e.hp < e.maxHp * 0.2) dmg *= 2;
-                    if (metaState.abilities.includes('brutal') && Math.random() < 0.10) { dmg *= 3; type = 'crit'; }
+                    if (runState.abilities.includes('execute') && e.hp < e.maxHp * 0.2) dmg *= 2;
+                    if (runState.abilities.includes('brutal') && Math.random() < 0.10) { dmg *= 3; type = 'crit'; }
                     // Boss damage bonus
                     if (e.isBoss && effBossDmg > 0) {
                         dmg = Math.floor(dmg * (1 + effBossDmg / 100));
@@ -1390,7 +1388,7 @@
                 }
 
                 // Contraataque
-                if (metaState.abilities.includes('counter') && Math.random() < 0.20) {
+                if (runState.abilities.includes('counter') && Math.random() < 0.20) {
                     const counterDmg = Math.floor(dmg * 0.5);
                     e.hp -= counterDmg;
                     spawnFloat('enemy-floats', `-${counterDmg} (C)`, 'crit');
@@ -1498,7 +1496,7 @@
             runState.pendingChoice = 'ability';
             const pool = ABILITY_POOLS[runState.level];
             renderChoices(`¡Habilidad de Nivel ${runState.level}!`, 'Elige una habilidad especial:', pool.map(a => ({
-                label: a.label, desc: a.desc, action: () => { metaState.abilities.push(a.id); closeChoice(); }
+                label: a.label, desc: a.desc, action: () => { runState.abilities.push(a.id); closeChoice(); }
             })));
         }
 
@@ -1602,6 +1600,7 @@
             if (runState.active) return;
             runState.active = true; runState.floor = 1; runState.level = 1; runState.xp = 0; runState.xpToNext = BALANCE.levelUp.xpBase;
             runState.runBonuses = { hp: 0, atk: 0, def: 0, agi: 0 };
+            runState.abilities = []; // Talentos se resetean cada run
             document.getElementById('combat-log').innerHTML = '';
             if (metaState.unlockedEquipment) {
                 document.getElementById('equip-section').classList.remove('locked');
@@ -1617,6 +1616,7 @@
             runState.active = false; runState.floor = 1; runState.enemy = null;
             runState.furyCounter = 0;
             runState.toughCounter = 0;
+            runState.abilities = []; // Talentos se resetean al reiniciar
             document.getElementById('combat-log').innerHTML = '';
             addLog('🔄 Run reiniciada', 'system');
             render(); updateButtons();
@@ -1651,10 +1651,11 @@
             document.getElementById('player-atk').textContent = p.atk;
             document.getElementById('player-def').textContent = p.def;
             document.getElementById('player-agi').textContent = p.agi;
+            // Equipment crit rating converts to % with ratio 13 (linear conversion)
+            const equipCritPct = (p.critRating || 0) / 13;
+            const rawCrit = derived.crit + equipCritPct + (runState.abilities.includes('precise') ? 15 : 0);
             const critBonus = metaState.upgrades.crit.level * metaState.upgrades.crit.percent * 100;
-            // Apply diminishing returns consistently with combatTick
-            const rawCrit = (derived.crit + critBonus) * (1 + p.critMult / 100) + (metaState.abilities.includes('precise') ? 15 : 0);
-            const totalCrit = Math.floor(diminishingReturns(rawCrit, BALANCE.combat.critCap, BALANCE.combat.critK)) + (runState.masteryFlatCrit || 0);
+            const totalCrit = Math.floor(diminishingReturns(rawCrit, BALANCE.combat.critCap, BALANCE.combat.critK)) + (runState.masteryFlatCrit || 0) + critBonus;
             const rawDodge = derived.dodge * (1 + p.dodgeMult / 100);
             const totalDodge = Math.floor(diminishingReturns(rawDodge, BALANCE.combat.dodgeCap, BALANCE.combat.dodgeK)) + (runState.masteryFlatDodge || 0);
             const totalBlock = Math.floor(diminishingReturns(derived.block, BALANCE.combat.blockCap, BALANCE.combat.blockK)) + (runState.masteryFlatBlock || 0);
