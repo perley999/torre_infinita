@@ -2,6 +2,16 @@
 
 Todos los cambios notables en este proyecto.
 
+## [0.3.1] - 2026-05-20
+
+### Eliminado
+- **Thorns (espinas)**: removido completamente del sistema de equipo (stat pools, budgetMult, caps, calcIlvl, combate, UI)
+- **Soul Bonus del equipo**: removido de pools de anillo, budgetMult, calcIlvl, cálculo de almas al morir, UI. La mejora permanente de almas por piso (`metaUpgrades.souls`) se conserva intacta
+
+### Cambiado
+- **Anillo**: HP removido del pool de stats primarios (ahora solo ATK, DEF, AGI)
+- **Maestría Regenerativa**: cambió de flat (+5/+10/+15 HP cada 2s) a porcentaje (+5%/+7.5%/+10% del HP máximo cada 2s)
+
 ## [0.3.0] - 2026-05-19
 
 ### Añadido
