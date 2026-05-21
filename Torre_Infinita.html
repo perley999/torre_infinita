@@ -2658,6 +2658,14 @@
             pendingEquipOldItem = null;
             pendingEquipNewItem = null;
 
+            // Training mode: no floor up, no talents, just increment counter
+            if (runState.trainingMode) {
+                runState.enemiesDefeated++;
+                runState.furiaStacks = 0;
+                checkLevelUp();
+                return;
+            }
+
             // Continuar la run (floor++ y checkLevelUp se difirieron)
             const prevFloor = runState.floor;
             runState.floor++;
