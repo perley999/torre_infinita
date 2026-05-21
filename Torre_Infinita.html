@@ -788,7 +788,10 @@
             <button class="control-btn start" id="btn-start" onclick="startRun()">Iniciar Run</button>
             <button class="control-btn restart" id="btn-restart" onclick="restartRun()" disabled>Reiniciar</button>
         </div>
-        <div class="controls">
+        <div class="controls" id="training-controls" style="display: none;">
+            <button class="control-btn training" id="btn-training-end" onclick="endTraining()">⏹️ Terminar Entrenamiento</button>
+        </div>
+        <div class="controls" id="training-start-controls">
             <button class="control-btn training" id="btn-training" onclick="showTrainingModal()" disabled>🏋️ Entrenamiento</button>
         </div>
         <div style="text-align: center; margin-top: 4px;">
@@ -2393,6 +2396,7 @@
                 runState.enemiesDefeated = 0;
                 render();
                 saveGame();
+                updateButtons();
                 return;
             }
 
@@ -2715,6 +2719,35 @@
             updateButtons();
         }
 
+        function endTraining() {
+            if (!runState.trainingMode) return;
+            if (combatLoop) clearInterval(combatLoop);
+            combatLoop = null;
+            runState.active = false;
+
+            // Calculate souls reward (25% of normal)
+            const floor = runState.trainingFloor;
+            let souls = Math.floor(floor * BALANCE.souls.baseMult + (floor * metaState.upgrades.souls.level * metaState.upgrades.souls.flat));
+            souls = Math.floor(souls * 0.25);
+            if (souls > 0) {
+                // Maestría Afortunada: chance de duplicar almas
+                if (runState.masteryFortuneChance > 0 && Math.random() * 100 < runState.masteryFortuneChance) {
+                    souls = Math.floor(souls * 2);
+                    addLog('🍀 ¡Maestría Afortunada duplica las almas!', 'loot');
+                }
+                metaState.souls += souls;
+                addLog(`✅ Entrenamiento terminado. Enemigos derrotados: ${runState.enemiesDefeated}. +${souls} almas.`, 'victory');
+            } else {
+                addLog(`✅ Entrenamiento terminado. Enemigos derrotados: ${runState.enemiesDefeated}.`, 'victory');
+            }
+
+            runState.trainingMode = false;
+            runState.enemiesDefeated = 0;
+            render();
+            saveGame();
+            updateButtons();
+        }
+
         function startRun() {
             if (runState.active) return;
             runState.active = true; runState.floor = 1;
@@ -3017,6 +3050,9 @@
             document.getElementById('btn-restart').disabled = !runState.active;
             const btnTraining = document.getElementById('btn-training');
             btnTraining.disabled = !metaState.unlockedTraining || runState.active;
+            // Show/hide training controls based on training mode
+            document.getElementById('training-controls').style.display = runState.trainingMode ? 'flex' : 'none';
+            document.getElementById('training-start-controls').style.display = runState.trainingMode ? 'none' : 'flex';
         }
 
         // ============================================
