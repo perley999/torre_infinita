@@ -2382,16 +2382,22 @@
             runState.active = false;
 
             if (runState.trainingMode) {
-                // Training mode: 25% souls, no maxFloor update, end session
-                let souls = Math.floor(runState.trainingFloor * BALANCE.souls.baseMult + (runState.trainingFloor * metaState.upgrades.souls.level * metaState.upgrades.souls.flat));
-                souls = Math.floor(souls * 0.25); // 25% reward
-                // Maestría Afortunada: chance de duplicar almas
-                if (runState.masteryFortuneChance > 0 && Math.random() * 100 < runState.masteryFortuneChance) {
-                    souls = Math.floor(souls * 2);
-                    addLog('🍀 ¡Maestría Afortunada duplica las almas!', 'loot');
+                // Training mode: 25% souls per enemy, no maxFloor update, end session
+                const killed = runState.enemiesDefeated;
+                if (killed > 0) {
+                    let soulsPerEnemy = Math.floor(runState.trainingFloor * BALANCE.souls.baseMult + (runState.trainingFloor * metaState.upgrades.souls.level * metaState.upgrades.souls.flat));
+                    soulsPerEnemy = Math.floor(soulsPerEnemy * 0.25);
+                    let totalSouls = soulsPerEnemy * killed;
+                    // Maestría Afortunada: chance de duplicar almas
+                    if (runState.masteryFortuneChance > 0 && Math.random() * 100 < runState.masteryFortuneChance) {
+                        totalSouls = Math.floor(totalSouls * 2);
+                        addLog('🍀 ¡Maestría Afortunada duplica las almas!', 'loot');
+                    }
+                    metaState.souls += totalSouls;
+                    addLog(`💀 Entrenamiento terminado. Enemigos derrotados: ${killed}. +${totalSouls} almas.`, 'death');
+                } else {
+                    addLog(`💀 Entrenamiento terminado. No derrotaste ningún enemigo.`, 'death');
                 }
-                metaState.souls += souls;
-                addLog(`💀 Entrenamiento terminado. Enemigos derrotados: ${runState.enemiesDefeated}. +${souls} almas.`, 'death');
                 runState.trainingMode = false;
                 runState.enemiesDefeated = 0;
                 render();
@@ -2725,20 +2731,22 @@
             combatLoop = null;
             runState.active = false;
 
-            // Calculate souls reward (25% of normal)
-            const floor = runState.trainingFloor;
-            let souls = Math.floor(floor * BALANCE.souls.baseMult + (floor * metaState.upgrades.souls.level * metaState.upgrades.souls.flat));
-            souls = Math.floor(souls * 0.25);
-            if (souls > 0) {
+            const killed = runState.enemiesDefeated;
+            if (killed > 0) {
+                // Souls per enemy = 25% of normal floor reward
+                const floor = runState.trainingFloor;
+                let soulsPerEnemy = Math.floor(floor * BALANCE.souls.baseMult + (floor * metaState.upgrades.souls.level * metaState.upgrades.souls.flat));
+                soulsPerEnemy = Math.floor(soulsPerEnemy * 0.25);
+                let totalSouls = soulsPerEnemy * killed;
                 // Maestría Afortunada: chance de duplicar almas
                 if (runState.masteryFortuneChance > 0 && Math.random() * 100 < runState.masteryFortuneChance) {
-                    souls = Math.floor(souls * 2);
+                    totalSouls = Math.floor(totalSouls * 2);
                     addLog('🍀 ¡Maestría Afortunada duplica las almas!', 'loot');
                 }
-                metaState.souls += souls;
-                addLog(`✅ Entrenamiento terminado. Enemigos derrotados: ${runState.enemiesDefeated}. +${souls} almas.`, 'victory');
+                metaState.souls += totalSouls;
+                addLog(`✅ Entrenamiento terminado. Enemigos derrotados: ${killed}. +${totalSouls} almas.`, 'victory');
             } else {
-                addLog(`✅ Entrenamiento terminado. Enemigos derrotados: ${runState.enemiesDefeated}.`, 'victory');
+                addLog('✅ Entrenamiento terminado. No derrotaste ningún enemigo.', 'system');
             }
 
             runState.trainingMode = false;
