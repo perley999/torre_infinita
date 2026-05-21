@@ -1109,6 +1109,7 @@
             runState.xpToNext = BALANCE.levelUp.xpBase;
             runState.runBonuses = { hp: 0, atk: 0, def: 0, agi: 0 };
             runState.enemy = null;
+            runState.pendingSouls = 0;
             document.getElementById('combat-log').innerHTML = '';
             document.getElementById('equip-section').classList.add('locked');
             document.querySelector('#equip-section h2').textContent = '🎒 Equipo (Se desbloquea tras superar piso 10)';
@@ -1137,6 +1138,7 @@
             vitalShield: 0, // Escudo Vital acumulado (persiste entre combates, se resetea al morir)
             piedraShield: { amount: 0, ticksLeft: 0 }, // Escudo temporal de Piel de Piedra (3s)
             shieldMax: 0, // Para calcular el % de la barra de escudo
+            pendingSouls: 0, // Almas acumuladas por enemigo (se suman al morir/terminar)
             // Training mode
             trainingMode: false,
             trainingFloor: 30,
@@ -2320,6 +2322,15 @@
             runState.xp += xpGain;
             addLog(`+${xpGain} XP`, 'system');
 
+            // Souls pending (accumulate, add to total on death/end training)
+            const floor = runState.trainingMode ? runState.trainingFloor : runState.floor;
+            let soulsPerKill = Math.floor(floor * BALANCE.souls.baseMult + (floor * metaState.upgrades.souls.level * metaState.upgrades.souls.flat));
+            if (runState.trainingMode) {
+                soulsPerKill = Math.floor(soulsPerKill * 0.25); // 25% in training
+            }
+            runState.pendingSouls += soulsPerKill;
+            addLog(`+${soulsPerKill} 💀 (pendientes)`, 'system');
+
             // Drop de equipo
             let equipPending = false;
             if (metaState.unlockedEquipment) {
@@ -2382,44 +2393,44 @@
             runState.active = false;
 
             if (runState.trainingMode) {
-                // Training mode: 25% souls per enemy, no maxFloor update, end session
-                const killed = runState.enemiesDefeated;
-                if (killed > 0) {
-                    let soulsPerEnemy = Math.floor(runState.trainingFloor * BALANCE.souls.baseMult + (runState.trainingFloor * metaState.upgrades.souls.level * metaState.upgrades.souls.flat));
-                    soulsPerEnemy = Math.floor(soulsPerEnemy * 0.25);
-                    let totalSouls = soulsPerEnemy * killed;
+                // Training mode: use accumulated pending souls, no maxFloor update
+                const totalSouls = runState.pendingSouls;
+                if (totalSouls > 0) {
                     // Maestría Afortunada: chance de duplicar almas
+                    let finalSouls = totalSouls;
                     if (runState.masteryFortuneChance > 0 && Math.random() * 100 < runState.masteryFortuneChance) {
-                        totalSouls = Math.floor(totalSouls * 2);
+                        finalSouls = Math.floor(totalSouls * 2);
                         addLog('🍀 ¡Maestría Afortunada duplica las almas!', 'loot');
                     }
-                    metaState.souls += totalSouls;
-                    addLog(`💀 Entrenamiento terminado. Enemigos derrotados: ${killed}. +${totalSouls} almas.`, 'death');
+                    metaState.souls += finalSouls;
+                    addLog(`💀 Entrenamiento terminado. Enemigos derrotados: ${runState.enemiesDefeated}. +${finalSouls} almas.`, 'death');
                 } else {
                     addLog(`💀 Entrenamiento terminado. No derrotaste ningún enemigo.`, 'death');
                 }
                 runState.trainingMode = false;
                 runState.enemiesDefeated = 0;
+                runState.pendingSouls = 0;
                 render();
                 saveGame();
                 updateButtons();
                 return;
             }
 
-            let souls = Math.floor(runState.floor * BALANCE.souls.baseMult + (runState.floor * metaState.upgrades.souls.level * metaState.upgrades.souls.flat));
+            // Tower mode: use accumulated pending souls
+            let totalSouls = runState.pendingSouls;
             // Maestría Afortunada: chance de duplicar almas
             if (runState.masteryFortuneChance > 0 && Math.random() * 100 < runState.masteryFortuneChance) {
-                souls = Math.floor(souls * 2);
+                totalSouls = Math.floor(totalSouls * 2);
                 addLog('🍀 ¡Maestría Afortunada duplica las almas!', 'loot');
             }
-            metaState.souls += souls;
+            metaState.souls += totalSouls;
             metaState.maxFloor = Math.max(metaState.maxFloor, runState.floor);
             // Unlock training mode when reaching floor 30
             if (metaState.maxFloor >= 30 && !metaState.unlockedTraining) {
                 metaState.unlockedTraining = true;
                 addLog('🏋️ ¡Sala de Entrenamiento desbloqueada!', 'victory');
             }
-            addLog(`💀 Caíste en el piso ${runState.floor}. +${souls} almas.`, 'death');
+            addLog(`💀 Caíste en el piso ${runState.floor}. +${totalSouls} almas.`, 'death');
             render();
             saveGame();
         }
@@ -2697,6 +2708,7 @@
             runState.trainingFloor = floor;
             runState.floor = floor;
             runState.enemiesDefeated = 0;
+            runState.pendingSouls = 0;
             runState.level = metaState.heroLevel;
             runState.xp = metaState.heroXp;
             runState.xpToNext = BALANCE.levelUp.xpScale * runState.level;
@@ -2732,25 +2744,23 @@
             runState.active = false;
 
             const killed = runState.enemiesDefeated;
-            if (killed > 0) {
-                // Souls per enemy = 25% of normal floor reward
-                const floor = runState.trainingFloor;
-                let soulsPerEnemy = Math.floor(floor * BALANCE.souls.baseMult + (floor * metaState.upgrades.souls.level * metaState.upgrades.souls.flat));
-                soulsPerEnemy = Math.floor(soulsPerEnemy * 0.25);
-                let totalSouls = soulsPerEnemy * killed;
+            const totalSouls = runState.pendingSouls;
+            if (totalSouls > 0) {
                 // Maestría Afortunada: chance de duplicar almas
+                let finalSouls = totalSouls;
                 if (runState.masteryFortuneChance > 0 && Math.random() * 100 < runState.masteryFortuneChance) {
-                    totalSouls = Math.floor(totalSouls * 2);
+                    finalSouls = Math.floor(totalSouls * 2);
                     addLog('🍀 ¡Maestría Afortunada duplica las almas!', 'loot');
                 }
-                metaState.souls += totalSouls;
-                addLog(`✅ Entrenamiento terminado. Enemigos derrotados: ${killed}. +${totalSouls} almas.`, 'victory');
+                metaState.souls += finalSouls;
+                addLog(`✅ Entrenamiento terminado. Enemigos derrotados: ${killed}. +${finalSouls} almas.`, 'victory');
             } else {
                 addLog('✅ Entrenamiento terminado. No derrotaste ningún enemigo.', 'system');
             }
 
             runState.trainingMode = false;
             runState.enemiesDefeated = 0;
+            runState.pendingSouls = 0;
             render();
             saveGame();
             updateButtons();
@@ -2762,6 +2772,7 @@
             runState.trainingMode = false;
             runState.trainingFloor = 30;
             runState.enemiesDefeated = 0;
+            runState.pendingSouls = 0;
             runState.level = metaState.heroLevel;
             runState.xp = metaState.heroXp;
             runState.xpToNext = BALANCE.levelUp.xpScale * runState.level;
@@ -2796,6 +2807,7 @@
             runState.trainingMode = false;
             runState.trainingFloor = 30;
             runState.enemiesDefeated = 0;
+            runState.pendingSouls = 0;
             runState.furyCounter = 0;
             runState.toughCounter = 0;
             runState.abilities = []; // Talentos se resetean al reiniciar
