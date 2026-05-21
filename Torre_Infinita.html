@@ -511,7 +511,32 @@
         }
         .control-btn.start { background: linear-gradient(135deg, #22c55e, #16a34a); color: white; }
         .control-btn.restart { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
+        .control-btn.training { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; }
         .control-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* Training floor selector */
+        .training-slider {
+            width: 100%; margin: 12px 0;
+            -webkit-appearance: none; appearance: none;
+            height: 8px; background: #2a2a4a; border-radius: 4px; outline: none;
+        }
+        .training-slider::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none;
+            width: 24px; height: 24px; border-radius: 50%;
+            background: #3b82f6; cursor: pointer; border: 2px solid #60a5fa;
+        }
+        .training-slider::-moz-range-thumb {
+            width: 24px; height: 24px; border-radius: 50%;
+            background: #3b82f6; cursor: pointer; border: 2px solid #60a5fa;
+        }
+        .training-floor-display {
+            text-align: center; font-size: 1.5rem; font-weight: 700;
+            color: #60a5fa; margin: 8px 0;
+        }
+        .training-range-labels {
+            display: flex; justify-content: space-between;
+            font-size: 0.75rem; color: #9ca3af; margin-top: 4px;
+        }
 
         /* ============================================
            MODALS
@@ -715,6 +740,11 @@
         <!-- Talent Display -->
         <div class="talents-row" id="talents-row"></div>
 
+        <!-- Training Mode: Enemies Defeated Counter -->
+        <div class="training-counter" id="training-counter" style="display: none; text-align: center; padding: 8px; background: #1a1a2e; border-radius: 8px; border: 1px solid #2a2a4a; margin-bottom: 8px;">
+            <span style="color: #60a5fa; font-size: 0.85rem;">🏋️ Enemigos derrotados: <strong id="training-enemies-count">0</strong></span>
+        </div>
+
         <!-- Log -->
         <div class="combat-log" id="combat-log">
             <div class="log-entry system">Bienvenido a la Torre Infinita. ¡Pulsa Iniciar!</div>
@@ -757,6 +787,9 @@
         <div class="controls">
             <button class="control-btn start" id="btn-start" onclick="startRun()">Iniciar Run</button>
             <button class="control-btn restart" id="btn-restart" onclick="restartRun()" disabled>Reiniciar</button>
+        </div>
+        <div class="controls">
+            <button class="control-btn training" id="btn-training" onclick="showTrainingModal()" disabled>🏋️ Entrenamiento</button>
         </div>
         <div style="text-align: center; margin-top: 4px;">
             <button onclick="resetGame()" style="background: transparent; border: 1px solid #3a2a2a; color: #6b4a4a; padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 0.75rem;">🗑️ Borrar progreso</button>
@@ -818,6 +851,24 @@
                 <button class="choice-btn" onclick="resolveEquipComparison(true)">
                     <span class="title">⚡ Equipar el nuevo</span>
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Training Mode Modal -->
+    <div class="modal-overlay" id="training-overlay">
+        <div class="modal">
+            <h2>🏋️ Sala de Entrenamiento</h2>
+            <p>Elige el nivel de dificultad. Los enemigos escalarán según el piso seleccionado. No hay talentos ni jefes.</p>
+            <div class="training-floor-display" id="training-floor-value">Piso 30</div>
+            <input type="range" class="training-slider" id="training-slider" min="30" max="30" value="30" oninput="updateTrainingSlider()">
+            <div class="training-range-labels">
+                <span id="training-min-label">30</span>
+                <span id="training-max-label">30</span>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 16px;">
+                <button class="modal-close" onclick="startTraining()" style="flex: 1; background: #3b82f6;">Entrar</button>
+                <button class="modal-close" onclick="closeTrainingModal()" style="flex: 1; background: #4a4a6a;">Cancelar</button>
             </div>
         </div>
     </div>
@@ -949,6 +1000,7 @@
             souls: 0,
             maxFloor: 0,
             unlockedEquipment: false,
+            unlockedTraining: false,
             equipment: { weapon: null, armor: null, ring: null },
             upgrades: {},
             bossAttempted: [], // pisos de jefe YA intentados (persistente entre runs)
@@ -971,6 +1023,7 @@
                 souls: metaState.souls,
                 maxFloor: metaState.maxFloor,
                 unlockedEquipment: metaState.unlockedEquipment,
+                unlockedTraining: metaState.unlockedTraining,
                 equipment: metaState.equipment,
                 upgrades: {},
                 bossAttempted: metaState.bossAttempted,
@@ -1001,6 +1054,7 @@
                 metaState.souls = data.souls ?? 0;
                 metaState.maxFloor = data.maxFloor ?? 0;
                 metaState.unlockedEquipment = data.unlockedEquipment ?? false;
+                metaState.unlockedTraining = data.unlockedTraining ?? false;
                 metaState.equipment = data.equipment ?? { weapon: null, armor: null, ring: null };
                 metaState.bossAttempted = data.bossAttempted ?? [];
                 metaState.bossStats = data.bossStats ?? {};
@@ -1020,6 +1074,13 @@
             }
         }
 
+        function checkTrainingUnlock() {
+            if (metaState.maxFloor >= 30 && !metaState.unlockedTraining) {
+                metaState.unlockedTraining = true;
+                saveGame();
+            }
+        }
+
         function resetGame() {
             if (!confirm('¿Seguro que quieres borrar TODO el progreso? Esta acción no se puede deshacer.')) return;
             localStorage.removeItem(SAVE_KEY);
@@ -1027,6 +1088,7 @@
             metaState.souls = 0;
             metaState.maxFloor = 0;
             metaState.unlockedEquipment = false;
+            metaState.unlockedTraining = false;
             metaState.equipment = { weapon: null, armor: null, ring: null };
             metaState.bossAttempted = [];
             metaState.bossStats = {};
@@ -1072,6 +1134,18 @@
             vitalShield: 0, // Escudo Vital acumulado (persiste entre combates, se resetea al morir)
             piedraShield: { amount: 0, ticksLeft: 0 }, // Escudo temporal de Piel de Piedra (3s)
             shieldMax: 0, // Para calcular el % de la barra de escudo
+            // Training mode
+            trainingMode: false,
+            trainingFloor: 30,
+            enemiesDefeated: 0,
+            hasRevived: false,
+            furiaStacks: 0,
+            critMasteryCounter: 0,
+            runeTapCounter: 0,
+            reflejoBonus: 0,
+            spellShieldCounter: 0,
+            segundoAlientoUsed: false,
+            bossesKilledThisRun: 0,
         };
 
         // ============================================
@@ -1674,8 +1748,8 @@
                 }
             }
 
-            // ¿Primer intento contra este jefe (persistente entre runs)?
-            const isBossFloor = runState.floor % 10 === 0;
+            // Training mode: always normal enemies, no bosses
+            const isBossFloor = !runState.trainingMode && runState.floor % 10 === 0;
             const isFirstBossAttempt = isBossFloor
                 && !metaState.bossAttempted.includes(runState.floor);
             if (isFirstBossAttempt) {
@@ -2270,6 +2344,14 @@
 
             if (equipPending) return; // el modal de comparación reanudará después
 
+            // Training mode: no talents, no floor up, just increment counter
+            if (runState.trainingMode) {
+                runState.enemiesDefeated++;
+                runState.furiaStacks = 0;
+                checkLevelUp();
+                return;
+            }
+
             // Talento basado en piso (cada 5 pisos)
             if (runState.floor % 5 === 0) {
                 showTalentChoice(runState.floor);
@@ -2295,6 +2377,25 @@
 
             clearInterval(combatLoop); combatLoop = null;
             runState.active = false;
+
+            if (runState.trainingMode) {
+                // Training mode: 25% souls, no maxFloor update, end session
+                let souls = Math.floor(runState.trainingFloor * BALANCE.souls.baseMult + (runState.trainingFloor * metaState.upgrades.souls.level * metaState.upgrades.souls.flat));
+                souls = Math.floor(souls * 0.25); // 25% reward
+                // Maestría Afortunada: chance de duplicar almas
+                if (runState.masteryFortuneChance > 0 && Math.random() * 100 < runState.masteryFortuneChance) {
+                    souls = Math.floor(souls * 2);
+                    addLog('🍀 ¡Maestría Afortunada duplica las almas!', 'loot');
+                }
+                metaState.souls += souls;
+                addLog(`💀 Entrenamiento terminado. Enemigos derrotados: ${runState.enemiesDefeated}. +${souls} almas.`, 'death');
+                runState.trainingMode = false;
+                runState.enemiesDefeated = 0;
+                render();
+                saveGame();
+                return;
+            }
+
             let souls = Math.floor(runState.floor * BALANCE.souls.baseMult + (runState.floor * metaState.upgrades.souls.level * metaState.upgrades.souls.flat));
             // Maestría Afortunada: chance de duplicar almas
             if (runState.masteryFortuneChance > 0 && Math.random() * 100 < runState.masteryFortuneChance) {
@@ -2303,6 +2404,11 @@
             }
             metaState.souls += souls;
             metaState.maxFloor = Math.max(metaState.maxFloor, runState.floor);
+            // Unlock training mode when reaching floor 30
+            if (metaState.maxFloor >= 30 && !metaState.unlockedTraining) {
+                metaState.unlockedTraining = true;
+                addLog('🏋️ ¡Sala de Entrenamiento desbloqueada!', 'victory');
+            }
             addLog(`💀 Caíste en el piso ${runState.floor}. +${souls} almas.`, 'death');
             render();
             saveGame();
@@ -2545,9 +2651,76 @@
         // ============================================
         // 7. CONTROLES Y RENDER
         // ============================================
+
+        // --- Training Mode Functions ---
+        function showTrainingModal() {
+            if (!metaState.unlockedTraining) return;
+            const overlay = document.getElementById('training-overlay');
+            const slider = document.getElementById('training-slider');
+            const minFloor = 30;
+            const maxFloor = Math.max(minFloor, metaState.maxFloor - 1);
+            slider.min = minFloor;
+            slider.max = maxFloor;
+            slider.value = maxFloor;
+            document.getElementById('training-min-label').textContent = minFloor;
+            document.getElementById('training-max-label').textContent = maxFloor;
+            updateTrainingSlider();
+            overlay.classList.add('visible');
+        }
+
+        function closeTrainingModal() {
+            document.getElementById('training-overlay').classList.remove('visible');
+        }
+
+        function updateTrainingSlider() {
+            const val = document.getElementById('training-slider').value;
+            document.getElementById('training-floor-value').textContent = `Piso ${val}`;
+        }
+
+        function startTraining() {
+            if (runState.active) return;
+            const floor = parseInt(document.getElementById('training-slider').value);
+            closeTrainingModal();
+
+            runState.active = true;
+            runState.trainingMode = true;
+            runState.trainingFloor = floor;
+            runState.floor = floor;
+            runState.enemiesDefeated = 0;
+            runState.level = metaState.heroLevel;
+            runState.xp = metaState.heroXp;
+            runState.xpToNext = BALANCE.levelUp.xpScale * runState.level;
+            runState.runBonuses = { ...metaState.heroBonuses };
+            runState.abilities = [];
+            runState.talentLevels = {};
+            runState.hasRevived = false;
+            runState.furiaStacks = 0;
+            runState.critMasteryCounter = 0;
+            runState.runeTapCounter = 0;
+            runState.reflejoBonus = 0;
+            runState.spellShieldCounter = 0;
+            runState.segundoAlientoUsed = false;
+            runState.bossesKilledThisRun = 0;
+            runState.enemyDebuffs = [];
+            runState.vitalShield = 0;
+            runState.shieldMax = 0;
+            runState.piedraShield = { amount: 0, ticksLeft: 0 };
+            document.getElementById('combat-log').innerHTML = '';
+            if (metaState.unlockedEquipment) {
+                document.getElementById('equip-section').classList.remove('locked');
+                document.querySelector('#equip-section h2').textContent = '🎒 Equipo (Desbloqueado)';
+            }
+            addLog(`🏋️ Entrenamiento iniciado — Piso ${floor}`, 'system');
+            startCombat();
+            updateButtons();
+        }
+
         function startRun() {
             if (runState.active) return;
             runState.active = true; runState.floor = 1;
+            runState.trainingMode = false;
+            runState.trainingFloor = 30;
+            runState.enemiesDefeated = 0;
             runState.level = metaState.heroLevel;
             runState.xp = metaState.heroXp;
             runState.xpToNext = BALANCE.levelUp.xpScale * runState.level;
@@ -2579,6 +2752,9 @@
         function restartRun() {
             if (combatLoop) clearInterval(combatLoop);
             runState.active = false; runState.floor = 1; runState.enemy = null;
+            runState.trainingMode = false;
+            runState.trainingFloor = 30;
+            runState.enemiesDefeated = 0;
             runState.furyCounter = 0;
             runState.toughCounter = 0;
             runState.abilities = []; // Talentos se resetean al reiniciar
@@ -2616,8 +2792,14 @@
         }
 
         function render() {
-            document.getElementById('floor-number').textContent = `Piso ${runState.floor}`;
-            document.getElementById('boss-indicator').style.display = runState.floor % 10 === 0 ? 'block' : 'none';
+            // Training mode header
+            if (runState.trainingMode) {
+                document.getElementById('floor-number').textContent = `🏋️ Entrenamiento — Piso ${runState.floor}`;
+                document.getElementById('boss-indicator').style.display = 'none';
+            } else {
+                document.getElementById('floor-number').textContent = `Piso ${runState.floor}`;
+                document.getElementById('boss-indicator').style.display = runState.floor % 10 === 0 ? 'block' : 'none';
+            }
             
             // Player
             document.getElementById('player-level').textContent = `Nivel ${runState.level}`;
@@ -2752,6 +2934,15 @@
                 }).join('');
             }
 
+            // Training mode counter
+            const trainingCounter = document.getElementById('training-counter');
+            if (runState.trainingMode) {
+                trainingCounter.style.display = 'block';
+                document.getElementById('training-enemies-count').textContent = runState.enemiesDefeated;
+            } else {
+                trainingCounter.style.display = 'none';
+            }
+
             document.getElementById('souls-count').textContent = metaState.souls;
 
             // Accumulated stats from leveling
@@ -2824,6 +3015,8 @@
         function updateButtons() {
             document.getElementById('btn-start').disabled = runState.active;
             document.getElementById('btn-restart').disabled = !runState.active;
+            const btnTraining = document.getElementById('btn-training');
+            btnTraining.disabled = !metaState.unlockedTraining || runState.active;
         }
 
         // ============================================
@@ -3018,6 +3211,7 @@
                 document.querySelector('#equip-section h2').textContent = '🎒 Equipo (Desbloqueado)';
             }
         }
+        checkTrainingUnlock();
         render(); updateButtons();
         if (!localStorage.getItem('torre_tutorial_seen')) showTutorial();
     </script>
