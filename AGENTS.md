@@ -343,7 +343,7 @@ Funciones:
 1. **Display de crit al equipar**: `resolveEquipComparison()` llama `render()` ANTES de `startCombat()`, mostrando crit con equipo viejo por 1 frame. Se corrige en el render siguiente.
 2. **Jefe P10 no tiene boss guardado**: `firstBoss` usa stats fijas, no se guarda en `bossStats` para evitar confusión con el sistema dinámico de P20+.
 3. **Maestría Furiosa**: el contador se resetea solo al hacer el ataque que da el proc. No hay timeout del contador entre pisos.
-4. **Piel de Piedra con escudo activo**: si se recibe otro golpe fuerte antes de que expire el escudo, se reemplaza (no se acumula).
+4. **Piel de Piedra con escudo activo**: si el nuevo escudo es mayor, se reemplaza; si no, solo refresca la duración (3s).
 
 ---
 

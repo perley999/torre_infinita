@@ -105,6 +105,129 @@
 
         .help-btn:hover { background: #3a3a5a; border-color: #a78bfa; }
 
+        .codex-btn {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            width: 32px;
+            height: 32px;
+            background: #2a2a4a;
+            border: 1px solid #3a3a5a;
+            border-radius: 50%;
+            color: #a78bfa;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+        }
+
+        .codex-btn:hover { background: #3a3a5a; border-color: #a78bfa; }
+
+        /* ============================================
+           CODEX MODAL
+           ============================================ */
+        .codex-modal {
+            max-width: 520px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .codex-intro {
+            font-size: 0.85rem;
+            color: #9ca3af;
+            margin: 0 0 12px;
+        }
+
+        .codex-content {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 8px;
+            margin-bottom: 12px;
+        }
+
+        .codex-content::-webkit-scrollbar { width: 6px; }
+        .codex-content::-webkit-scrollbar-track { background: #1a1a2e; border-radius: 3px; }
+        .codex-content::-webkit-scrollbar-thumb { background: #3a3a5a; border-radius: 3px; }
+
+        .codex-block {
+            margin-bottom: 16px;
+        }
+
+        .codex-block-title {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 0;
+            padding: 8px 10px;
+            background: #1a1a2e;
+            border-radius: 6px;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.15s ease;
+        }
+
+        .codex-block-title:hover { background: #2a2a4a; }
+
+        .codex-block-title .arrow {
+            transition: transform 0.2s ease;
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+
+        .codex-block-title.open .arrow { transform: rotate(90deg); }
+
+        .codex-block-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .codex-block-body.open {
+            max-height: 2000px;
+        }
+
+        .codex-talent {
+            margin-bottom: 10px;
+            padding: 6px 8px;
+            background: #1a1a2e;
+            border-radius: 6px;
+        }
+
+        .codex-talent-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #e5e7eb;
+            margin-bottom: 2px;
+        }
+
+        .codex-talent-desc {
+            font-size: 0.8rem;
+            color: #9ca3af;
+            margin-bottom: 4px;
+        }
+
+        .codex-talent-levels {
+            font-size: 0.75rem;
+            color: #6b7280;
+            line-height: 1.5;
+        }
+
+        .codex-talent-levels span {
+            display: block;
+        }
+
+        .codex-talent-note {
+            font-size: 0.75rem;
+            color: #6b7280;
+            font-style: italic;
+            margin-top: 2px;
+        }
+
         /* ============================================
            COMBAT AREA
            ============================================ */
@@ -527,6 +650,7 @@
         <!-- Header -->
         <div class="header">
             <h1>🗼 Torre Infinita</h1>
+            <button class="codex-btn" onclick="showCodex()" title="Talentos">📖</button>
             <button class="help-btn" onclick="showTutorial()" title="Tutorial">?</button>
             <div class="floor-display">
                 <span id="floor-number">Piso 1</span>
@@ -654,6 +778,16 @@
         </div>
     </div>
 
+    <!-- Talent Codex Modal -->
+    <div class="modal-overlay" id="codex-overlay">
+        <div class="modal codex-modal">
+            <h2>📖 Codex de Talentos</h2>
+            <p class="codex-intro">37 talentos en 5 bloques. Se eligen cada 5 pisos (heroico cada 20). Cada talento tiene 3 niveles.</p>
+            <div class="codex-content" id="codex-content"></div>
+            <button class="modal-close" onclick="closeCodex()">Cerrar</button>
+        </div>
+    </div>
+
     <!-- Choice Modal (Level Up / Abilities) -->
     <div class="modal-overlay" id="choice-overlay">
         <div class="modal">
@@ -721,6 +855,7 @@
                 crit: { baseCost: 30, scale: 1.8, flat: 0, percent: 0.02, label: '+2% Crítico', icon: '🎯', maxLevel: 15 },
                 drop: { baseCost: 40, scale: 2.0, flat: 0, percent: 0.05, label: '+5% Drop', icon: '🎁', maxLevel: 10 },
                 pen:  { baseCost: 35, scale: 1.9, flat: 0, percent: 0.01, label: '+1% Penetración', icon: '💥', maxLevel: 10 },
+                critDmg: { baseCost: 30, scale: 1.8, flat: 0, percent: 0.20, label: '+20% Daño Crítico', icon: '💢', maxLevel: 10 },
             },
 
             // --- ENEMIES ---
@@ -758,7 +893,7 @@
                 // Stat pools per slot
                 statPools: {
                     weapon: { primary: ['atk'], secondary: ['crit', 'lifesteal', 'pen', 'critDamage', 'bossDamage'] },
-                    armor: { primary: ['def'], secondary: ['hp', 'dodge', 'hpRegen'] },
+                    armor: { primary: ['def'], secondary: ['hp', 'dodge', 'hpRegen', 'block'] },
                     ring: { primary: ['atk', 'def', 'agi'], secondary: ['hp', 'atk', 'def', 'agi', 'crit', 'dodge', 'pen', 'critDamage', 'bossDamage', 'hpRegen'] },
                 },
                 // Budget multipliers per stat type
@@ -934,6 +1069,9 @@
             abilities: [], // Talentos activos en esta run (se resetean al morir/reiniciar)
             talentLevels: {}, // { talentId: nivel (1, 2, 3) } — rastrea progreso de cada talento
             enemyDebuffs: [], // Debuffs activos sobre el enemigo (DoT, vulnerabilidad, etc.)
+            vitalShield: 0, // Escudo Vital acumulado (persiste entre combates, se resetea al morir)
+            piedraShield: { amount: 0, ticksLeft: 0 }, // Escudo temporal de Piel de Piedra (3s)
+            shieldMax: 0, // Para calcular el % de la barra de escudo
         };
 
         // ============================================
@@ -973,7 +1111,8 @@
                 { id: 'golpe_penetrante', label: 'Golpe Penetrante', desc: 'Tus ataques ignoran % de la DEF del enemigo',
                   levels: [{ penPct: 10 }, { penPct: 20 }, { penPct: 30 }] },
                 { id: 'furia_creciente', label: 'Furia Creciente', desc: 'Cada ataque consecutivo hace +X% daño (máx acumulativo)',
-                  levels: [{ perHit: 5, maxStack: 10 }, { perHit: 10, maxStack: 10 }, { perHit: 15, maxStack: 10 }] },
+                  levels: [{ perHit: 5, maxStack: 10 }, { perHit: 10, maxStack: 10 }, { perHit: 15, maxStack: 10 }],
+                  note: 'Se resetea entre pisos.' },
                 { id: 'eco_combate', label: 'Eco de Combate', desc: 'Probabilidad de replicar el ataque con daño reducido',
                   levels: [{ chance: 15, dmgPct: 40 }, { chance: 20, dmgPct: 50 }, { chance: 25, dmgPct: 60 }] },
             ],
@@ -988,10 +1127,11 @@
                   levels: [{ flatDodge: 8 }, { flatDodge: 12 }, { flatDodge: 16 }] },
                 { id: 'sangre_gigante', label: 'Sangre de Gigante', desc: 'Más HP máximo pero menos velocidad de ataque',
                   levels: [{ hpBonus: 15, speedPenalty: 10 }, { hpBonus: 25, speedPenalty: 15 }, { hpBonus: 35, speedPenalty: 20 }] },
-                { id: 'piel_piedra', label: 'Piel de Piedra', desc: 'Al recibir un golpe >10% HP máx, ganás vida temporal',
-                  levels: [{ shieldPct: 15, duration: 5 }, { shieldPct: 20, duration: 5 }, { shieldPct: 25, duration: 5 }] },
+                { id: 'piel_piedra', label: 'Piel de Piedra', desc: 'Al recibir un golpe ≥15% HP máx, ganás vida temporal (3s)',
+                  levels: [{ shieldPct: 10, duration: 3 }, { shieldPct: 15, duration: 3 }, { shieldPct: 20, duration: 3 }] },
                 { id: 'furia_ardiente', label: 'Furia Ardiente', desc: 'Aura: cada segundo, probabilidad de quemar al enemigo (no se acumula)',
-                  levels: [{ chancePerSec: 20 }, { chancePerSec: 30 }, { chancePerSec: 40 }] },
+                  levels: [{ chancePerSec: 20 }, { chancePerSec: 30 }, { chancePerSec: 40 }],
+                  note: 'Daño fijo (no escala con stats).' },
                 { id: 'escudo_magico', label: 'Escudo Mágico', desc: 'Cada 3 ataques del enemigo, el próximo golpe se reduce el daño',
                   levels: [{ everyN: 3, reduction: 30 }, { everyN: 3, reduction: 40 }, { everyN: 3, reduction: 50 }] },
                 { id: 'veterano_batalla', label: 'Veterano de Batalla', desc: 'Cada 5 pisos completados, +reducción de daño acumulativa',
@@ -1003,7 +1143,8 @@
                 { id: 'hemorragia', label: 'Hemorragia', desc: 'Probabilidad de aplicar sangrado al enemigo',
                   levels: [{ chance: 10, dmgPctPerTick: 1, ticks: 3, maxStack: 3 }, { chance: 15, dmgPctPerTick: 2, ticks: 3, maxStack: 3 }, { chance: 20, dmgPctPerTick: 3, ticks: 3, maxStack: 3 }] },
                 { id: 'marca_muerte', label: 'Marca de Muerte', desc: 'Tus ataques aplican vulnerabilidad: enemigo recibe +daño',
-                  levels: [{ vulnPct: 10, duration: 3 }, { vulnPct: 15, duration: 3 }, { vulnPct: 20, duration: 3 }] },
+                  levels: [{ vulnPct: 10, duration: 3 }, { vulnPct: 15, duration: 3 }, { vulnPct: 20, duration: 3 }],
+                  note: 'Se aplica en CADA golpe (sin chequeo de probabilidad).' },
                 { id: 'golpe_cegador', label: 'Golpe Cegador', desc: 'Probabilidad de cegar al enemigo: falla su próximo ataque',
                   levels: [{ chance: 8 }, { chance: 12 }, { chance: 16 }] },
                 { id: 'hoja_toxica', label: 'Hoja Tóxica', desc: 'Probabilidad de envenenar: DoT + reduce DEF del enemigo',
@@ -1019,7 +1160,8 @@
                 { id: 'toque_runico', label: 'Toque Rúnico', desc: 'Cada 5to ataque, curás % de tu HP máximo',
                   levels: [{ healPct: 5 }, { healPct: 8 }, { healPct: 12 }] },
                 { id: 'asalto_vampirico', label: 'Asalto Vampírico', desc: 'Aumenta robo de vida a TODAS las fuentes de daño',
-                  levels: [{ flatLifesteal: 5 }, { flatLifesteal: 8 }, { flatLifesteal: 12 }] },
+                  levels: [{ flatLifesteal: 5 }, { flatLifesteal: 8 }, { flatLifesteal: 12 }],
+                  note: 'Se suma al robo de vida existente antes de aplicar DR.' },
                 { id: 'fortaleza', label: 'Fortaleza', desc: 'Cuando tu HP <50%, recibes menos daño',
                   levels: [{ dmgReduction: 10 }, { dmgReduction: 20 }, { dmgReduction: 30 }] },
                 { id: 'regeneracion', label: 'Regeneración', desc: 'Regenerás HP cada 2 segundos durante el combate',
@@ -1062,19 +1204,19 @@
 
         const MASTERIES = {
             weapon: [
-                { id: 'crit_mastery', label: 'Maestría Crítica', values: [5, 10, 15] },
-                { id: 'vampiric', label: 'Maestría Vampírica', values: [5, 7.5, 10] },
-                { id: 'fury', label: 'Maestría Furiosa', thresholds: [7, 5, 3] },
+                { id: 'crit_mastery', label: 'Maestría Crítica', desc: 'Aumenta tu probabilidad crítica de forma plana (post-DR)', values: [5, 10, 15] },
+                { id: 'vampiric', label: 'Maestría Vampírica', desc: 'Aumenta el robo de vida de forma plana (post-DR)', values: [5, 7.5, 10] },
+                { id: 'fury', label: 'Maestría Furiosa', desc: 'Cada X ataques, tu golpe hace daño ×2', thresholds: [7, 5, 3] },
             ],
             armor: [
-                { id: 'block_mastery', label: 'Maestría Bloqueo', values: [2.5, 5, 7.5] },
-                { id: 'regen_mastery', label: 'Maestría Regenerativa', values: [5, 7.5, 10] },
-                { id: 'tough_mastery', label: 'Maestría Resistente', values: [5, 10, 15] },
+                { id: 'block_mastery', label: 'Maestría Bloqueo', desc: 'Aumenta tu probabilidad de bloqueo de forma plana (post-DR)', values: [2.5, 5, 7.5] },
+                { id: 'regen_mastery', label: 'Maestría Regenerativa', desc: 'Regenerás % de tu HP máximo cada 2s durante el combate', values: [5, 7.5, 10] },
+                { id: 'tough_mastery', label: 'Maestría Resistente', desc: 'Cada 5 golpes recibidos, reducís % del daño de ese golpe', values: [5, 10, 15] },
             ],
             ring: [
-                { id: 'dodge_mastery', label: 'Maestría Evasiva', values: [2.5, 5, 7.5] },
-                { id: 'pen_mastery', label: 'Maestría Perforante', values: [5, 7.5, 10] },
-                { id: 'fortune_mastery', label: 'Maestría Afortunada', values: [10, 20, 30] },
+                { id: 'dodge_mastery', label: 'Maestría Evasiva', desc: 'Aumenta tu probabilidad de evasión de forma plana (post-DR)', values: [2.5, 5, 7.5] },
+                { id: 'pen_mastery', label: 'Maestría Perforante', desc: 'Aumenta tu penetración de forma plana (post-DR)', values: [5, 7.5, 10] },
+                { id: 'fortune_mastery', label: 'Maestría Afortunada', desc: 'Probabilidad de duplicar las almas obtenidas al morir', values: [10, 20, 30] },
             ],
         };
 
@@ -1416,7 +1558,7 @@
             const pool = statPools[slot];
 
             // Stats según rareza
-            const numSecondary = rarity === 'Poco común' ? 0 : rarity === 'Raro' ? 1 : rarity === 'Épico' ? 1 : 2;
+            const numSecondary = rarity === 'Poco común' ? 0 : rarity === 'Raro' ? 1 : rarity === 'Épico' ? 2 : 3;
             const hasMastery = ['Raro', 'Épico', 'Legendario'].includes(rarity);
             const masteryLevel = rarity === 'Raro' ? 1 : rarity === 'Épico' ? 2 : rarity === 'Legendario' ? 3 : 0;
 
@@ -1465,7 +1607,7 @@
                 render();
                 return true;
             }
-            if (calcIlvl(item) <= calcIlvl(current)) {
+            if (calcIlvl(item) < calcIlvl(current) * 0.8) {
                 return false;
             }
             // Mejor objeto encontrado → mostrar comparación
@@ -1579,15 +1721,21 @@
                 name: eStats.isBoss ? BOSS_NAMES[Math.floor((runState.floor / 10 - 1) % BOSS_NAMES.length)] : ENEMY_NAMES[Math.floor((runState.floor - 1) % ENEMY_NAMES.length)],
             };
 
-            // Escudo Vital
+            // Escudo Vital: persistente entre combates, capped al 35% del HP base
             const tl = runState.talentLevels || {};
             const t = (id) => tl[id] || 0;
             if (t('escudo_vital') > 0) {
                 const shieldPct = TALENT_POOL.defensivo.find(x => x.id === 'escudo_vital').levels[t('escudo_vital') - 1].shieldPct;
-                const shield = Math.floor(stats.maxHp * shieldPct / 100);
-                p.maxHp += shield;
-                p.hp += shield;
+                const newShield = Math.floor(stats.maxHp * shieldPct / 100);
+                const maxShield = Math.floor(stats.maxHp * 0.35);
+                runState.vitalShield = Math.min(maxShield, (runState.vitalShield || 0) + newShield);
             }
+            // Aplicar escudos al HP (vitalShield + piedraShield)
+            const totalShield = (runState.vitalShield || 0) + (runState.piedraShield?.amount || 0);
+            p.maxHp += totalShield;
+            p.hp += totalShield;
+            // Track shield max for bar percentage
+            runState.shieldMax = totalShield;
 
             // W1 — Clear debuffs at start of each combat (safety for edge cases)
             runState.enemyDebuffs = [];
@@ -1768,7 +1916,8 @@
 
                     // Crit: base 1.5x + bonus from equipment (capped at 650% total = 6.5x)
                     if (Math.random() * 100 < totalCrit) {
-                        const critMult = 1.5 + effCritDmg / 100;
+                        const critDmgBonus = metaState.upgrades.critDmg.level * metaState.upgrades.critDmg.percent * 100;
+                        const critMult = 1.5 + (effCritDmg + critDmgBonus) / 100;
                         dmg = Math.floor(dmg * critMult);
                         type = 'crit';
                     }
@@ -1994,22 +2143,40 @@
                     if (dr > 0) dmg = Math.floor(dmg * (1 - dr / 100));
                 }
 
-                // Talento: Piel de Piedra — shield on big hits (>= 20% maxHp)
-                if (t('piel_piedra') > 0 && dmg >= p.maxHp * 0.10) {
-                    const pp = TALENT_POOL.defensivo.find(x => x.id === 'piel_piedra').levels[t('piel_piedra') - 1];
-                    const shieldAmount = Math.floor(p.maxHp * pp.shieldPct / 100);
-                    runState.piedraShield.amount = shieldAmount;
-                    runState.piedraShield.ticksLeft = pp.duration * 10; // seconds → ticks
-                    spawnFloat('player-floats', `🛡️+${shieldAmount}`, 'block');
-                }
-
-                // Piel de Piedra: shield absorbs damage BEFORE it hits HP
+                // Escudos: absorben daño antes que el HP (piedraShield primero, luego vitalShield)
+                const rawDmg = dmg; // save original for threshold check
+                let totalAbsorbed = 0;
+                // 1. piedraShield absorbs first
                 if (runState.piedraShield && runState.piedraShield.amount > 0) {
                     const absorbed = Math.min(dmg, runState.piedraShield.amount);
                     runState.piedraShield.amount -= absorbed;
                     dmg -= absorbed;
-                    if (absorbed > 0 && dmg > 0) {
-                        spawnFloat('player-floats', `-${absorbed}🛡️`, 'block');
+                    totalAbsorbed += absorbed;
+                }
+                // 2. vitalShield absorbs remainder
+                if (dmg > 0 && runState.vitalShield > 0) {
+                    const absorbed = Math.min(dmg, runState.vitalShield);
+                    runState.vitalShield -= absorbed;
+                    dmg -= absorbed;
+                    totalAbsorbed += absorbed;
+                }
+                if (totalAbsorbed > 0 && dmg > 0) {
+                    spawnFloat('player-floats', `-${totalAbsorbed}🛡️`, 'block');
+                }
+
+                // Talento: Piel de Piedra — shield on big hits (>= 15% maxHp)
+                if (t('piel_piedra') > 0 && rawDmg >= p.maxHp * 0.15) {
+                    const pp = TALENT_POOL.defensivo.find(x => x.id === 'piel_piedra').levels[t('piel_piedra') - 1];
+                    const shieldAmount = Math.floor(p.maxHp * pp.shieldPct / 100);
+                    const current = runState.piedraShield?.amount || 0;
+                    if (shieldAmount > current) {
+                        // New shield is stronger: replace
+                        runState.piedraShield = { amount: shieldAmount, ticksLeft: pp.duration * 10 };
+                        runState.shieldMax = (runState.vitalShield || 0) + shieldAmount;
+                        spawnFloat('player-floats', `🛡️+${shieldAmount}`, 'block');
+                    } else {
+                        // Current shield is better: just refresh duration
+                        runState.piedraShield.ticksLeft = pp.duration * 10;
                     }
                 }
 
@@ -2396,6 +2563,8 @@
             runState.segundoAlientoUsed = false;
             runState.bossesKilledThisRun = 0;
             runState.enemyDebuffs = [];
+            runState.vitalShield = 0;
+            runState.shieldMax = 0;
             runState.piedraShield = { amount: 0, ticksLeft: 0 };
             document.getElementById('combat-log').innerHTML = '';
             if (metaState.unlockedEquipment) {
@@ -2423,6 +2592,8 @@
             runState.segundoAlientoUsed = false;
             runState.bossesKilledThisRun = 0;
             runState.enemyDebuffs = [];
+            runState.vitalShield = 0;
+            runState.shieldMax = 0;
             runState.piedraShield = { amount: 0, ticksLeft: 0 };
             runState.level = metaState.heroLevel;
             runState.xp = metaState.heroXp;
@@ -2455,11 +2626,20 @@
             
             const p = runState.player;
             const pPct = p.maxHp > 0 ? Math.max(0, (p.hp / p.maxHp) * 100) : 100;
-            const hasShield = runState.piedraShield && runState.piedraShield.amount > 0 && runState.piedraShield.ticksLeft > 0;
-            document.getElementById('player-hp-bar').style.width = pPct + '%';
-            document.getElementById('player-hp-bar').className = 'hp-bar' + (hasShield ? ' shield' : pPct <= 25 ? ' low' : pPct <= 50 ? ' mid' : '');
-            const shieldDisplay = (runState.piedraShield && runState.piedraShield.amount > 0) ? ` +${runState.piedraShield.amount}🛡️` : '';
-            document.getElementById('player-hp-text').textContent = `${Math.max(0, p.hp)} / ${p.maxHp}${shieldDisplay}`;
+            const totalShield = (runState.vitalShield || 0) + (runState.piedraShield?.amount || 0);
+            const hasShield = totalShield > 0;
+            if (hasShield) {
+                // Show shield percentage on blue bar, shield amount only in text
+                const shieldPct = runState.shieldMax > 0 ? Math.max(0, (totalShield / runState.shieldMax) * 100) : 100;
+                document.getElementById('player-hp-bar').style.width = shieldPct + '%';
+                document.getElementById('player-hp-bar').className = 'hp-bar shield';
+                document.getElementById('player-hp-text').textContent = `+${totalShield}🛡️`;
+            } else {
+                // Normal HP display
+                document.getElementById('player-hp-bar').style.width = pPct + '%';
+                document.getElementById('player-hp-bar').className = 'hp-bar' + (pPct <= 25 ? ' low' : pPct <= 50 ? ' mid' : '');
+                document.getElementById('player-hp-text').textContent = `${Math.max(0, p.hp)} / ${p.maxHp}`;
+            }
             const derived = getDerivedStats(p.atk, p.def, p.agi);
             document.getElementById('player-atk').textContent = p.atk;
             document.getElementById('player-def').textContent = p.def;
@@ -2503,11 +2683,12 @@
             }
             const effPen = diminishingReturns((p.pen || 0), BALANCE.combat.penCap, BALANCE.combat.penK) + penFlat;
             const effCritDmg = diminishingReturns((p.critDamage || 0), BALANCE.combat.critDmgCap, BALANCE.combat.critDmgK);
+            const critDmgBonus = metaState.upgrades.critDmg.level * metaState.upgrades.critDmg.percent * 100;
             const effBossDmg = diminishingReturns((p.bossDamage || 0), BALANCE.combat.bossDmgCap, BALANCE.combat.bossDmgK);
             const effHpRegen = diminishingReturns((p.hpRegen || 0), 15, 150);
 
             document.getElementById('player-pen').textContent = effPen.toFixed(1) + '%';
-            document.getElementById('player-crit-dmg').textContent = '+' + (BALANCE.combat.critDmgBase + effCritDmg).toFixed(1) + '%';
+            document.getElementById('player-crit-dmg').textContent = '+' + (BALANCE.combat.critDmgBase + effCritDmg + critDmgBonus).toFixed(1) + '%';
             document.getElementById('player-boss-dmg').textContent = '+' + effBossDmg.toFixed(1) + '%';
             document.getElementById('player-hp-regen').textContent = effHpRegen.toFixed(1) + '%';
             document.getElementById('player-lifesteal').textContent = totalLifesteal.toFixed(1) + '%';
@@ -2721,6 +2902,111 @@
         function closeTutorial() {
             document.getElementById('tutorial-overlay').classList.remove('visible');
             localStorage.setItem('torre_tutorial_seen', 'true');
+        }
+
+        // Talent Codex
+        function showCodex() {
+            document.getElementById('codex-content').innerHTML = buildCodexHTML();
+            document.getElementById('codex-overlay').classList.add('visible');
+        }
+
+        function closeCodex() {
+            document.getElementById('codex-overlay').classList.remove('visible');
+        }
+
+        function buildCodexHTML() {
+            const blocks = [
+                { icon: '⚔️', name: 'Ofensivo', talents: TALENT_POOL.ofensivo },
+                { icon: '🛡️', name: 'Defensivo', talents: TALENT_POOL.defensivo },
+                { icon: '💀', name: 'Estado', talents: TALENT_POOL.estado },
+                { icon: '💚', name: 'Sustain', talents: TALENT_POOL.sustain },
+                { icon: '👑', name: 'Heroico', talents: TALENT_POOL.heroico },
+                { icon: '⭐', name: 'Maestrías', talents: null, isMasteries: true },
+            ];
+
+            const keyLabels = {
+                chance: '% prob', chance2: '% prob 2 golpes', chance3: '% prob 3 golpes',
+                dmgMult: '× daño', flatCrit: ' crítico', chancePerSec: '%/s',
+                threshold: ' umbral HP', mult: '× daño', dmgBonus: '% daño',
+                dmgTaken: '% daño recibido', everyN: ' cada N golpes',
+                penPct: '% PEN', perHit: '%/golpe', maxStack: ' máx stacks',
+                dmgPct: '% daño', dmgPctPerTick: '% HP/tick', ticks: ' ticks',
+                vulnPct: '% vulnerabilidad', duration: 's', defReductionPct: '% DEF',
+                slowPct: '% ralentización', perTick: '%/tick',
+                shieldPct: '% HP máx escudo',
+                dmgReduction: '% reducción', selfDmgPenalty: '% daño propio',
+                flatDodge: ' dodge', hpBonus: '% HP', speedPenalty: '% velocidad',
+                reduction: '% reducción', per5Floors: '%/5 pisos', maxDr: '% máx',
+                healPct: '% cura', flatLifesteal: ' lifesteal', hpPctPer2s: '% HP/2s',
+                statBonus: '% stats', perBoss: '%/boss', flatEach: ' cada stat',
+                extraTicks: ' ticks extra',
+            };
+
+            let html = '';
+            for (let bi = 0; bi < blocks.length; bi++) {
+                const block = blocks[bi];
+                html += `<div class="codex-block">`;
+                html += `<div class="codex-block-title" onclick="toggleCodexBlock(${bi})">`;
+                html += `<span>${block.icon} ${block.name}</span>`;
+                html += `<span class="arrow">▶</span>`;
+                html += `</div>`;
+                html += `<div class="codex-block-body" id="codex-body-${bi}">`;
+                if (block.isMasteries) {
+                    // Render masteries by slot
+                    const slotIcons = { weapon: '🗡️', armor: '🛡️', ring: '💍' };
+                    const slotNames = { weapon: 'Arma', armor: 'Armadura', ring: 'Anillo' };
+                    const masteryLabels = {
+                        crit_mastery: '% crítico', vampiric: '% lifesteal', fury: ' cada N golpes',
+                        block_mastery: '% bloqueo', regen_mastery: '% HP/2s', tough_mastery: '% reducción',
+                        dodge_mastery: '% evasión', pen_mastery: '% PEN', fortune_mastery: '% duplicar',
+                    };
+                    for (const [slotKey, masteries] of Object.entries(MASTERIES)) {
+                        html += `<div class="codex-talent" style="border-left: 3px solid #3a3a5a; padding-left: 10px;">`;
+                        html += `<div class="codex-talent-name">${slotIcons[slotKey]} ${slotNames[slotKey]}</div>`;
+                        for (const m of masteries) {
+                            html += `<div class="codex-talent" style="margin-top: 6px;">`;
+                            html += `<div class="codex-talent-name" style="font-size: 0.85rem;">${m.label}</div>`;
+                            html += `<div class="codex-talent-desc">${m.desc}</div>`;
+                            html += `<div class="codex-talent-levels">`;
+                            const vals = m.values || m.thresholds;
+                            const label = masteryLabels[m.id] || '';
+                            const prefix = m.thresholds ? 'Cada ' : '+';
+                            for (let i = 0; i < vals.length; i++) {
+                                html += `<span><b>Nv.${i + 1}:</b> ${prefix}${vals[i]}${label}</span>`;
+                            }
+                            html += `</div></div>`;
+                        }
+                        html += `</div>`;
+                    }
+                } else {
+                    for (const t of block.talents) {
+                        html += `<div class="codex-talent">`;
+                        html += `<div class="codex-talent-name">${t.label}</div>`;
+                        html += `<div class="codex-talent-desc">${t.desc}</div>`;
+                        html += `<div class="codex-talent-levels">`;
+                        for (let i = 0; i < t.levels.length; i++) {
+                            const lvl = t.levels[i];
+                            const parts = Object.entries(lvl).map(([k, v]) => {
+                                const label = keyLabels[k] || k;
+                                return `${v}${label}`;
+                            }).join(' · ');
+                            html += `<span><b>Nv.${i + 1}:</b> ${parts}</span>`;
+                        }
+                        html += `</div>`;
+                        if (t.note) html += `<div class="codex-talent-note">${t.note}</div>`;
+                        html += `</div>`;
+                    }
+                }
+                html += `</div></div>`;
+            }
+            return html;
+        }
+
+        function toggleCodexBlock(idx) {
+            const title = document.querySelectorAll('.codex-block-title')[idx];
+            const body = document.getElementById(`codex-body-${idx}`);
+            title.classList.toggle('open');
+            body.classList.toggle('open');
         }
 
         // Init
