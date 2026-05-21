@@ -2324,9 +2324,12 @@
 
             // Souls pending (accumulate, add to total on death/end training)
             const floor = runState.trainingMode ? runState.trainingFloor : runState.floor;
-            let soulsPerKill = Math.floor(floor * BALANCE.souls.baseMult + (floor * metaState.upgrades.souls.level * metaState.upgrades.souls.flat));
+            let soulsPerKill;
             if (runState.trainingMode) {
-                soulsPerKill = Math.floor(soulsPerKill * 0.25); // 25% in training
+                // Training: base only, no upgrades, 25%
+                soulsPerKill = Math.floor(floor * BALANCE.souls.baseMult * 0.25);
+            } else {
+                soulsPerKill = Math.floor(floor * BALANCE.souls.baseMult + (floor * metaState.upgrades.souls.level * metaState.upgrades.souls.flat));
             }
             runState.pendingSouls += soulsPerKill;
             addLog(`+${soulsPerKill} 💀 (pendientes)`, 'system');
