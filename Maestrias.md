@@ -40,10 +40,10 @@
 - _Nota_: Se suma al bloqueo total después de aplicar diminishing returns.
 
 ### Maestría Regenerativa
-- **Descripción**: Regenerás % de tu HP máximo cada 2 segundos durante el combate
-- **Nivel 1** (Raro): +5% HP cada 2s
-- **Nivel 2** (Épico): +7.5% HP cada 2s
-- **Nivel 3** (Legendario): +10% HP cada 2s
+- **Descripción**: Se suma al HP REGEN del equipo (post-DR, sin cap), regenerando cada 1s
+- **Nivel 1** (Raro): +5% HP
+- **Nivel 2** (Épico): +7.5% HP
+- **Nivel 3** (Legendario): +10% HP
 
 ### Maestría Resistente
 - **Descripción**: Cada 5 golpes recibidos, reducís % del daño de ese golpe
@@ -85,7 +85,7 @@
 | 🗡️ Arma | Vampírica | +lifesteal flat | +5% | +7.5% | +10% |
 | 🗡️ Arma | Furiosa | Proc ×2 cada N golpes | 7 | 5 | 3 |
 | 🛡️ Armadura | Bloqueo | +bloqueo flat | +2.5% | +5% | +7.5% |
-| 🛡️ Armadura | Regenerativa | % HP cada 2s | 5% | 7.5% | 10% |
+| 🛡️ Armadura | Regenerativa | +% HP REGEN (post-DR) | +5% | +7.5% | +10% |
 | 🛡️ Armadura | Resistente | Reducción cada 5 golpes | 5% | 10% | 15% |
 | 💍 Anillo | Evasiva | +evasión flat | +2.5% | +5% | +7.5% |
 | 💍 Anillo | Perforante | +PEN flat | +5% | +7.5% | +10% |

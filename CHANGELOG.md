@@ -2,6 +2,28 @@
 
 Todos los cambios notables en este proyecto.
 
+## [0.4.2] - 2026-05-24
+
+### Añadido
+- **T14 Golpe Cegador**: probabilidad de cegar al enemigo — falla su próximo ataque (8/12/16% por nivel). Badge 👁️ Cegado
+- **T15 Golpe Helado**: probabilidad de congelar al boss 2s con CD 3s (10/15/20% por nivel). Badge ❄️ Congelado con barra de duración
+- **T16 Toque Helado**: ralentiza la velocidad de ataque del enemigo al golpear (-10/15/20%, duración 5/6/8s). Badge 🧊 Ralentizado con barra de duración
+- **Death recap** (idea guardada): pantalla post-mortem con desglose de daño/mitigación/curaciones
+
+### Cambiado
+- **Golpe Helado**: CD reducido de 15s a 3s
+- **Desgaste**: ahora apila cada 2s en vez de 3s (tick 30 → 20)
+- **Héroe nivel 0**: ahora arranca en nivel 0 con tiered stat gain cada 50 niveles
+- **Maestría Regenerativa**: fusionada con hpRegen (flat post-DR, sin cap), cura cada 1s
+- **Save migration**: sistema dataVersion para migrar saves antiguos (v0 → v1 recalcula heroBonuses)
+
+### Corregido
+- **SaveGame crash**: restaurado `upgrades: {}` faltante en el objeto data
+- **Estado talent flags**: se limpian entre combates para evitar herencia de estados (blinded/frozen/slow)
+- **Descripción Golpe Helado**: actualizada de "CD 15s" a "CD 3s" en codex y Talentos.md
+- **Descripción Desgaste**: actualizada de "Cada 3s" a "Cada 2s"
+- **Dead code**: eliminado `slowDuration` que no se usaba
+
 ## [0.4.0] - 2026-05-24
 
 ### Cambiado

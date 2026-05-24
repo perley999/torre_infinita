@@ -4,7 +4,7 @@
 
 Contexto completo para trabajar sobre este proyecto. Leer antes de modificar.
 
-**Versión actual**: 0.4.0 · Último tag: `v0.3.0`
+**Versión actual**: 0.4.2 · Último tag: `v0.3.0`
 
 ---
 
@@ -311,7 +311,7 @@ Ver `Talentos.md` para la referencia completa con valores por nivel.
 | Arma | Vampírica | +5/7.5/10 lifesteal flat |
 | Arma | Furiosa | Cada 7/5/3 golpes, daño ×2 |
 | Armadura | Bloqueo | +2.5/5/7.5 block flat |
-| Armadura | Regenerativa | +5/10/15 HP planos cada 2s |
+| Armadura | Regenerativa | +5/7.5/10% HP REGEN (post-DR, se suma al stat cada 1s) |
 | Armadura | Resistente | Reduce 5/10/15% daño cada 5 golpes |
 | Anillo | Evasiva | +2.5/5/7.5 dodge flat |
 | Anillo | Perforante | +5/7.5/10 PEN flat |

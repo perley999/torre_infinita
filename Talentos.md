@@ -165,7 +165,7 @@
 - **Nivel 3**: 20% por golpe, 6% HP por tick (DoT ×3), -15% DEF, no se acumula
 
 ### Golpe Helado
-- **Descripción**: Probabilidad de congelar al boss (no ataca 2s). CD 15s
+- **Descripción**: Probabilidad de congelar al boss (no ataca 2s). CD 3s
 - **Nivel 1**: 10% de probabilidad por golpe
 - **Nivel 2**: 15% de probabilidad por golpe
 - **Nivel 3**: 20% de probabilidad por golpe
@@ -177,7 +177,7 @@
 - **Nivel 3**: -20% velocidad, duración 8 segundos
 
 ### Desgaste
-- **Descripción**: Cada 3s en combate, el enemigo pierde % de ATK y DEF (acumulativo)
+- **Descripción**: Cada 2s en combate, el enemigo pierde % de ATK y DEF (acumulativo)
 - **Nivel 1**: -2% ATK/DEF por stack, máx 10 (total -20%)
 - **Nivel 2**: -3% ATK/DEF por stack, máx 15 (total -45%)
 - **Nivel 3**: -4% ATK/DEF por stack, máx 20 (total -80%)

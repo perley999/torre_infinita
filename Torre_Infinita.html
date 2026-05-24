@@ -618,6 +618,12 @@
         .debuff-badge.vulnerability .debuff-bar-fill { background: #f59e0b; }
         .debuff-badge.stat_drain { border-color: #22c55e; color: #4ade80; }
         .debuff-badge.stat_drain .debuff-bar-fill { background: #22c55e; }
+        .debuff-badge.freeze { border-color: #06b6d4; color: #22d3ee; }
+        .debuff-badge.freeze .debuff-bar-fill { background: #06b6d4; }
+        .debuff-badge.blind { border-color: #a855f7; color: #c084fc; }
+        .debuff-badge.blind .debuff-bar-fill { background: #a855f7; }
+        .debuff-badge.slow { border-color: #67e8f9; color: #67e8f9; }
+        .debuff-badge.slow .debuff-bar-fill { background: #67e8f9; }
 
         /* === TALENT BADGES === */
         .talents-row {
@@ -1008,7 +1014,8 @@
             upgrades: {},
             bossAttempted: [], // pisos de jefe YA intentados (persistente entre runs)
             bossStats: {},    // stats guardadas del PRIMER intento de cada jefe
-            heroLevel: 1,     // Nivel persistente del héroe (no se resetea al morir)
+            dataVersion: 1,   // Para migraciones futuras
+            heroLevel: 0,     // Nivel persistente del héroe (no se resetea al morir, arranca en 0)
             heroXp: 0,        // XP persistente del héroe
             heroBonuses: { hp: 0, atk: 0, def: 0, agi: 0 }, // Stats acumuladas por nivel
         };
@@ -1023,6 +1030,7 @@
         // ============================================
         function saveGame() {
             const data = {
+                dataVersion: metaState.dataVersion,
                 souls: metaState.souls,
                 maxFloor: metaState.maxFloor,
                 unlockedEquipment: metaState.unlockedEquipment,
@@ -1061,15 +1069,27 @@
                 metaState.equipment = data.equipment ?? { weapon: null, armor: null, ring: null };
                 metaState.bossAttempted = data.bossAttempted ?? [];
                 metaState.bossStats = data.bossStats ?? {};
-                metaState.heroLevel = data.heroLevel ?? 1;
+                metaState.heroLevel = data.heroLevel ?? 0;
                 metaState.heroXp = data.heroXp ?? 0;
                 metaState.heroBonuses = data.heroBonuses ?? { hp: 0, atk: 0, def: 0, agi: 0 };
+                metaState.dataVersion = data.dataVersion ?? 0;
+                // Migración v0→v1: recalcular heroBonuses con sistema escalonado
+                let needsMigration = false;
+                if (metaState.dataVersion < 1) {
+                    metaState.heroBonuses = calcTieredBonuses(metaState.heroLevel);
+                    metaState.dataVersion = 1;
+                    needsMigration = true;
+                }
                 if (data.upgrades) {
                     for (const [key, saved] of Object.entries(data.upgrades)) {
                         if (metaState.upgrades[key]) {
                             metaState.upgrades[key].level = saved.level ?? 0;
                         }
                     }
+                }
+                // Guardar SOLO después de restaurar upgrades para no pisarlos con 0
+                if (needsMigration) {
+                    saveGame();
                 }
                 return true;
             } catch {
@@ -1095,7 +1115,8 @@
             metaState.equipment = { weapon: null, armor: null, ring: null };
             metaState.bossAttempted = [];
             metaState.bossStats = {};
-            metaState.heroLevel = 1;
+            metaState.dataVersion = 1;
+            metaState.heroLevel = 0;
             metaState.heroXp = 0;
             metaState.heroBonuses = { hp: 0, atk: 0, def: 0, agi: 0 };
             for (const key of Object.keys(metaState.upgrades)) {
@@ -1104,7 +1125,7 @@
             if (combatLoop) clearInterval(combatLoop);
             runState.active = false;
             runState.floor = 1;
-            runState.level = 1;
+            runState.level = 0;
             runState.xp = 0;
             runState.xpToNext = BALANCE.levelUp.xpBase;
             runState.runBonuses = { hp: 0, atk: 0, def: 0, agi: 0 };
@@ -1121,7 +1142,7 @@
         const runState = {
             active: false,
             floor: 1,
-            level: 1,
+            level: 0,
             xp: 0,
             xpToNext: BALANCE.levelUp.xpBase,
             runBonuses: { hp: 0, atk: 0, def: 0, agi: 0 },
@@ -1225,11 +1246,11 @@
                   levels: [{ chance: 8 }, { chance: 12 }, { chance: 16 }] },
                 { id: 'hoja_toxica', label: 'Hoja Tóxica', desc: 'Probabilidad de envenenar: DoT + reduce DEF del enemigo',
                   levels: [{ chance: 20, dmgPctPerTick: 2, ticks: 3, defReductionPct: 5, maxStack: 1 }, { chance: 20, dmgPctPerTick: 4, ticks: 3, defReductionPct: 10, maxStack: 1 }, { chance: 20, dmgPctPerTick: 6, ticks: 3, defReductionPct: 15, maxStack: 1 }] },
-                { id: 'golpe_helado', label: 'Golpe Helado', desc: 'Probabilidad de congelar al boss (no ataca 2s). CD 15s',
+                { id: 'golpe_helado', label: 'Golpe Helado', desc: 'Probabilidad de congelar al boss (no ataca 2s). CD 3s',
                   levels: [{ chance: 10 }, { chance: 15 }, { chance: 20 }] },
                 { id: 'toque_helado', label: 'Toque Helado', desc: 'Tus ataques ralentizan la velocidad del enemigo',
                   levels: [{ slowPct: 10, duration: 5 }, { slowPct: 15, duration: 6 }, { slowPct: 20, duration: 8 }] },
-                { id: 'desgaste', label: 'Desgaste', desc: 'Cada 3s en combate, el enemigo pierde % de ATK y DEF (acumulativo)',
+                { id: 'desgaste', label: 'Desgaste', desc: 'Cada 2s en combate, el enemigo pierde % de ATK y DEF (acumulativo)',
                   levels: [{ perTick: 2, maxStack: 10 }, { perTick: 3, maxStack: 15 }, { perTick: 4, maxStack: 20 }] },
             ],
             sustain: [
@@ -1286,7 +1307,7 @@
             ],
             armor: [
                 { id: 'block_mastery', label: 'Maestría Bloqueo', desc: 'Aumenta tu probabilidad de bloqueo de forma plana (post-DR)', values: [2.5, 5, 7.5] },
-                { id: 'regen_mastery', label: 'Maestría Regenerativa', desc: 'Regenerás % de tu HP máximo cada 2s durante el combate', values: [5, 7.5, 10] },
+                { id: 'regen_mastery', label: 'Maestría Regenerativa', desc: 'Regenerás % de tu HP máximo cada 1s durante el combate', values: [5, 7.5, 10] },
                 { id: 'tough_mastery', label: 'Maestría Resistente', desc: 'Cada 5 golpes recibidos, reducís % del daño de ese golpe', values: [5, 10, 15] },
             ],
             ring: [
@@ -1560,10 +1581,10 @@
                         toRemove.push(i);
                     }
                 } else if (db.type === 'stat_drain') {
-                    // Desgaste: add stack every 3 seconds (30 ticks)
+                    // Desgaste: add stack every 2 seconds (20 ticks)
                     if (db._tickCounter === undefined) db._tickCounter = 0;
                     db._tickCounter++;
-                    if (db._tickCounter >= 30) {
+                    if (db._tickCounter >= 20) {
                         db._tickCounter = 0;
                         if (db.stack < db.maxStack) {
                             db.stack = Math.min(db.stack + 1, db.maxStack);
@@ -1871,6 +1892,12 @@
 
             // W1 — Clear debuffs at start of each combat (safety for edge cases)
             runState.enemyDebuffs = [];
+            // Clear estado talent flags between fights (Golpe Cegador, Golpe Helado, Toque Helado)
+            runState.enemyBlinded = false;
+            runState.frozenTicks = 0;
+            runState.freezeCooldown = 0;
+            runState.enemySlowTicks = 0;
+            runState.enemySlowPct = 0;
 
             // T11 — Desgaste: initialize stat_drain debuff at combat start
             if (t('desgaste') > 0) {
@@ -1914,6 +1941,12 @@
 
             // T5 — Process debuffs at TOP of combatTick
             processDebuffs(currentLifesteal);
+
+            // Golpe Helado: decrement frozen ticks and cooldown every tick
+            if (runState.frozenTicks > 0) runState.frozenTicks--;
+            if (runState.freezeCooldown > 0) runState.freezeCooldown--;
+            // Toque Helado: decrement slow ticks
+            if (runState.enemySlowTicks > 0) runState.enemySlowTicks--;
 
             // Piel de Piedra: decrement shield ticks
             if (runState.piedraShield && runState.piedraShield.ticksLeft > 0) {
@@ -1964,7 +1997,8 @@
             const effPen = diminishingReturns(p.pen || 0, BALANCE.combat.penCap, BALANCE.combat.penK) + (runState.masteryFlatPen || 0);
             const effCritDmg = diminishingReturns(p.critDamage || 0, BALANCE.combat.critDmgCap, BALANCE.combat.critDmgK);
             const effBossDmg = diminishingReturns(p.bossDamage || 0, BALANCE.combat.bossDmgCap, BALANCE.combat.bossDmgK);
-            const effHpRegen = diminishingReturns(p.hpRegen || 0, 15, 150); // 15% max regen cap
+            const effHpRegen = diminishingReturns(p.hpRegen || 0, 15, 150) // 15% max regen cap (solo equipo)
+                + (runState.masteryFlatRegen || 0); // Maestría Regenerativa: flat post-DR, sin cap
 
             // HP Regeneration (each second = 10 ticks)
             if (effHpRegen > 0 && p.tickCount === undefined) p.tickCount = 0;
@@ -1976,20 +2010,6 @@
                     if (regen > 0 && p.hp < p.maxHp) {
                         p.hp = Math.min(p.maxHp, p.hp + regen);
                         spawnFloat('player-floats', `+${regen}`, 'heal');
-                    }
-                }
-            }
-
-            // Maestría Regeneración: cura % de HP máx cada 2 segundos (20 ticks)
-            if (runState.masteryFlatRegen > 0) {
-                if (p.regenFlatTick === undefined) p.regenFlatTick = 0;
-                p.regenFlatTick++;
-                if (p.regenFlatTick >= 20) {
-                    p.regenFlatTick = 0;
-                    if (p.hp < p.maxHp) {
-                        const regenHeal = Math.floor(p.maxHp * runState.masteryFlatRegen / 100);
-                        p.hp = Math.min(p.maxHp, p.hp + regenHeal);
-                        spawnFloat('player-floats', `+${regenHeal}`, 'heal');
                     }
                 }
             }
@@ -2179,6 +2199,14 @@
                         }
                     }
 
+                    // T14 — Golpe Cegador: chance to blind enemy (next attack misses)
+                    if (t('golpe_cegador') > 0) {
+                        const gc = TALENT_POOL.estado.find(x => x.id === 'golpe_cegador').levels[t('golpe_cegador') - 1];
+                        if (Math.random() * 100 < gc.chance) {
+                            runState.enemyBlinded = true;
+                        }
+                    }
+
                     // T7 — Hemorragia: chance to apply bleeding DoT (stacks independientes hasta maxStack)
                     if (t('hemorragia') > 0) {
                         const h = TALENT_POOL.estado.find(x => x.id === 'hemorragia').levels[t('hemorragia') - 1];
@@ -2224,6 +2252,23 @@
                             duration: mm.duration * 10,
                         });
                     }
+
+                    // T16 — Toque Helado: slow enemy attack speed on hit
+                    if (t('toque_helado') > 0) {
+                        const th = TALENT_POOL.estado.find(x => x.id === 'toque_helado').levels[t('toque_helado') - 1];
+                        runState.enemySlowPct = th.slowPct;
+                        runState.enemySlowTicks = th.duration * 10;
+                    }
+
+                    // T15 — Golpe Helado: freeze boss for 2s (20 ticks), 3s CD (30 ticks)
+                    if (t('golpe_helado') > 0 && runState.enemy?.isBoss && (runState.freezeCooldown || 0) <= 0) {
+                        const gh = TALENT_POOL.estado.find(x => x.id === 'golpe_helado').levels[t('golpe_helado') - 1];
+                        if (Math.random() * 100 < gh.chance) {
+                            runState.frozenTicks = 20; // 2 seconds at 100ms/tick
+                            runState.freezeCooldown = 30; // 3 seconds cooldown
+                            addLog('❄️ ¡Jefe congelado!', 'system');
+                        }
+                    }
                 }
                 isFirstAttack = false;
             }
@@ -2231,8 +2276,26 @@
             // Enemigo ataca
             e.attackTimer -= BALANCE.combat.tickMs;
             if (e.attackTimer <= 0) {
-                e.attackTimer = speedToInterval(e.agi);
-                
+                // Apply slow if active (Toque Helado)
+                if ((runState.enemySlowTicks || 0) > 0) {
+                    e.attackTimer = speedToInterval(e.agi) * (1 + (runState.enemySlowPct || 0) / 100);
+                } else {
+                    e.attackTimer = speedToInterval(e.agi);
+                }
+
+                // Golpe Helado: frozen boss doesn't attack
+                if ((runState.frozenTicks || 0) > 0) {
+                    spawnFloat('enemy-floats', '❄️', 'miss');
+                    return;
+                }
+
+                // Golpe Cegador: blinded enemy misses
+                if (runState.enemyBlinded) {
+                    runState.enemyBlinded = false;
+                    spawnFloat('player-floats', 'MISS', 'miss');
+                    return;
+                }
+
                     // Dodge check
                     if (Math.random() * 100 < totalDodge) {
                         spawnFloat('player-floats', 'MISS', 'miss');
@@ -2529,6 +2592,19 @@
             saveGame();
         }
 
+        // Helper: calcula heroBonuses acumulados con sistema escalonado (cada 50 niveles)
+        function calcTieredBonuses(level) {
+            let hp = 0, atk = 0, def = 0, agi = 0;
+            for (let i = 1; i <= level; i++) {
+                const tier = Math.ceil(i / 50);
+                hp += 10 * tier;
+                atk += 1 * tier;
+                def += 1 * tier;
+                agi += 1 * tier;
+            }
+            return { hp, atk, def, agi };
+        }
+
         // ============================================
         // 6. NIVELES Y ELECCIONES
         // ============================================
@@ -2541,12 +2617,15 @@
                 runState.xp -= runState.xpToNext;
                 runState.level++;
 
-                // Auto-apply all stats on every level up
-                runState.runBonuses.hp  += 10;
-                runState.runBonuses.atk += 1;
-                runState.runBonuses.def += 1;
-                runState.runBonuses.agi += 1;
-                addLog(`⬆️ ¡Nivel ${runState.level}! ❤️+10 HP ⚔️+1 ATK 🛡️+1 DEF 🏃+1 AGI`, 'system');
+                // Auto-apply all stats on every level up (tiered cada 50 niveles)
+                const levelTier = Math.ceil(runState.level / 50);
+                const hpGain = 10 * levelTier;
+                const statGain = 1 * levelTier;
+                runState.runBonuses.hp  += hpGain;
+                runState.runBonuses.atk += statGain;
+                runState.runBonuses.def += statGain;
+                runState.runBonuses.agi += statGain;
+                addLog(`⬆️ ¡Nivel ${runState.level}! ❤️+${hpGain} HP ⚔️+${statGain} ATK 🛡️+${statGain} DEF 🏃+${statGain} AGI`, 'system');
 
                 runState.xpToNext = BALANCE.levelUp.xpScale * runState.level;
 
@@ -2812,7 +2891,7 @@
             runState.enemiesDefeated = 0;
             runState.level = metaState.heroLevel;
             runState.xp = metaState.heroXp;
-            runState.xpToNext = BALANCE.levelUp.xpScale * runState.level;
+            runState.xpToNext = BALANCE.levelUp.xpScale * (runState.level || 1);
             runState.runBonuses = { ...metaState.heroBonuses };
             runState.abilities = [];
             runState.talentLevels = {};
@@ -2874,7 +2953,7 @@
             runState.enemiesDefeated = 0;
             runState.level = metaState.heroLevel;
             runState.xp = metaState.heroXp;
-            runState.xpToNext = BALANCE.levelUp.xpScale * runState.level;
+            runState.xpToNext = BALANCE.levelUp.xpScale * (runState.level || 1);
             runState.runBonuses = { ...metaState.heroBonuses };
             runState.abilities = []; // Talentos se resetean cada run
             runState.talentLevels = {}; // Progreso de talentos se resetea cada run
@@ -2924,7 +3003,7 @@
             runState.piedraShield = { amount: 0, ticksLeft: 0 };
             runState.level = metaState.heroLevel;
             runState.xp = metaState.heroXp;
-            runState.xpToNext = BALANCE.levelUp.xpScale * runState.level;
+            runState.xpToNext = BALANCE.levelUp.xpScale * (runState.level || 1);
             runState.runBonuses = { ...metaState.heroBonuses };
             document.getElementById('combat-log').innerHTML = '';
             addLog('🔄 Run reiniciada', 'system');
@@ -2943,6 +3022,7 @@
         }
 
         function render() {
+            try {
             // Training mode header
             if (runState.trainingMode) {
                 document.getElementById('floor-number').textContent = `🏋️ Entrenamiento — Piso ${runState.floor}`;
@@ -3021,7 +3101,8 @@
             const effCritDmg = diminishingReturns((p.critDamage || 0), BALANCE.combat.critDmgCap, BALANCE.combat.critDmgK);
             const critDmgBonus = metaState.upgrades.critDmg.level * metaState.upgrades.critDmg.percent * 100;
             const effBossDmg = diminishingReturns((p.bossDamage || 0), BALANCE.combat.bossDmgCap, BALANCE.combat.bossDmgK);
-            const effHpRegen = diminishingReturns((p.hpRegen || 0), 15, 150);
+            const effHpRegen = diminishingReturns((p.hpRegen || 0), 15, 150)
+                + (runState.masteryFlatRegen || 0); // Maestría Regenerativa: flat post-DR
 
             document.getElementById('player-pen').textContent = effPen.toFixed(1) + '%';
             document.getElementById('player-crit-dmg').textContent = '+' + (BALANCE.combat.critDmgBase + effCritDmg + critDmgBonus).toFixed(1) + '%';
@@ -3054,7 +3135,10 @@
                     hemorragia: 'Sangrado', hoja_toxica: 'Tóxico', marca_muerte: 'Vulnerabilidad',
                     quemadura: 'Quemadura', desgaste: 'Desgaste',
                 };
-                if (runState.enemyDebuffs.length > 0) {
+                const hasFrozen = (runState.frozenTicks || 0) > 0;
+                const hasBlind = !!runState.enemyBlinded;
+                const hasSlow = (runState.enemySlowTicks || 0) > 0;
+                if (runState.enemyDebuffs.length > 0 || hasFrozen || hasBlind || hasSlow) {
                     let html = '';
                     for (const db of runState.enemyDebuffs) {
                         const icon = debuffIcons[db.id] || '⚡';
@@ -3065,6 +3149,35 @@
                         html += `<span class="debuff-icon">${icon}</span>`;
                         html += `<span class="debuff-name">${name}${extra}</span>`;
                         html += `<div class="debuff-bar"><div class="debuff-bar-fill" style="width:${pct}%"></div></div>`;
+                        html += `</div>`;
+                    }
+                    // Golpe Cegador: blind state (no duration, consumed on next attack)
+                    if (hasBlind) {
+                        html += `<div class="debuff-badge blind">`;
+                        html += `<span class="debuff-icon">👁️</span>`;
+                        html += `<span class="debuff-name">Cegado</span>`;
+                        html += `<div class="debuff-bar"><div class="debuff-bar-fill" style="width:100%"></div></div>`;
+                        html += `</div>`;
+                    }
+                    // Golpe Helado: frozen state with duration bar
+                    if (hasFrozen) {
+                        const frozenPct = (runState.frozenTicks / 20) * 100;
+                        html += `<div class="debuff-badge freeze">`;
+                        html += `<span class="debuff-icon">❄️</span>`;
+                        html += `<span class="debuff-name">Congelado</span>`;
+                        html += `<div class="debuff-bar"><div class="debuff-bar-fill" style="width:${frozenPct}%"></div></div>`;
+                        html += `</div>`;
+                    }
+                    // Toque Helado: slow state with duration bar
+                    if (hasSlow) {
+                        const slowMax = t('toque_helado') > 0
+                            ? TALENT_POOL.estado.find(x => x.id === 'toque_helado').levels[t('toque_helado') - 1].duration * 10
+                            : 80;
+                        const slowPct = (runState.enemySlowTicks / slowMax) * 100;
+                        html += `<div class="debuff-badge slow">`;
+                        html += `<span class="debuff-icon">🧊</span>`;
+                        html += `<span class="debuff-name">Ralentizado</span>`;
+                        html += `<div class="debuff-bar"><div class="debuff-bar-fill" style="width:${slowPct}%"></div></div>`;
                         html += `</div>`;
                     }
                     debuffsContainer.innerHTML = html;
@@ -3164,6 +3277,7 @@
                 btn.innerHTML = `<span>${u.icon} ${u.label}</span><span class="level">${levelText}${cumulative}</span><span class="cost">${isMaxed ? '✅ MAX' : `💀 ${cost}`}</span>`;
                 grid.appendChild(btn);
             }
+            } catch(e) { console.error('❌ Render error:', e, e.stack); }
         }
 
         function updateButtons() {
@@ -3308,7 +3422,7 @@
                     const slotNames = { weapon: 'Arma', armor: 'Armadura', ring: 'Anillo' };
                     const masteryLabels = {
                         crit_mastery: '% crítico', vampiric: '% lifesteal', fury: ' cada N golpes',
-                        block_mastery: '% bloqueo', regen_mastery: '% HP/2s', tough_mastery: '% reducción',
+                        block_mastery: '% bloqueo', regen_mastery: '% HP', tough_mastery: '% reducción',
                         dodge_mastery: '% evasión', pen_mastery: '% PEN', fortune_mastery: '% duplicar',
                     };
                     for (const [slotKey, masteries] of Object.entries(MASTERIES)) {
