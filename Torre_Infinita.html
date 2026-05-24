@@ -784,7 +784,7 @@
         </div>
 
         <!-- Controls -->
-        <div class="controls">
+        <div class="controls" id="run-controls">
             <button class="control-btn start" id="btn-start" onclick="startRun()">Iniciar Run</button>
             <button class="control-btn restart" id="btn-restart" onclick="restartRun()" disabled>Reiniciar</button>
         </div>
@@ -955,7 +955,8 @@
                     crit: 1.5, lifesteal: 1.5, dodge: 1.5,
                     pen: 1.5, critDamage: 1.5,
                     bossDamage: 1.2, hpRegen: 1.2,
-                    flat: 0.4, // hp, atk, def, agi as secondary
+                    hp: 1.5,
+                    flat: 0.4, // atk, def, agi as secondary
                     primary: 1.0, // atk, def as primary
                 },
                 rarities: [
@@ -976,7 +977,7 @@
                 minDamage: 1,
                 // Diminishing returns: cap × (stat / (stat + K))
                 critCap: 70, critK: 100,
-                dodgeCap: 40, dodgeK: 80,
+                dodgeCap: 40, dodgeK: 80, dodgeRatingRatio: 5,
                 blockCap: 50, blockK: 100,
                 lifestealCap: 25, lifestealK: 80,
                 // New stat caps with diminishing returns
@@ -991,7 +992,6 @@
             },
 
             // --- DoT COMBAT ---
-            furiaArdiente: { baseDamage: 3 },
         };
 
         const SAVE_KEY = 'torre_infinita_save_v1';
@@ -1109,7 +1109,6 @@
             runState.xpToNext = BALANCE.levelUp.xpBase;
             runState.runBonuses = { hp: 0, atk: 0, def: 0, agi: 0 };
             runState.enemy = null;
-            runState.pendingSouls = 0;
             document.getElementById('combat-log').innerHTML = '';
             document.getElementById('equip-section').classList.add('locked');
             document.querySelector('#equip-section h2').textContent = '🎒 Equipo (Se desbloquea tras superar piso 10)';
@@ -1138,7 +1137,6 @@
             vitalShield: 0, // Escudo Vital acumulado (persiste entre combates, se resetea al morir)
             piedraShield: { amount: 0, ticksLeft: 0 }, // Escudo temporal de Piel de Piedra (3s)
             shieldMax: 0, // Para calcular el % de la barra de escudo
-            pendingSouls: 0, // Almas acumuladas por enemigo (se suman al morir/terminar)
             // Training mode
             trainingMode: false,
             trainingFloor: 30,
@@ -1208,9 +1206,8 @@
                   levels: [{ hpBonus: 15, speedPenalty: 10 }, { hpBonus: 25, speedPenalty: 15 }, { hpBonus: 35, speedPenalty: 20 }] },
                 { id: 'piel_piedra', label: 'Piel de Piedra', desc: 'Al recibir un golpe ≥15% HP máx, ganás vida temporal (3s)',
                   levels: [{ shieldPct: 10, duration: 3 }, { shieldPct: 15, duration: 3 }, { shieldPct: 20, duration: 3 }] },
-                { id: 'furia_ardiente', label: 'Furia Ardiente', desc: 'Aura: cada segundo, probabilidad de quemar al enemigo (no se acumula)',
-                  levels: [{ chancePerSec: 20 }, { chancePerSec: 30 }, { chancePerSec: 40 }],
-                  note: 'Daño fijo (no escala con stats).' },
+                { id: 'furia_ardiente', label: 'Furia Ardiente', desc: 'Aura - aplica daño de fuego cada segundo y tiene 20% probabilidad de quemar al enemigo',
+                  levels: [{ dmgPctPerTick: 1, chance: 20, atkReductionPct: 10 }, { dmgPctPerTick: 2, chance: 20, atkReductionPct: 15 }, { dmgPctPerTick: 3, chance: 20, atkReductionPct: 20 }] },
                 { id: 'escudo_magico', label: 'Escudo Mágico', desc: 'Cada 3 ataques del enemigo, el próximo golpe se reduce el daño',
                   levels: [{ everyN: 3, reduction: 30 }, { everyN: 3, reduction: 40 }, { everyN: 3, reduction: 50 }] },
                 { id: 'veterano_batalla', label: 'Veterano de Batalla', desc: 'Cada 5 pisos completados, +reducción de daño acumulativa',
@@ -1220,14 +1217,14 @@
             ],
             estado: [
                 { id: 'hemorragia', label: 'Hemorragia', desc: 'Probabilidad de aplicar sangrado al enemigo',
-                  levels: [{ chance: 10, dmgPctPerTick: 1, ticks: 3, maxStack: 3 }, { chance: 15, dmgPctPerTick: 2, ticks: 3, maxStack: 3 }, { chance: 20, dmgPctPerTick: 3, ticks: 3, maxStack: 3 }] },
+                  levels: [{ chance: 20, dmgPctPerTick: 1, ticks: 3, maxStack: 3 }, { chance: 20, dmgPctPerTick: 2, ticks: 3, maxStack: 3 }, { chance: 20, dmgPctPerTick: 3, ticks: 3, maxStack: 3 }] },
                 { id: 'marca_muerte', label: 'Marca de Muerte', desc: 'Tus ataques aplican vulnerabilidad: enemigo recibe +daño',
                   levels: [{ vulnPct: 10, duration: 3 }, { vulnPct: 15, duration: 3 }, { vulnPct: 20, duration: 3 }],
                   note: 'Se aplica en CADA golpe (sin chequeo de probabilidad).' },
                 { id: 'golpe_cegador', label: 'Golpe Cegador', desc: 'Probabilidad de cegar al enemigo: falla su próximo ataque',
                   levels: [{ chance: 8 }, { chance: 12 }, { chance: 16 }] },
                 { id: 'hoja_toxica', label: 'Hoja Tóxica', desc: 'Probabilidad de envenenar: DoT + reduce DEF del enemigo',
-                  levels: [{ chance: 10, dmgPctPerTick: 2, ticks: 3, defReductionPct: 5, maxStack: 1 }, { chance: 15, dmgPctPerTick: 4, ticks: 3, defReductionPct: 10, maxStack: 1 }, { chance: 20, dmgPctPerTick: 6, ticks: 3, defReductionPct: 15, maxStack: 1 }] },
+                  levels: [{ chance: 20, dmgPctPerTick: 2, ticks: 3, defReductionPct: 5, maxStack: 1 }, { chance: 20, dmgPctPerTick: 4, ticks: 3, defReductionPct: 10, maxStack: 1 }, { chance: 20, dmgPctPerTick: 6, ticks: 3, defReductionPct: 15, maxStack: 1 }] },
                 { id: 'golpe_helado', label: 'Golpe Helado', desc: 'Probabilidad de congelar al boss (no ataca 2s). CD 15s',
                   levels: [{ chance: 10 }, { chance: 15 }, { chance: 20 }] },
                 { id: 'toque_helado', label: 'Toque Helado', desc: 'Tus ataques ralentizan la velocidad del enemigo',
@@ -1240,7 +1237,7 @@
                   levels: [{ healPct: 5 }, { healPct: 8 }, { healPct: 12 }] },
                 { id: 'asalto_vampirico', label: 'Asalto Vampírico', desc: 'Aumenta robo de vida a TODAS las fuentes de daño',
                   levels: [{ flatLifesteal: 5 }, { flatLifesteal: 8 }, { flatLifesteal: 12 }],
-                  note: 'Se suma al robo de vida existente antes de aplicar DR.' },
+                  note: 'Aplica a auto-ataques, DoTs, Furia Ardiente, Eco y Contraataque.' },
                 { id: 'fortaleza', label: 'Fortaleza', desc: 'Cuando tu HP <50%, recibes menos daño',
                   levels: [{ dmgReduction: 10 }, { dmgReduction: 20 }, { dmgReduction: 30 }] },
                 { id: 'regeneracion', label: 'Regeneración', desc: 'Regenerás HP cada 2 segundos durante el combate',
@@ -1344,7 +1341,7 @@
             // Equipment bonuses: flat stats + percent multipliers over base
             // Lifesteal is flat from equipment only (no base stat)
             let equipLifesteal = 0;
-            let equipCritMult = 0, equipDodgeMult = 0;
+            let equipCritMult = 0, equipDodgeRating = 0;
             let equipPen = 0, equipCritDmg = 0, equipBossDmg = 0;
             let equipHpRegen = 0;
 
@@ -1360,7 +1357,7 @@
                     agi += item.stats.agi || 0;
                     equipLifesteal += item.stats.lifesteal || 0;
                     equipCritMult += item.stats.crit || 0;
-                    equipDodgeMult += item.stats.dodge || 0;
+                    equipDodgeRating += item.stats.dodge || 0;
                     equipPen += item.stats.pen || 0;
                     equipCritDmg += item.stats.critDamage || 0;
                     equipBossDmg += item.stats.bossDamage || 0;
@@ -1411,7 +1408,7 @@
                 agi: Math.floor(agi),
                 lifesteal: equipLifesteal,
                 critRating: equipCritMult,
-                dodgeMult: equipDodgeMult,
+                dodgeRating: equipDodgeRating,
                 pen: equipPen,
                 critDamage: equipCritDmg,
                 bossDamage: equipBossDmg,
@@ -1459,45 +1456,57 @@
             if (toxica && toxica.originalDef !== undefined && runState.enemy) {
                 runState.enemy.def = toxica.originalDef;
             }
+            // Restore ATK if Quemadura was active
+            const quemadura = runState.enemyDebuffs.find(d => d.id === 'quemadura');
+            if (quemadura && quemadura.originalAtk !== undefined && runState.enemy) {
+                runState.enemy.atk = quemadura.originalAtk;
+            }
             runState.enemyDebuffs = [];
         }
 
         // T4 — applyDebuff()
         function applyDebuff(def) {
             // def: { id, type, ticksLeft, duration, dmgPctPerTick?, defReductionPct?, maxStack?, stack?, perTick?, vulnPct? }
-            const existing = runState.enemyDebuffs.find(d => d.id === def.id);
+            const tl = runState.talentLevels || {};
+            const applyMaestroTicks = (d) => {
+                if ((d.type === 'dot' || d.type === 'def_reduction') && tl['maestro_elemental']) {
+                    const me = TALENT_POOL.heroico.find(x => x.id === 'maestro_elemental').levels[tl['maestro_elemental'] - 1];
+                    d.ticksLeft = (d.ticksLeft || 0) + me.extraTicks;
+                    d.duration = (d.duration || 0) + me.extraTicks;
+                }
+                return d;
+            };
 
+            // DoTs con stacks independientes (maxStack > 1): crear entradas separadas
+            if (def.type === 'dot' && (def.maxStack || 1) > 1) {
+                const active = runState.enemyDebuffs.filter(d => d.id === def.id);
+                if (active.length >= def.maxStack) return; // ya hay máximas entradas
+                runState.enemyDebuffs.push(applyMaestroTicks({ ...def }));
+                return;
+            }
+
+            // Debuffs que refrescan en vez de stackear
+            const existing = runState.enemyDebuffs.find(d => d.id === def.id);
             if (existing) {
-                // Desgaste: acumular stacks
                 if (def.type === 'stat_drain') {
                     existing.stack = Math.min(existing.stack + (def.stack || 1), existing.maxStack);
-                    existing.ticksLeft = existing.duration; // refresh timer
+                    existing.ticksLeft = existing.duration;
                 } else {
-                    // Otros debuffs: refresh ticks/duration, no stack
                     existing.ticksLeft = def.ticksLeft;
                     existing.duration = def.duration;
                 }
                 return;
             }
 
-            // Nuevo debuff: agregar
-            const newDebuff = { ...def };
-
-            // Maestro Elemental: extra ticks en DoTs
-            const tl = runState.talentLevels || {};
-            if ((def.type === 'dot' || def.type === 'def_reduction') && tl['maestro_elemental']) {
-                const me = TALENT_POOL.heroico.find(x => x.id === 'maestro_elemental').levels[tl['maestro_elemental'] - 1];
-                newDebuff.ticksLeft = (def.ticksLeft || 0) + me.extraTicks;
-                newDebuff.duration = (def.duration || 0) + me.extraTicks;
-            }
-
-            runState.enemyDebuffs.push(newDebuff);
+            // Nuevo debuff
+            runState.enemyDebuffs.push(applyMaestroTicks({ ...def }));
         }
 
         // T5 — processDebuffs()
-        function processDebuffs() {
+        function processDebuffs(lifestealPct) {
             const tl = runState.talentLevels || {};
             const t = (id) => tl[id] || 0;
+            const p = runState.player;
             const e = runState.enemy;
             if (!e) return;
 
@@ -1518,6 +1527,14 @@
                         if (db.dmgPctPerTick > 0) {
                             const dotDmg = Math.max(1, Math.floor(e.maxHp * db.dmgPctPerTick / 100));
                             e.hp -= dotDmg;
+                            // Lifesteal applies to ALL damage sources (Asalto Vampírico)
+                            if (lifestealPct > 0) {
+                                const heal = Math.floor(dotDmg * lifestealPct / 100);
+                                if (heal > 0) {
+                                    p.hp = Math.min(p.maxHp, p.hp + heal);
+                                    spawnFloat('player-floats', `+${heal} (DoT)`, 'heal');
+                                }
+                            }
                             spawnFloat('enemy-floats', `-${dotDmg} (DoT)`, 'crit', 'left');
                         }
                     }
@@ -1556,6 +1573,21 @@
                     db.ticksLeft--;
                     if (db.ticksLeft <= 0) {
                         toRemove.push(i);
+                    }
+                } else if (db.type === 'burn') {
+                    // Quemadura: reduce ATK del enemigo mientras dura
+                    if (db.atkReductionPct && db.originalAtk === undefined) {
+                        db.originalAtk = e.atk;
+                    }
+                    if (db.atkReductionPct && db.originalAtk !== undefined) {
+                        e.atk = Math.max(0, Math.floor(db.originalAtk * (1 - db.atkReductionPct / 100)));
+                    }
+                    db.ticksLeft--;
+                    if (db.ticksLeft <= 0) {
+                        toRemove.push(i);
+                        if (db.atkReductionPct && db.originalAtk !== undefined) {
+                            e.atk = db.originalAtk;
+                        }
                     }
                 }
             }
@@ -1599,15 +1631,16 @@
             const s = item.stats;
             return (s.atk || 0) * 1.0
                  + (s.def || 0) * 1.0
-                 + (s.hp || 0) * 0.5
-                 + (s.agi || 0) * 1.5
+                 + (s.agi || 0) * 1.0
+                 + (s.hp || 0) * 0.4
                  + (s.crit || 0) * 0.5
                  + (s.lifesteal || 0) * 0.5
                  + (s.dodge || 0) * 0.5
-                 + (s.pen || 0) * 0.5
+                 + (s.block || 0) * 0.4
                  + (s.critDamage || 0) * 0.4
-                 + (s.bossDamage || 0) * 0.35
                  + (s.hpRegen || 0) * 0.4
+                 + (s.bossDamage || 0) * 0.3
+                 + (s.pen || 0) * 0.3
                  + (item.mastery ? item.mastery.level * 3 : 0);
         }
 
@@ -1686,10 +1719,30 @@
                 render();
                 return true;
             }
-            if (calcIlvl(item) < calcIlvl(current) * 0.8) {
+
+            const newIlvl = calcIlvl(item);
+            const curIlvl = calcIlvl(current);
+
+            // Si ilvl >= actual → siempre mostrar modal, sin importar rareza
+            if (newIlvl >= curIlvl) {
+                showEquipComparison(current, item);
+                return null;
+            }
+
+            // Rareza inferior + ilvl menor → descartar directo
+            const rarityOrder = BALANCE.equipment.rarities;
+            const curRarityIdx = rarityOrder.findIndex(r => r.name === current.rarity);
+            const newRarityIdx = rarityOrder.findIndex(r => r.name === item.rarity);
+            if (newRarityIdx < curRarityIdx) {
                 return false;
             }
-            // Mejor objeto encontrado → mostrar comparación
+
+            // Umbral de ilvl al 90%
+            if (newIlvl < curIlvl * 0.9) {
+                return false;
+            }
+
+            // Mostrar comparación
             showEquipComparison(current, item);
             return null; // pendiente, el jugador decide
         }
@@ -1709,7 +1762,7 @@
             p.def = stats.def;
             p.agi = stats.agi;
             p.critRating = stats.critRating;
-            p.dodgeMult = stats.dodgeMult;
+            p.dodgeRating = stats.dodgeRating;
             p.lifesteal = stats.lifesteal;
             p.pen = stats.pen;
             p.critDamage = stats.critDamage;
@@ -1844,8 +1897,23 @@
         function combatTick() {
             if (!runState.active || !runState.enemy || runState.pendingChoice) return;
 
+            const p = runState.player;
+            const e = runState.enemy;
+            const derived = getDerivedStats(p.atk, p.def, p.agi);
+            const tl = runState.talentLevels;
+            const t = (id) => tl[id] || 0;
+
+            // Lifesteal: equipment (DR) + maestría vampírica (flat post-DR) + asalto vampírico (flat post-DR, aplica a TODO)
+            const baseLifestealDR = diminishingReturns((p.lifesteal || 0), BALANCE.combat.lifestealCap, BALANCE.combat.lifestealK);
+            const masteryLifesteal = (runState.masteryFlatLifesteal || 0);
+            let currentLifesteal = Math.min(baseLifestealDR + masteryLifesteal, BALANCE.combat.lifestealCap);
+            if (t('asalto_vampirico') > 0) {
+                const av = TALENT_POOL.sustain.find(x => x.id === 'asalto_vampirico').levels[t('asalto_vampirico') - 1];
+                currentLifesteal = Math.min(currentLifesteal + av.flatLifesteal, BALANCE.combat.lifestealCap);
+            }
+
             // T5 — Process debuffs at TOP of combatTick
-            processDebuffs();
+            processDebuffs(currentLifesteal);
 
             // Piel de Piedra: decrement shield ticks
             if (runState.piedraShield && runState.piedraShield.ticksLeft > 0) {
@@ -1856,16 +1924,9 @@
                 }
             }
 
-            const p = runState.player;
-            const e = runState.enemy;
-            const derived = getDerivedStats(p.atk, p.def, p.agi);
             // Equipment crit rating converts to % with ratio 13 (linear conversion)
             const equipCritPct = (p.critRating || 0) / 13;
             const baseCrit = derived.crit + equipCritPct;
-
-            // Talento: Golpe Preciso (flat crit pre-DR)
-            const tl = runState.talentLevels;
-            const t = (id) => tl[id] || 0;
             let preciseBonus = 0;
             if (t('golpe_preciso') > 0) {
                 preciseBonus = TALENT_POOL.ofensivo.find(x => x.id === 'golpe_preciso').levels[t('golpe_preciso') - 1].flatCrit;
@@ -1894,11 +1955,10 @@
             }
 
             const baseDodge = derived.dodge;
-            const rawDodge = baseDodge * (1 + p.dodgeMult / 100);
+            const equipDodgePct = (p.dodgeRating || 0) / BALANCE.combat.dodgeRatingRatio;
+            const rawDodge = baseDodge + equipDodgePct;
             const totalDodge = Math.floor(diminishingReturns(rawDodge, BALANCE.combat.dodgeCap, BALANCE.combat.dodgeK)) + (runState.masteryFlatDodge || 0) + (t('reflejos_felinos') > 0 ? TALENT_POOL.defensivo.find(x => x.id === 'reflejos_felinos').levels[t('reflejos_felinos') - 1].flatDodge : 0) + trinityFlat;
             const totalBlock = Math.floor(diminishingReturns(derived.block, BALANCE.combat.blockCap, BALANCE.combat.blockK)) + (runState.masteryFlatBlock || 0) + trinityFlat;
-            // Lifesteal: diminishing returns on flat equipment + maestría (pre-DR)
-            const totalLifesteal = diminishingReturns((p.lifesteal || 0) + (runState.masteryFlatLifesteal || 0), BALANCE.combat.lifestealCap, BALANCE.combat.lifestealK);
 
             // Diminishing returns for percentage stats
             const effPen = diminishingReturns(p.pen || 0, BALANCE.combat.penCap, BALANCE.combat.penK) + (runState.masteryFlatPen || 0);
@@ -1934,17 +1994,42 @@
                 }
             }
 
-            // T8 — Furia Ardiente: 1-second timer, direct damage (not a debuff)
+            // T8 — Furia Ardiente: every 1s, fire damage + chance to burn
             if (t('furia_ardiente') > 0) {
                 if (p.furiaArdienteTick === undefined) p.furiaArdienteTick = 0;
                 p.furiaArdienteTick++;
                 if (p.furiaArdienteTick >= 10) { // 10 ticks = 1 second
                     p.furiaArdienteTick = 0;
                     const fa = TALENT_POOL.defensivo.find(x => x.id === 'furia_ardiente').levels[t('furia_ardiente') - 1];
-                    if (Math.random() * 100 < fa.chancePerSec) {
-                        const fireDmg = BALANCE.furiaArdiente.baseDamage;
-                        e.hp -= fireDmg;
-                        spawnFloat('enemy-floats', `-${fireDmg} (🔥)`, 'crit', 'left');
+
+                    // Fire damage based on enemy max HP
+                    const fireDmg = Math.floor(e.maxHp * fa.dmgPctPerTick / 100);
+                    e.hp -= fireDmg;
+                    if (currentLifesteal > 0) {
+                        const heal = Math.floor(fireDmg * currentLifesteal / 100);
+                        if (heal > 0) {
+                            p.hp = Math.min(p.maxHp, p.hp + heal);
+                            spawnFloat('player-floats', `+${heal} (🔥)`, 'heal');
+                        }
+                    }
+                    spawnFloat('enemy-floats', `-${fireDmg} (🔥)`, 'crit', 'left');
+
+                    // 20% chance to apply/refresh burn (3s = 30 ticks)
+                    if (Math.random() * 100 < fa.chance) {
+                        const existing = runState.enemyDebuffs.filter(d => d.id === 'quemadura');
+                        if (existing.length > 0) {
+                            existing[0].ticksLeft = 30;
+                            existing[0].duration = 30;
+                        } else {
+                            applyDebuff({
+                                id: 'quemadura',
+                                type: 'burn',
+                                ticksLeft: 30,
+                                duration: 30,
+                                atkReductionPct: fa.atkReductionPct,
+                                maxStack: 1,
+                            });
+                        }
                     }
                 }
             }
@@ -1983,7 +2068,8 @@
                         const f = TALENT_POOL.ofensivo.find(x => x.id === 'furia_creciente').levels[t('furia_creciente') - 1];
                         if (!runState.furiaStacks) runState.furiaStacks = 0;
                         runState.furiaStacks++;
-                        const bonus = Math.min(f.perHit * runState.furiaStacks, f.maxStack);
+                        const stacks = Math.min(runState.furiaStacks, f.maxStack);
+                        const bonus = f.perHit * stacks;
                         if (bonus > 0) dmg = Math.floor(dmg * (1 + bonus / 100));
                     }
 
@@ -2054,13 +2140,7 @@
                     spawnFloat('enemy-floats', dmgText, type);
                     flashElement('enemy-card');
                     
-                    // Lifesteal (stats + passive), capped at BALANCE.combat.lifestealCap
-                    let currentLifesteal = totalLifesteal;
-                    // Talento: Asalto Vampírico (flat lifesteal que se aplica a todo)
-                    if (t('asalto_vampirico') > 0) {
-                        const av = TALENT_POOL.sustain.find(x => x.id === 'asalto_vampirico').levels[t('asalto_vampirico') - 1];
-                        currentLifesteal = diminishingReturns(currentLifesteal + av.flatLifesteal, BALANCE.combat.lifestealCap, BALANCE.combat.lifestealK);
-                    }
+                    // Lifesteal (ya incluye equipo + maestría + asalto vampírico, flat post-DR)
                     if (currentLifesteal > 0) {
                         const heal = Math.floor(dmg * currentLifesteal / 100);
                         if (heal > 0) {
@@ -2088,25 +2168,29 @@
                         if (Math.random() * 100 < ec.chance) {
                             const echoDmg = Math.floor(dmg * ec.dmgPct / 100);
                             e.hp -= echoDmg;
+                            if (currentLifesteal > 0) {
+                                const heal = Math.floor(echoDmg * currentLifesteal / 100);
+                                if (heal > 0) {
+                                    p.hp = Math.min(p.maxHp, p.hp + heal);
+                                    spawnFloat('player-floats', `+${heal} (eco)`, 'heal');
+                                }
+                            }
                             spawnFloat('enemy-floats', `-${echoDmg} (eco)`, 'crit', 'right');
                         }
                     }
 
-                    // T7 — Hemorragia: chance to apply bleeding DoT on hit
+                    // T7 — Hemorragia: chance to apply bleeding DoT (stacks independientes hasta maxStack)
                     if (t('hemorragia') > 0) {
                         const h = TALENT_POOL.estado.find(x => x.id === 'hemorragia').levels[t('hemorragia') - 1];
                         if (Math.random() * 100 < h.chance) {
-                            const existing = runState.enemyDebuffs.filter(d => d.id === 'hemorragia');
-                            if (existing.length < h.maxStack) {
-                                applyDebuff({
-                                    id: 'hemorragia',
-                                    type: 'dot',
-                                    dmgPctPerTick: h.dmgPctPerTick,
-                                    ticksLeft: h.ticks,
-                                    duration: h.ticks,
-                                    maxStack: h.maxStack,
-                                });
-                            }
+                            applyDebuff({
+                                id: 'hemorragia',
+                                type: 'dot',
+                                dmgPctPerTick: h.dmgPctPerTick,
+                                ticksLeft: h.ticks,
+                                duration: h.ticks,
+                                maxStack: h.maxStack,
+                            });
                         }
                     }
 
@@ -2270,6 +2354,13 @@
                     if (Math.random() * 100 < ca.chance) {
                         const counterDmg = Math.floor(dmg * ca.dmgPct / 100);
                         e.hp -= counterDmg;
+                        if (currentLifesteal > 0) {
+                            const heal = Math.floor(counterDmg * currentLifesteal / 100);
+                            if (heal > 0) {
+                                p.hp = Math.min(p.maxHp, p.hp + heal);
+                                spawnFloat('player-floats', `+${heal} (C)`, 'heal');
+                            }
+                        }
                         spawnFloat('enemy-floats', `-${counterDmg} (C)`, 'crit', 'right');
                     }
                 }
@@ -2322,7 +2413,7 @@
             runState.xp += xpGain;
             addLog(`+${xpGain} XP`, 'system');
 
-            // Souls pending (accumulate, add to total on death/end training)
+            // Souls per floor (display only — awarded at death, not accumulated)
             const floor = runState.trainingMode ? runState.trainingFloor : runState.floor;
             let soulsPerKill;
             if (runState.trainingMode) {
@@ -2331,8 +2422,7 @@
             } else {
                 soulsPerKill = Math.floor(floor * BALANCE.souls.baseMult + (floor * metaState.upgrades.souls.level * metaState.upgrades.souls.flat));
             }
-            runState.pendingSouls += soulsPerKill;
-            addLog(`+${soulsPerKill} 💀 (pendientes)`, 'system');
+            addLog(`+${soulsPerKill} 💀`, 'system');
 
             // Drop de equipo
             let equipPending = false;
@@ -2396,31 +2486,32 @@
             runState.active = false;
 
             if (runState.trainingMode) {
-                // Training mode: use accumulated pending souls, no maxFloor update
-                const totalSouls = runState.pendingSouls;
-                if (totalSouls > 0) {
+                // Training mode: base only, 25% per kill, no upgrades
+                const killed = runState.enemiesDefeated;
+                let totalSouls = 0;
+                if (killed > 0) {
+                    const soulsPerEnemy = Math.floor(runState.trainingFloor * BALANCE.souls.baseMult * 0.25);
+                    totalSouls = soulsPerEnemy * killed;
                     // Maestría Afortunada: chance de duplicar almas
-                    let finalSouls = totalSouls;
                     if (runState.masteryFortuneChance > 0 && Math.random() * 100 < runState.masteryFortuneChance) {
-                        finalSouls = Math.floor(totalSouls * 2);
+                        totalSouls = Math.floor(totalSouls * 2);
                         addLog('🍀 ¡Maestría Afortunada duplica las almas!', 'loot');
                     }
-                    metaState.souls += finalSouls;
-                    addLog(`💀 Entrenamiento terminado. Enemigos derrotados: ${runState.enemiesDefeated}. +${finalSouls} almas.`, 'death');
+                    metaState.souls += totalSouls;
+                    addLog(`💀 Entrenamiento terminado. Enemigos derrotados: ${killed}. +${totalSouls} almas.`, 'death');
                 } else {
                     addLog(`💀 Entrenamiento terminado. No derrotaste ningún enemigo.`, 'death');
                 }
                 runState.trainingMode = false;
                 runState.enemiesDefeated = 0;
-                runState.pendingSouls = 0;
                 render();
                 saveGame();
                 updateButtons();
                 return;
             }
 
-            // Tower mode: use accumulated pending souls
-            let totalSouls = runState.pendingSouls;
+            // Tower mode: original formula — souls based on floor reached, one-time payment at death
+            let totalSouls = Math.floor(runState.floor * BALANCE.souls.baseMult + (runState.floor * metaState.upgrades.souls.level * metaState.upgrades.souls.flat));
             // Maestría Afortunada: chance de duplicar almas
             if (runState.masteryFortuneChance > 0 && Math.random() * 100 < runState.masteryFortuneChance) {
                 totalSouls = Math.floor(totalSouls * 2);
@@ -2719,7 +2810,6 @@
             runState.trainingFloor = floor;
             runState.floor = floor;
             runState.enemiesDefeated = 0;
-            runState.pendingSouls = 0;
             runState.level = metaState.heroLevel;
             runState.xp = metaState.heroXp;
             runState.xpToNext = BALANCE.levelUp.xpScale * runState.level;
@@ -2755,23 +2845,22 @@
             runState.active = false;
 
             const killed = runState.enemiesDefeated;
-            const totalSouls = runState.pendingSouls;
-            if (totalSouls > 0) {
+            if (killed > 0) {
+                const soulsPerEnemy = Math.floor(runState.trainingFloor * BALANCE.souls.baseMult * 0.25);
+                let totalSouls = soulsPerEnemy * killed;
                 // Maestría Afortunada: chance de duplicar almas
-                let finalSouls = totalSouls;
                 if (runState.masteryFortuneChance > 0 && Math.random() * 100 < runState.masteryFortuneChance) {
-                    finalSouls = Math.floor(totalSouls * 2);
+                    totalSouls = Math.floor(totalSouls * 2);
                     addLog('🍀 ¡Maestría Afortunada duplica las almas!', 'loot');
                 }
-                metaState.souls += finalSouls;
-                addLog(`✅ Entrenamiento terminado. Enemigos derrotados: ${killed}. +${finalSouls} almas.`, 'victory');
+                metaState.souls += totalSouls;
+                addLog(`✅ Entrenamiento terminado. Enemigos derrotados: ${killed}. +${totalSouls} almas.`, 'victory');
             } else {
                 addLog('✅ Entrenamiento terminado. No derrotaste ningún enemigo.', 'system');
             }
 
             runState.trainingMode = false;
             runState.enemiesDefeated = 0;
-            runState.pendingSouls = 0;
             render();
             saveGame();
             updateButtons();
@@ -2783,7 +2872,6 @@
             runState.trainingMode = false;
             runState.trainingFloor = 30;
             runState.enemiesDefeated = 0;
-            runState.pendingSouls = 0;
             runState.level = metaState.heroLevel;
             runState.xp = metaState.heroXp;
             runState.xpToNext = BALANCE.levelUp.xpScale * runState.level;
@@ -2818,7 +2906,6 @@
             runState.trainingMode = false;
             runState.trainingFloor = 30;
             runState.enemiesDefeated = 0;
-            runState.pendingSouls = 0;
             runState.furyCounter = 0;
             runState.toughCounter = 0;
             runState.abilities = []; // Talentos se resetean al reiniciar
@@ -2879,7 +2966,8 @@
                 const shieldPct = runState.shieldMax > 0 ? Math.max(0, (totalShield / runState.shieldMax) * 100) : 100;
                 document.getElementById('player-hp-bar').style.width = shieldPct + '%';
                 document.getElementById('player-hp-bar').className = 'hp-bar shield';
-                document.getElementById('player-hp-text').textContent = `+${totalShield}🛡️`;
+                const baseHp = Math.max(0, p.hp - totalShield);
+                document.getElementById('player-hp-text').textContent = `${baseHp} +${totalShield}🛡️`;
             } else {
                 // Normal HP display
                 document.getElementById('player-hp-bar').style.width = pPct + '%';
@@ -2905,17 +2993,19 @@
             const rawCrit = derived.crit + equipCritPct + preciseBonus;
             const critBonus = metaState.upgrades.crit.level * metaState.upgrades.crit.percent * 100;
             const totalCrit = Math.floor(diminishingReturns(rawCrit, BALANCE.combat.critCap, BALANCE.combat.critK)) + (runState.masteryFlatCrit || 0) + critBonus + trinityFlat;
-            const rawDodge = derived.dodge * (1 + (p.dodgeMult || 0) / 100);
+            const equipDodgePct = (p.dodgeRating || 0) / BALANCE.combat.dodgeRatingRatio;
+            const rawDodge = derived.dodge + equipDodgePct;
             let dodgeFlat = (runState.masteryFlatDodge || 0) + trinityFlat;
             if (t('reflejos_felinos') > 0) {
                 dodgeFlat += TALENT_POOL.defensivo.find(x => x.id === 'reflejos_felinos').levels[t('reflejos_felinos') - 1].flatDodge;
             }
             const totalDodge = Math.floor(diminishingReturns(rawDodge, BALANCE.combat.dodgeCap, BALANCE.combat.dodgeK)) + dodgeFlat;
             const totalBlock = Math.floor(diminishingReturns(derived.block, BALANCE.combat.blockCap, BALANCE.combat.blockK)) + (runState.masteryFlatBlock || 0) + trinityFlat;
-            let totalLifesteal = diminishingReturns(((p.lifesteal || 0) + (runState.masteryFlatLifesteal || 0)), BALANCE.combat.lifestealCap, BALANCE.combat.lifestealK);
+            const baseLS = diminishingReturns((p.lifesteal || 0), BALANCE.combat.lifestealCap, BALANCE.combat.lifestealK);
+            let totalLifesteal = Math.min(baseLS + (runState.masteryFlatLifesteal || 0), BALANCE.combat.lifestealCap);
             if (t('asalto_vampirico') > 0) {
                 const av = TALENT_POOL.sustain.find(x => x.id === 'asalto_vampirico').levels[t('asalto_vampirico') - 1];
-                totalLifesteal = diminishingReturns(totalLifesteal + av.flatLifesteal, BALANCE.combat.lifestealCap, BALANCE.combat.lifestealK);
+                totalLifesteal = Math.min(totalLifesteal + av.flatLifesteal, BALANCE.combat.lifestealCap);
             }
 
             document.getElementById('player-crit').textContent = totalCrit + '%';
@@ -2958,11 +3048,11 @@
             if (debuffsContainer) {
                 const debuffIcons = {
                     hemorragia: '🩸', hoja_toxica: '☠️', marca_muerte: '💀',
-                    furia_ardiente: '🔥', desgaste: '📉',
+                    quemadura: '🔥', desgaste: '📉',
                 };
                 const debuffNames = {
                     hemorragia: 'Sangrado', hoja_toxica: 'Tóxico', marca_muerte: 'Vulnerabilidad',
-                    furia_ardiente: 'Furia', desgaste: 'Desgaste',
+                    quemadura: 'Quemadura', desgaste: 'Desgaste',
                 };
                 if (runState.enemyDebuffs.length > 0) {
                     let html = '';
@@ -3081,7 +3171,8 @@
             document.getElementById('btn-restart').disabled = !runState.active;
             const btnTraining = document.getElementById('btn-training');
             btnTraining.disabled = !metaState.unlockedTraining || runState.active;
-            // Show/hide training controls based on training mode
+            // Show/hide controls based on training mode
+            document.getElementById('run-controls').style.display = runState.trainingMode ? 'none' : 'flex';
             document.getElementById('training-controls').style.display = runState.trainingMode ? 'flex' : 'none';
             document.getElementById('training-start-controls').style.display = runState.trainingMode ? 'none' : 'flex';
         }
@@ -3186,7 +3277,7 @@
 
             const keyLabels = {
                 chance: '% prob', chance2: '% prob 2 golpes', chance3: '% prob 3 golpes',
-                dmgMult: '× daño', flatCrit: ' crítico', chancePerSec: '%/s',
+                dmgMult: '× daño', flatCrit: ' crítico',
                 threshold: ' umbral HP', mult: '× daño', dmgBonus: '% daño',
                 dmgTaken: '% daño recibido', everyN: ' cada N golpes',
                 penPct: '% PEN', perHit: '%/golpe', maxStack: ' máx stacks',
@@ -3197,9 +3288,9 @@
                 dmgReduction: '% reducción', selfDmgPenalty: '% daño propio',
                 flatDodge: ' dodge', hpBonus: '% HP', speedPenalty: '% velocidad',
                 reduction: '% reducción', per5Floors: '%/5 pisos', maxDr: '% máx',
-                healPct: '% cura', flatLifesteal: ' lifesteal', hpPctPer2s: '% HP/2s',
+                healPct: '% cura', flatLifesteal: '% lifesteal', hpPctPer2s: '% HP/2s',
                 statBonus: '% stats', perBoss: '%/boss', flatEach: ' cada stat',
-                extraTicks: ' ticks extra',
+                extraTicks: ' ticks extra', atkReductionPct: '% ATK',
             };
 
             let html = '';

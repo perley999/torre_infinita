@@ -2,6 +2,20 @@
 
 Todos los cambios notables en este proyecto.
 
+## [0.4.0] - 2026-05-24
+
+### Cambiado
+- **Pesos de ilvl**: AGI baja de ×1.5 a ×1.0 (igual que ATK/DEF). PEN y Boss DMG bajan a ×0.3. HP baja de ×0.5 a ×0.4. Añadido Block con ×0.4.
+- **budgetMult de HP**: sube de ×0.4 (flat) a ×1.5 para que los objetos den valores de HP significativos
+- **tryEquip()**: umbral de ilvl subido de 80% a 90%. Nuevo filtro: rareza inferior + ilvl menor → descarte directo. Si ilvl >= actual → modal siempre
+
+### Añadido
+- **Quemadura (Furia Ardiente)**: nuevo debuff tipo `burn` que reduce ATK del enemigo -10/15/20% durante 3s
+
+### Corregido
+- **Dodge de equipo**: ahora usa rating + DR única como crítico (eliminada la doble DR con multiplicador)
+- **Furia Ardiente**: daño fijo → %HP por segundo. Quemadura ahora dura 30 ticks (3s) en vez de 3 ticks (300ms)
+
 ## [0.3.1] - 2026-05-20
 
 ### Eliminado

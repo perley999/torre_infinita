@@ -110,11 +110,11 @@
 - **Nivel 3**: Escudo de 20% HP máx durante 3 segundos
 
 ### Furia Ardiente
-- **Descripción**: Aura — cada segundo, probabilidad de quemar al enemigo (no se acumula)
-- **Nivel 1**: 20% por segundo de aplicar quemadura
-- **Nivel 2**: 30% por segundo de aplicar quemadura
-- **Nivel 3**: 40% por segundo de aplicar quemadura
-- _Nota_: Daño fijo (no escala con stats).
+- **Descripción**: Aura - aplica daño de fuego cada segundo y tiene 20% probabilidad de quemar al enemigo
+- **Nivel 1**: 1% HP por segundo de daño y -10% ATK al enemigo
+- **Nivel 2**: 2% HP por segundo de daño y -15% ATK al enemigo
+- **Nivel 3**: 3% HP por segundo de daño y -20% ATK al enemigo
+- _Nota_: Un enemigo quemado ve reducido su ATK durante 3 segundos.
 
 ### Escudo Mágico
 - **Descripción**: Cada 3 ataques del enemigo, el próximo golpe se reduce
@@ -139,10 +139,11 @@
 ## 💀 Estado
 
 ### Hemorragia
-- **Descripción**: Probabilidad de aplicar sangrado al enemigo
-- **Nivel 1**: 10% por golpe, 1% HP por tick (DoT ×3), máx 3 acumulaciones
-- **Nivel 2**: 15% por golpe, 2% HP por tick (DoT ×3), máx 3 acumulaciones
-- **Nivel 3**: 20% por golpe, 3% HP por tick (DoT ×3), máx 3 acumulaciones
+- **Descripción**: Probabilidad de aplicar sangrado al enemigo (entradas independientes, hasta 3 a la vez)
+- **Nivel 1**: 20% por golpe, 1% HP por tick (DoT ×3), máx 3 entradas
+- **Nivel 2**: 20% por golpe, 2% HP por tick (DoT ×3), máx 3 entradas
+- **Nivel 3**: 20% por golpe, 3% HP por tick (DoT ×3), máx 3 entradas
+- _Nota_: Cada sangrado es independiente. Golpear mientras hay un sangrado activo puede aplicar otro nuevo (hasta 3). No se refrescan ni se fusionan.
 
 ### Marca de Muerte
 - **Descripción**: Tus ataques aplican vulnerabilidad — enemigo recibe +daño
@@ -159,8 +160,8 @@
 
 ### Hoja Tóxica
 - **Descripción**: Probabilidad de envenenar — DoT + reduce DEF del enemigo
-- **Nivel 1**: 10% por golpe, 2% HP por tick (DoT ×3), -5% DEF, no se acumula
-- **Nivel 2**: 15% por golpe, 4% HP por tick (DoT ×3), -10% DEF, no se acumula
+- **Nivel 1**: 20% por golpe, 2% HP por tick (DoT ×3), -5% DEF, no se acumula
+- **Nivel 2**: 20% por golpe, 4% HP por tick (DoT ×3), -10% DEF, no se acumula
 - **Nivel 3**: 20% por golpe, 6% HP por tick (DoT ×3), -15% DEF, no se acumula
 
 ### Golpe Helado
@@ -193,10 +194,10 @@
 
 ### Asalto Vampírico
 - **Descripción**: Aumenta robo de vida a TODAS las fuentes de daño
-- **Nivel 1**: +5 de robo de vida plano (post-DR)
-- **Nivel 2**: +8 de robo de vida plano (post-DR)
-- **Nivel 3**: +12 de robo de vida plano (post-DR)
-- _Nota_: Se suma al robo de vida existente antes de aplicar DR.
+- **Nivel 1**: +5% robo de vida plano (post-DR)
+- **Nivel 2**: +8% robo de vida plano (post-DR)
+- **Nivel 3**: +12% robo de vida plano (post-DR)
+- _Nota_: Se suma plano después de aplicar DR. Aplica a auto-ataques, DoTs, Furia Ardiente, Eco de Combate y Contraataque.
 
 ### Fortaleza
 - **Descripción**: Cuando tu HP < 50%, recibes menos daño

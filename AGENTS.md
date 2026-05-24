@@ -4,7 +4,7 @@
 
 Contexto completo para trabajar sobre este proyecto. Leer antes de modificar.
 
-**Versión actual**: 0.3.1 · Último tag: `v0.3.0`
+**Versión actual**: 0.4.0 · Último tag: `v0.3.0`
 
 ---
 
@@ -57,7 +57,7 @@ startRun() → startCombat() → combatTick (cada 100ms)
 
 | Archivo | Propósito |
 |---------|-----------|
-| `Torre_Infinita.html` | Juego completo (HTML + CSS + JS inline, ~2740 líneas) |
+| `Torre_Infinita.html` | Juego completo (HTML + CSS + JS inline, ~3280 líneas) |
 | `README.md` | Docs generales para jugar |
 | `PROYECTO.md` | Decisiones de diseño y resumen técnico |
 | `PROMPT.md` | Prompt replicable para regenerar desde cero |
@@ -94,10 +94,15 @@ BALANCE
 │   ├── firstBoss   → { hp: 150, atk: 15, def: 5 } — stats fijos P10
 │   └── dynamicBoss → { hpMult, atkMult, defMult } — 1er intento P20+
 ├── equipment
-│   ├── dropBaseChance → 30
+│   ├── dropBaseChance → 50
 │   ├── slots       → [weapon, armor, ring]
 │   ├── statPools   → por slot (primarios y secundarios)
 │   ├── budgetMult  → multiplicadores por tipo de stat
+│   │   ├── crit/lifesteal/dodge/pen/critDmg → 1.5
+│   │   ├── hp                              → 1.5
+│   │   ├── bossDmg/hpRegen                 → 1.2
+│   │   ├── primary (atk/def)               → 1.0
+│   │   └── flat (atk/def/agi secundario)   → 0.4
 │   ├── rarities[]  → nombre, pesos, statMult
 │   └── budgetBase  → 5
 ├── combat
@@ -108,12 +113,10 @@ BALANCE
 │   ├── minDamage   → 1
 │   ├── caps y K    → crit(70/100), dodge(40/80), block(50/100),
 │   │                 lifesteal(25/80), pen(50/100), critDmg(600/200),
-│   │                 bossDmg(100/150), thorns(100/150)
+│   │                 bossDmg(100/150)
 │   └── critDmgBase → 50 (% base sobre ×1.5)
 ├── souls
 │   └── baseMult    → 2
-└── furiaArdiente
-    └── baseDamage  → 3
 ```
 
 ---
@@ -133,11 +136,11 @@ La DEF siempre reduce un porcentaje, nunca anula el daño por completo.
 speedToInterval(agi) = max(750, 3000 - (agi * 100))
 ```
 
-### Crit chance (combate: línea ~1636-1661 / display: línea ~2468-2481)
+### Crit chance (combate: línea ~1907 / display: línea ~2934)
 ```js
 equipCritPct = (p.critRating || 0) / 13  // rating → % lineal, estilo WoW
 rawCrit      = derived.crit + equipCritPct + preciseBonus
-totalCrit    = floor(DR(rawCrit, cap=70, K=100)) + masteryFlatCrit + critBonus + trinityFlat
+totalCrit    = floor(DR(rawCrit, cap=70, K=100)) + masteryCritFlat + critBonus + trinityFlat
 ```
 - **Equipment**: crit rating se convierte con ratio 13. +65 = 5%
 - **Golpe Preciso**: +10/15/20 flat pre-DR
@@ -146,11 +149,39 @@ totalCrit    = floor(DR(rawCrit, cap=70, K=100)) + masteryFlatCrit + critBonus +
 - **Maestría Crítica**: +5/10/15 flat, se aplica **post-DR**
 - **Base**: 0% (sin mejoras ni equipo, no hay crítico)
 
-### Crit damage (combate: ~línea 1770 / display: ~línea 2495)
+### Dodge / Evasión (combate: línea ~1917 / display: línea ~2938)
+```js
+baseDodge     = floor(dodgeCap * agi / (agi + dodgeK))  // DR desde AGI
+equipDodgePct = (p.dodgeRating || 0) / dodgeRatingRatio // rating → %, ratio 5
+rawDodge      = baseDodge + equipDodgePct                // suma pre-DR
+totalDodge    = floor(DR(rawDodge, cap=40, K=80)) + masteryFlatDodge + reflejosFelinos + trinityFlat
+```
+- **AGI**: `floor(40 × agi / (agi + 80))` → base
+- **Equipo**: dodge rating se convierte con ratio 5 (como crit rating/13)
+- **Reflejos Felinos**: +8/12/16 flat **post-DR**
+- **Maestría Evasiva** (anillo): +2.5/5/7.5 flat **post-DR**
+- **Trinidad**: +8/12/16 flat **post-DR**
+- No hay doble DR: equipo pasa por DR una sola vez, como el crítico
+
+### Crit damage (combate: línea ~1770 / display: línea ~2495)
 ```js
 critMult = 1.5 + DR(critDamage, cap=600, K=200) / 100
 dmg = floor(dmg * critMult)
 ```
+
+### Ilvl del equipo (calcIlvl, línea 1629)
+```js
+return atk×1.0 + def×1.0 + agi×1.0
+     + hp×0.4 + crit×0.5 + lifesteal×0.5 + dodge×0.5
+     + block×0.4 + critDamage×0.4 + hpRegen×0.4
+     + bossDamage×0.3 + pen×0.3
+     + maestría(nivel)×3
+```
+- **ATK/DEF/AGI**: peso ×1.0 — atributos principales
+- **CRIT/Lifesteal/Dodge**: peso ×0.5 — secundarios premium
+- **HP/Block/Crit DMG/HP REGEN**: peso ×0.4 — secundarios medios
+- **Boss DMG/PEN**: peso ×0.3 — secundarios situacionales
+- **Maestría**: +3 por nivel de maestría
 
 ### Progresión de enemigos — tier-based (calcEnemyStats, línea 1203)
 ```js
@@ -163,12 +194,14 @@ def = base * tierScale^tier * subScale^(sub-1)
 ```
 Los jefes tienen escalado dinámico en el PRIMER intento (P20+): las stats del jefe se calculan en función de las stats del jugador y se guardan en `bossStats` para reuso en intentos posteriores. El jefe P10 (`firstBoss`) usa stats fijas.
 
-### Almas al morir (línea 2131)
+### Almas al morir (línea ~2421)
 ```js
 souls = floor(piso * baseMult + piso * upgrade_almas.level * upgrade_almas.flat)
-souls *= (1 + DR(soulBonus, cap=100, K=200) / 100)
 ```
-Además: Maestría Afortunada (anillo) puede duplicar las almas con 10/20/30% de chance.
+- Las almas se calculan **una sola vez al morir**, basado en el piso alcanzado (no se acumulan por enemigo)
+- Cada piso derrotado muestra las almas que habría dado en el log de combate, solo como referencia visual
+- **Maestría Afortunada** (anillo): 10/20/30% de chance de duplicar las almas
+- **Training mode**: base solamente, 25% del valor, sin mejoras permanentes
 
 ### Diminishing Returns (línea 1373)
 ```js
@@ -258,17 +291,17 @@ Ver `Talentos.md` para la referencia completa con valores por nivel.
 | Slot | Stat primario | Stats secundarios posibles |
 |------|--------------|---------------------------|
 | Arma | ATK | CRIT, Lifesteal, PEN, CRIT DMG, Boss DMG |
-| Armadura | DEF | HP, Dodge, HP REGEN, Thorns |
+| Armadura | DEF | HP, Dodge, HP REGEN |
 | Anillo | HP/ATK/DEF/AGI | Cualquiera (incluye repetidos de primarios) |
 
 ### Rarezas
 
-| Rareza | statMult | # stats | Maestría |
-|--------|:--------:|:-------:|:--------:|
-| Poco común | 1.0 | 1 | ❌ |
-| Raro | 1.5 | 1-2 | ❌ |
-| Épico | 2.0 | 2 | ✅ |
-| Legendario | 3.0 | 3 | ✅ |
+| Rareza | statMult | Stats totales | Maestría | Drop normal | Drop boss |
+|--------|:--------:|:-------:|:--------:|:-----------:|:---------:|
+| Poco común | 1.0 | 1 | ❌ | 70% | 0% |
+| Raro | 1.5 | 2 | ✅ niv 1 | 25% | 65% |
+| Épico | 2.0 | 3 | ✅ niv 2 | 5% | 30% |
+| Legendario | 3.0 | 4 | ✅ niv 3 | 0% | 5% |
 
 ### Maestrías (pasivas de equipo)
 
@@ -293,15 +326,13 @@ Se calculan con diminishing returns: `DR(raw, cap, K) = cap × raw / (raw + K)`
 | Stat | Fuente | Cap | K |
 |------|--------|:---:|:---:|
 | Crit chance | equipo(ratio 13) + Golpe Preciso + Trinidad → DR → + maestría + meta upgrade | 70% | 100 |
-| Dodge | DR(agi + Reflejos Felinos + Trinidad + maestría) | 40% | 80 |
+| Dodge | DR(agi + equipo/ratio5) + maestría + Reflejos Felinos + Trinidad | 40% | 80 |
 | Block | DR(def + Trinidad + maestría) | 50% | 100 |
 | PEN | equipo + maestría + Golpe Penetrante (%) | 50% | 100 |
 | Crit DMG | equipo + 50% base | 600% | 200 |
 | Boss DMG | equipo | 100% | 150 |
-| Thorns | equipo | 100% | 150 |
-| Lifesteal | equipo + maestría + Asalto Vampírico | 25% | 80 |
+| Lifesteal | DR(equipo) + maestría (flat) + Asalto Vampírico (flat) | 25% | 80 |
 | HP REGEN | equipo | ~15% | 150 |
-| Soul Bonus | equipo | 100% | 200 |
 
 ---
 
@@ -314,7 +345,7 @@ Los debuffs se aplican al enemigo mediante talentos de estado. Viven en `runStat
 | Hemorragia | `hemorragia` | `dot` | Sangrado: daño por tick, acumulable ×3 |
 | Hoja Tóxica | `hoja_toxica` | `dot` | Veneno: DoT + reduce % DEF |
 | Marca de Muerte | `marca_muerte` | `vulnerability` | +% daño recibido multiplicativo |
-| Furia Ardiente | `furia_ardiente` | (directo) | Daño fijo cada 1s por chance (no es debuff persistente) |
+| Furia Ardiente | `quemadura` | `burn` | DoT de fuego 1s + chance de quemar: reduce ATK del enemigo |
 | Desgaste | `desgaste` | `stat_drain` | Cada 3s pierde % ATK/DEF acumulativo |
 
 Funciones:
