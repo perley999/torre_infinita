@@ -83,6 +83,23 @@ Todos los cambios notables en este proyecto.
 - **Talentos se resetean entre runs**: las habilidades de nivel 5/10/15/20 ahora viven en `runState.abilities` (RAM) en vez de `metaState.abilities` (localStorage). Se pierden al morir/reiniciar y se eligen de nuevo cada run.
 - **Orden UI**: bloque de almas movido justo antes de Mejoras Permanentes.
 
+## [0.4.3] - 2026-05-25
+
+### Añadido
+- **Death recap completo**: pantalla post-mortem con 3 tabs (Daño/Mitigación/Curación), desglose por fuente, niveles de talento mostrados, ordenado por valor. Incluye seguimiento de evasión (golpes esquivados y daño evitado).
+- **Contraataque rework**: ahora ejecuta un ataque completo del jugador con todas las sinergias de talentos (multiataque, penetración, crítico, golpe brutal, ejecución, furia creciente, debuffs, eco de combate, etc.) en vez de reflejar % del daño recibido.
+
+### Cambiado
+- **Primer Golpe**: buff sustancial — +50/80/120% de daño en primer golpe (antes ×1.25/1.40/1.60).
+- **Cañón de Cristal**: el bonus de daño ahora aplica siempre (no solo bajo 30% HP). El umbral de daño recibido extra subió a 50% HP (antes 30%).
+- **Reflejo Rápido renombrado a Golpe Rápido**: consistencia interna en naming.
+- **Contraataque**: ahora escala con lifesteal, debuffs y pasivas del jugador.
+- **Death recap**: talentos ahora muestran su nivel junto al nombre, filas ordenadas de mayor a menor valor.
+
+### Técnico
+- Variable `reflejoBonus` → `golpeBonus` en runState, `reflejo_rapido` → `golpe_rapido` en recap tracking.
+- Nuevos campos en recap.mitigation: `dodge_hits`, `dodge_dmg` para tracking de evasión.
+
 ## [Unreleased]
 
 ### Cambiado

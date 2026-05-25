@@ -16,9 +16,9 @@
 
 ### Primer Golpe
 - **Descripción**: Daño bonus en el primer ataque del combate
-- **Nivel 1**: ×1.25 de daño en el primer ataque
-- **Nivel 2**: ×1.40 de daño en el primer ataque
-- **Nivel 3**: ×1.60 de daño en el primer ataque
+- **Nivel 1**: +50% de daño en el primer ataque
+- **Nivel 2**: +80% de daño en el primer ataque
+- **Nivel 3**: +120% de daño en el primer ataque
 
 ### Golpe Preciso
 - **Descripción**: Aumento de probabilidad crítica
@@ -39,7 +39,7 @@
 - **Nivel 3**: Umbral 30% HP, daño ×3
 
 ### Cañón de Cristal
-- **Descripción**: Aumento de daño recibiendo más daño con HP < 30%
+- **Descripción**: Aumento de daño recibiendo más daño con HP < 50%
 - **Nivel 1**: +20% daño infligido, +10% daño recibido
 - **Nivel 2**: +30% daño infligido, +15% daño recibido
 - **Nivel 3**: +40% daño infligido, +20% daño recibido
@@ -74,10 +74,10 @@
 ## 🛡️ Defensivo
 
 ### Contraataque
-- **Descripción**: Al recibir daño, probabilidad de devolver % del daño
-- **Nivel 1**: 15% de probabilidad, devuelve 40% del daño recibido
-- **Nivel 2**: 20% de probabilidad, devuelve 50% del daño recibido
-- **Nivel 3**: 25% de probabilidad, devuelve 60% del daño recibido
+- **Descripción**: Al recibir daño, probabilidad de contraatacar con un ataque completo
+- **Nivel 1**: 15% de probabilidad de contraatacar
+- **Nivel 2**: 20% de probabilidad de contraatacar
+- **Nivel 3**: 25% de probabilidad de contraatacar
 
 ### Escudo Vital
 - **Descripción**: Al entrar en combate, escudo = % de tu HP máximo

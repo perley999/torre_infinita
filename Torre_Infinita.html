@@ -1205,7 +1205,7 @@
             furiaStacks: 0,
             critMasteryCounter: 0,
             runeTapCounter: 0,
-            reflejoBonus: 0,
+            golpeBonus: 0,
             spellShieldCounter: 0,
             segundoAlientoUsed: false,
             bossesKilledThisRun: 0,
@@ -1231,12 +1231,14 @@
                     contraataque: 0,  // Counterattack damage
                     maestro_elemental: 0, // Maestro Elemental bonus
                     furia_mastery: 0, // Maestría Furiosa bonus
-                    reflejo_rapido: 0, // Reflejo Rápido bonus
+                    golpe_rapido: 0, // Golpe Rápido bonus
                     reflected: 0,     // damage reflected (reserve)
                 },
                 mitigation: {
                     def: 0,           // damage prevented by DEF calc
                     block: 0,         // damage prevented by block (50% reduction)
+                    dodge_hits: 0,    // number of enemy attacks dodged
+                    dodge_dmg: 0,     // damage prevented by dodge (post-DEF value)
                     vital_shield: 0,  // damage absorbed by Vital Shield
                     piedra_shield: 0, // damage absorbed by Piel de Piedra
                     indestructible: 0, // damage reduced by Indestructible
@@ -1284,16 +1286,16 @@
             ofensivo: [
                 { id: 'multiataque', label: 'Multiataque', desc: 'Probabilidad de atacar múltiples veces',
                   levels: [{ chance2: 15 }, { chance2: 20 }, { chance2: 20, chance3: 10 }] },
-                { id: 'primer_golpe', label: 'Primer Golpe', desc: 'Daño bonus en el primer ataque del combate',
-                  levels: [{ dmgMult: 1.25 }, { dmgMult: 1.40 }, { dmgMult: 1.60 }] },
+{ id: 'primer_golpe', label: 'Primer Golpe', desc: 'Daño bonus en el primer ataque del combate',
+                   levels: [{ dmgMult: 1.50 }, { dmgMult: 1.80 }, { dmgMult: 2.20 }] },
                 { id: 'golpe_preciso', label: 'Golpe Preciso', desc: 'Aumento de probabilidad crítica',
                   levels: [{ flatCrit: 10 }, { flatCrit: 15 }, { flatCrit: 20 }] },
                 { id: 'golpe_brutal', label: 'Golpe Brutal', desc: 'Probabilidad de hacer ×3 daño',
                   levels: [{ chance: 8 }, { chance: 12 }, { chance: 16 }] },
                 { id: 'ejecucion', label: 'Ejecución', desc: 'Si el enemigo tiene poco HP, tu daño se multiplica',
                   levels: [{ threshold: 0.20, mult: 2 }, { threshold: 0.25, mult: 2.5 }, { threshold: 0.30, mult: 3 }] },
-                { id: 'canon_cristal', label: 'Cañón de Cristal', desc: 'Aumento de daño recibiendo más daño con HP<30%',
-                  levels: [{ dmgBonus: 20, dmgTaken: 10 }, { dmgBonus: 30, dmgTaken: 15 }, { dmgBonus: 40, dmgTaken: 20 }] },
+{ id: 'canon_cristal', label: 'Cañón de Cristal', desc: 'Aumento de daño recibiendo más daño con HP<50%',
+                   levels: [{ dmgBonus: 20, dmgTaken: 10 }, { dmgBonus: 30, dmgTaken: 15 }, { dmgBonus: 40, dmgTaken: 20 }] },
                 { id: 'maestria_critica', label: 'Maestría Crítica', desc: 'Golpe crítico garantizado cada X ataques',
                   levels: [{ everyN: 7 }, { everyN: 5 }, { everyN: 3 }] },
                 { id: 'golpe_penetrante', label: 'Golpe Penetrante', desc: 'Tus ataques ignoran % de la DEF del enemigo',
@@ -1305,8 +1307,8 @@
                   levels: [{ chance: 15, dmgPct: 40 }, { chance: 20, dmgPct: 50 }, { chance: 25, dmgPct: 60 }] },
             ],
             defensivo: [
-                { id: 'contraataque', label: 'Contraataque', desc: 'Al recibir daño, probabilidad de devolver % del daño',
-                  levels: [{ chance: 15, dmgPct: 40 }, { chance: 20, dmgPct: 50 }, { chance: 25, dmgPct: 60 }] },
+{ id: 'contraataque', label: 'Contraataque', desc: 'Al recibir daño, probabilidad de contraatacar con un ataque completo',
+                   levels: [{ chance: 15 }, { chance: 20 }, { chance: 25 }] },
                 { id: 'escudo_vital', label: 'Escudo Vital', desc: 'Al entrar en combate, escudo = % de tu HP máximo',
                   levels: [{ shieldPct: 8 }, { shieldPct: 12 }, { shieldPct: 16 }] },
                 { id: 'indestructible', label: 'Indestructible', desc: 'Reducción de daño a costa de menos daño propio',
@@ -2202,13 +2204,13 @@
                         if (rc) rc.dmg.furia_creciente += dmg - preDmg;
                     }
 
-                    // Talento: Reflejo Rápido (bonus tras esquivar, un solo golpe)
-                    if (runState.reflejoBonus > 0) {
-                        const preDmg = dmg;
-                        dmg = Math.floor(dmg * (1 + runState.reflejoBonus / 100));
-                        runState.reflejoBonus = 0;
-                        if (rc) rc.dmg.reflejo_rapido += dmg - preDmg;
-                    }
+// Talento: Golpe Rápido (bonus tras esquivar, un solo golpe)
+                     if (runState.golpeBonus > 0) {
+                         const preDmg = dmg;
+                         dmg = Math.floor(dmg * (1 + runState.golpeBonus / 100));
+                         runState.golpeBonus = 0;
+                         if (rc) rc.dmg.golpe_rapido += dmg - preDmg;
+                     }
 
                     // Crit: base 1.5x + bonus from equipment (capped at 650% total = 6.5x)
                     if (Math.random() * 100 < totalCrit) {
@@ -2257,8 +2259,8 @@
                         }
                     }
 
-                    // Talento: Cañón de Cristal (bajo 30% HP)
-                    if (t('canon_cristal') > 0 && p.hp < p.maxHp * 0.30) {
+                    // Talento: Cañón de Cristal (bonus de daño siempre)
+                    if (t('canon_cristal') > 0) {
                         const preDmg = dmg;
                         const cc = TALENT_POOL.ofensivo.find(x => x.id === 'canon_cristal').levels[t('canon_cristal') - 1];
                         dmg = Math.floor(dmg * (1 + cc.dmgBonus / 100));
@@ -2431,12 +2433,18 @@
                     return;
                 }
 
+                    // Pre-calc post-DEF damage for dodge tracking
+                    const dodgePotentialDmg = calcDamage(e.atk, p.def);
                     // Dodge check
                     if (Math.random() * 100 < totalDodge) {
                         spawnFloat('player-floats', 'MISS', 'miss');
+                        if (runState.recap) {
+                            runState.recap.mitigation.dodge_hits++;
+                            runState.recap.mitigation.dodge_dmg += dodgePotentialDmg;
+                        }
                         // Talento: Golpe Rápido (bonus dmg tras esquivar)
                         if (t('golpe_rapido') > 0) {
-                            runState.reflejoBonus = TALENT_POOL.defensivo.find(x => x.id === 'golpe_rapido').levels[t('golpe_rapido') - 1].dmgBonus;
+                            runState.golpeBonus = TALENT_POOL.defensivo.find(x => x.id === 'golpe_rapido').levels[t('golpe_rapido') - 1].dmgBonus;
                         }
                         return;
                     }
@@ -2491,8 +2499,8 @@
                     if (rcMit) rcMit.mitigation.fortaleza += preDmg - dmg;
                 }
 
-                // Talento: Cañón de Cristal (más daño recibido bajo 30% HP)
-                if (t('canon_cristal') > 0 && p.hp < p.maxHp * 0.30) {
+// Talento: Cañón de Cristal (más daño recibido bajo 50% HP)
+                 if (t('canon_cristal') > 0 && p.hp < p.maxHp * 0.50) {
                     const preDmg = dmg;
                     const cc = TALENT_POOL.ofensivo.find(x => x.id === 'canon_cristal').levels[t('canon_cristal') - 1];
                     dmg = Math.floor(dmg * (1 + cc.dmgTaken / 100));
@@ -2569,24 +2577,252 @@
                 spawnFloat('player-floats', playerDmgText, type);
                 flashElement('player-card');
 
-                // Talento: Contraataque
-                if (t('contraataque') > 0) {
-                    const ca = TALENT_POOL.defensivo.find(x => x.id === 'contraataque').levels[t('contraataque') - 1];
-                    if (Math.random() * 100 < ca.chance) {
-                        const counterDmg = Math.floor(dmg * ca.dmgPct / 100);
-                        e.hp -= counterDmg;
-                        if (runState.recap) runState.recap.dmg.contraataque += counterDmg;
-                        if (currentLifesteal > 0) {
-                            const heal = Math.floor(counterDmg * currentLifesteal / 100);
-                            if (heal > 0) {
-                                p.hp = Math.min(p.maxHp, p.hp + heal);
-                                spawnFloat('player-floats', `+${heal} (C)`, 'heal');
-                                if (runState.recap) runState.recap.heal.counter_lifesteal += heal;
-                            }
-                        }
-                        spawnFloat('enemy-floats', `-${counterDmg} (C)`, 'crit', 'right');
-                    }
-                }
+// Talento: Contraataque
+                 if (t('contraataque') > 0) {
+                     const ca = TALENT_POOL.defensivo.find(x => x.id === 'contraataque').levels[t('contraataque') - 1];
+                     if (Math.random() * 100 < ca.chance) {
+                         // Contraataque: perform a full player attack using current stats
+                         let attacks = 1;
+                         // Handle Multiataque for counterattacks too
+                         if (t('multiataque') > 0) {
+                             const m = TALENT_POOL.ofensivo.find(x => x.id === 'multiataque').levels[t('multiataque') - 1];
+                             if (Math.random() * 100 < (m.chance3 || 0)) attacks = 3;
+                             else if (Math.random() * 100 < m.chance2) attacks = 2;
+                         }
+
+                         for (let counterAttackIndex = 0; counterAttackIndex < attacks; counterAttackIndex++) {
+                             // Apply penetration: ignore % of enemy DEF
+                             let penPct = effPen;
+                             if (t('golpe_penetrante') > 0) {
+                                 penPct += TALENT_POOL.ofensivo.find(x => x.id === 'golpe_penetrante').levels[t('golpe_penetrante') - 1].penPct;
+                             }
+                             const effectiveDef = Math.max(0, Math.floor(e.def * (1 - penPct / 100)));
+                             let counterDmg = calcDamage(p.atk, effectiveDef);
+                             let counterType = 'normal';
+
+                             // Talento: Primer Golpe (only applies to first counterattack hit)
+                             if (counterAttackIndex === 0 && t('primer_golpe') > 0) {
+                                 const preDmg = counterDmg;
+                                 const mult = TALENT_POOL.ofensivo.find(x => x.id === 'primer_golpe').levels[t('primer_golpe') - 1].dmgMult;
+                                 counterDmg = Math.floor(counterDmg * mult);
+                                 if (runState.recap) runState.recap.dmg.contraataque += counterDmg - preDmg;
+                             }
+
+                             // Talento: Furia Creciente
+                             if (t('furia_creciente') > 0) {
+                                 const preDmg = counterDmg;
+                                 const f = TALENT_POOL.ofensivo.find(x => x.id === 'furia_creciente').levels[t('furia_creciente') - 1];
+                                 if (!runState.furiaStacks) runState.furiaStacks = 0;
+                                 runState.furiaStacks++;
+                                 const stacks = Math.min(runState.furiaStacks, f.maxStack);
+                                 const bonus = f.perHit * stacks;
+                                 if (bonus > 0) counterDmg = Math.floor(counterDmg * (1 + bonus / 100));
+                                 if (runState.recap) runState.recap.dmg.contraataque += counterDmg - preDmg;
+                             }
+
+// Talento: Golpe Rápido (bonus tras esquivar, un solo golpe)
+                              if (runState.golpeBonus > 0) {
+                                  const preDmg = counterDmg;
+                                  counterDmg = Math.floor(counterDmg * (1 + runState.golpeBonus / 100));
+                                  runState.golpeBonus = 0;
+                                  if (runState.recap) runState.recap.dmg.contraataque += counterDmg - preDmg;
+                              }
+
+                             // Crit: base 1.5x + bonus from equipment (capped at 650% total = 6.5x)
+                             if (Math.random() * 100 < totalCrit) {
+                                 const preDmg = counterDmg;
+                                 const critDmgBonus = metaState.upgrades.critDmg.level * metaState.upgrades.critDmg.percent * 100;
+                                 const critMult = 1.5 + (effCritDmg + critDmgBonus) / 100;
+                                 counterDmg = Math.floor(counterDmg * critMult);
+                                 counterType = 'crit';
+                                 if (runState.recap) runState.recap.dmg.contraataque += counterDmg - preDmg;
+                             }
+
+                             // Talento: Golpe Brutal
+                             if (t('golpe_brutal') > 0) {
+                                 const chance = TALENT_POOL.ofensivo.find(x => x.id === 'golpe_brutal').levels[t('golpe_brutal') - 1].chance;
+                                 if (Math.random() * 100 < chance) {
+                                     const preDmg = counterDmg;
+                                     counterDmg *= 3;
+                                     counterType = 'crit';
+                                     if (runState.recap) runState.recap.dmg.contraataque += counterDmg - preDmg;
+                                 }
+                             }
+
+                             // Talento: Ejecución
+                             if (t('ejecucion') > 0) {
+                                 const ex = TALENT_POOL.ofensivo.find(x => x.id === 'ejecucion').levels[t('ejecucion') - 1];
+                                 if (e.hp < e.maxHp * ex.threshold) {
+                                     const preDmg = counterDmg;
+                                     counterDmg = Math.floor(counterDmg * ex.mult);
+                                     counterType = 'crit';
+                                     if (runState.recap) runState.recap.dmg.contraataque += counterDmg - preDmg;
+                                 }
+                             }
+
+                             // Talento: Cañón de Cristal (bonus de daño siempre)
+                             if (t('canon_cristal') > 0) {
+                                 const preDmg = counterDmg;
+                                 const cc = TALENT_POOL.ofensivo.find(x => x.id === 'canon_cristal').levels[t('canon_cristal') - 1];
+                                 counterDmg = Math.floor(counterDmg * (1 + cc.dmgBonus / 100));
+                                 if (runState.recap) runState.recap.dmg.contraataque += counterDmg - preDmg;
+                             }
+
+                             // Boss damage bonus
+                             if (e.isBoss && effBossDmg > 0) {
+                                 const preDmg = counterDmg;
+                                 counterDmg = Math.floor(counterDmg * (1 + effBossDmg / 100));
+                                 if (runState.recap) runState.recap.dmg.contraataque += counterDmg - preDmg;
+                             }
+
+                             // T12 — Vulnerability multiplier (Marca de Muerte)
+                             const vulnDebuff = runState.enemyDebuffs.find(d => d.type === 'vulnerability');
+                             if (vulnDebuff && vulnDebuff.vulnPct) {
+                                 counterDmg = Math.floor(counterDmg * (1 + vulnDebuff.vulnPct / 100));
+                                 if (runState.recap) runState.recap.dmg.contraataque += counterDmg - preDmg;
+                             }
+
+                             // T13 — Maestro Elemental: bonus damage vs enemies with active DoT
+                             if (t('maestro_elemental') > 0 && hasActiveDebuff('dot')) {
+                                 const preDmg = counterDmg;
+                                 const me = TALENT_POOL.heroico.find(x => x.id === 'maestro_elemental').levels[t('maestro_elemental') - 1];
+                                 counterDmg = Math.floor(counterDmg * (1 + me.dmgBonus / 100));
+                                 if (runState.recap) runState.recap.dmg.contraataque += counterDmg - preDmg;
+                             }
+
+                             e.hp -= counterDmg;
+                             const dmgText = counterType === 'crit' ? `-${counterDmg}!` : `-${counterDmg}`;
+                             spawnFloat('enemy-floats', dmgText, counterType);
+
+                             // Lifesteal (ya incluye equipo + maestría + asalto vampírico, flat post-DR)
+                             if (currentLifesteal > 0) {
+                                 const heal = Math.floor(counterDmg * currentLifesteal / 100);
+                                 if (heal > 0) {
+                                     p.hp = Math.min(p.maxHp, p.hp + heal);
+                                     spawnFloat('player-floats', `+${heal}`, 'heal');
+                                     if (runState.recap) runState.recap.heal.contraataque += heal;
+                                 }
+                             }
+
+                             // Talento: Toque Rúnico (cura cada 5to ataque)
+                             if (t('toque_runico') > 0) {
+                                 if (!runState.runeTapCounter) runState.runeTapCounter = 0;
+                                 runState.runeTapCounter++;
+                                 if (runState.runeTapCounter >= 5) {
+                                     runState.runeTapCounter = 0;
+                                     const healPct = TALENT_POOL.sustain.find(x => x.id === 'toque_runico').levels[t('toque_runico') - 1].healPct;
+                                     const heal = Math.floor(p.maxHp * healPct / 100);
+                                     p.hp = Math.min(p.maxHp, p.hp + heal);
+                                     spawnFloat('player-floats', `+${heal} (runa)`, 'heal');
+                                     if (runState.recap) runState.recap.heal.contraataque += heal;
+                                 }
+                             }
+
+                             // Talento: Eco de Combate (chance de repetir ataque)
+                             if (t('eco_combate') > 0) {
+                                 const ec = TALENT_POOL.ofensivo.find(x => x.id === 'eco_combate').levels[t('eco_combate') - 1];
+                                 if (Math.random() * 100 < ec.chance) {
+                                     const echoDmg = Math.floor(counterDmg * ec.dmgPct / 100);
+                                     e.hp -= echoDmg;
+                                     if (runState.recap) runState.recap.dmg.contraataque += echoDmg;
+                                     if (currentLifesteal > 0) {
+                                         const heal = Math.floor(echoDmg * currentLifesteal / 100);
+                                         if (heal > 0) {
+                                             p.hp = Math.min(p.maxHp, p.hp + heal);
+                                             spawnFloat('player-floats', `+${heal} (eco)`, 'heal');
+                                             if (runState.recap) runState.recap.heal.contraataque += heal;
+                                         }
+                                     }
+                                     spawnFloat('enemy-floats', `-${echoDmg} (eco)`, 'crit', 'right');
+                                 }
+                             }
+
+                             // T14 — Golpe Cegador: chance to blind enemy (next attack misses)
+                             if (t('golpe_cegador') > 0) {
+                                 const gc = TALENT_POOL.estado.find(x => x.id === 'golpe_cegador').levels[t('golpe_cegador') - 1];
+                                 if (Math.random() * 100 < gc.chance) {
+                                     runState.enemyBlinded = true;
+                                     if (runState.recap) runState.recap.dmg.contraataque += 0; // No damage, but track the proc
+                                 }
+                             }
+
+                             // T7 — Hemorragia: chance to apply bleeding DoT (stacks independientes hasta maxStack)
+                             if (t('hemorragia') > 0) {
+                                 const h = TALENT_POOL.estado.find(x => x.id === 'hemorragia').levels[t('hemorragia') - 1];
+                                 if (Math.random() * 100 < h.chance) {
+                                     applyDebuff({
+                                         id: 'hemorragia',
+                                         type: 'dot',
+                                         dmgPctPerTick: h.dmgPctPerTick,
+                                         ticksLeft: h.ticks,
+                                         duration: h.ticks,
+                                         maxStack: h.maxStack,
+                                     });
+                                     if (runState.recap) runState.recap.dmg.contraataque += 0; // Track proc
+                                 }
+                             }
+
+                             // T9 — Hoja Tóxica: chance to apply poison DoT + DEF reduction on hit
+                             if (t('hoja_toxica') > 0) {
+                                 const ht = TALENT_POOL.estado.find(x => x.id === 'hoja_toxica').levels[t('hoja_toxica') - 1];
+                                 if (Math.random() * 100 < ht.chance) {
+                                     const existing = runState.enemyDebuffs.filter(d => d.id === 'hoja_toxica');
+                                     if (existing.length < ht.maxStack) {
+                                         applyDebuff({
+                                             id: 'hoja_toxica',
+                                             type: 'dot',
+                                             dmgPctPerTick: ht.dmgPctPerTick,
+                                             ticksLeft: ht.ticks,
+                                             duration: ht.ticks,
+                                             defReductionPct: ht.defReductionPct,
+                                             maxStack: ht.maxStack,
+                                         });
+                                         if (runState.recap) runState.recap.dmg.contraataque += 0; // Track proc
+                                     }
+                                 }
+                             }
+
+                             // T10 — Marca de Muerte: always applies vulnerability on hit (no chance check)
+                             if (t('marca_muerte') > 0) {
+                                 const mm = TALENT_POOL.estado.find(x => x.id === 'marca_muerte').levels[t('marca_muerte') - 1];
+                                 applyDebuff({
+                                     id: 'marca_muerte',
+                                     type: 'vulnerability',
+                                     vulnPct: mm.vulnPct,
+                                     ticksLeft: mm.duration * 10, // duration in seconds → ticks (10 ticks/sec)
+                                     duration: mm.duration * 10,
+                                 });
+                                 if (runState.recap) runState.recap.dmg.contraataque += 0; // Track proc
+                             }
+
+                             // T16 — Toque Helado: slow enemy attack speed on hit
+                             if (t('toque_helado') > 0) {
+                                 const th = TALENT_POOL.estado.find(x => x.id === 'toque_helado').levels[t('toque_helado') - 1];
+                                 runState.enemySlowPct = th.slowPct;
+                                 runState.enemySlowTicks = th.duration * 10;
+                                 if (runState.recap) runState.recap.dmg.contraataque += 0; // Track proc
+                             }
+
+                             // T15 — Golpe Helado: freeze boss for 2s (20 ticks), 3s CD (30 ticks)
+                             if (t('golpe_helado') > 0 && runState.enemy?.isBoss && (runState.freezeCooldown || 0) <= 0) {
+                                 const gh = TALENT_POOL.estado.find(x => x.id === 'golpe_helado').levels[t('golpe_helado') - 1];
+                                 if (Math.random() * 100 < gh.chance) {
+                                     runState.frozenTicks = 20; // 2 seconds at 100ms/tick
+                                     runState.freezeCooldown = 30; // 3 seconds cooldown
+                                     addLog('❄️ ¡Jefe congelado! (Contraataque)', 'system');
+                                     if (runState.recap) runState.recap.dmg.contraataque += 0; // Track proc
+                                 }
+                             }
+                         }
+
+                         // Track total counterattack damage in recap
+                         if (runState.recap) {
+                             // We already tracked individual components above, but we need the total
+                             // For simplicity, we'll calculate it here or rely on the individual tracking
+                             // Since we tracked components individually, we don't need to add the total again
+                         }
+                     }
+                 }
             }
 
             // Talento: Segundo Aliento (burst heal al bajar de 30% HP, una vez por combate)
@@ -3058,14 +3294,14 @@
             runState.xpToNext = BALANCE.levelUp.xpScale * (runState.level || 1);
             runState.runBonuses = { ...metaState.heroBonuses };
             runState.abilities = [];
-            runState.talentLevels = {};
-            runState.hasRevived = false;
-            runState.furiaStacks = 0;
-            runState.critMasteryCounter = 0;
-            runState.runeTapCounter = 0;
-            runState.reflejoBonus = 0;
-            runState.spellShieldCounter = 0;
-            runState.segundoAlientoUsed = false;
+runState.talentLevels = {};
+             runState.hasRevived = false;
+runState.furiaStacks = 0;
+             runState.critMasteryCounter = 0;
+             runState.runeTapCounter = 0;
+             runState.golpeBonus = 0;
+             runState.spellShieldCounter = 0;
+             runState.segundoAlientoUsed = false;
             runState.bossesKilledThisRun = 0;
             runState.enemyDebuffs = [];
             runState.vitalShield = 0;
@@ -3131,30 +3367,32 @@
             const recap = runState.recap;
             if (!recap) return;
             const container = document.getElementById('recap-content');
+            const tl = runState.talentLevels || {};
+            const lvl = (id) => { const v = tl[id] || 0; return v > 0 ? ` (Nv.${v})` : ''; };
             let html = '';
 
             if (tab === 'dmg') {
                 const items = [
                     ['Auto-ataques', recap.dmg.normal],
                     ['Críticos', recap.dmg.crit],
-                    ['Multiataque', recap.dmg.multiataque],
-                    ['Primer Golpe', recap.dmg.primer_golpe],
-                    ['Reflejo Rápido', recap.dmg.reflejo_rapido],
-                    ['Furia Creciente', recap.dmg.furia_creciente],
-                    ['Golpe Brutal', recap.dmg.golpe_brutal],
-                    ['Ejecución', recap.dmg.ejecucion],
-                    ['Cañón de Cristal', recap.dmg.canon_cristal],
+                    ['Multiataque' + lvl('multiataque'), recap.dmg.multiataque],
+                    ['Primer Golpe' + lvl('primer_golpe'), recap.dmg.primer_golpe],
+                    ['Golpe Rápido' + lvl('golpe_rapido'), recap.dmg.golpe_rapido],
+                    ['Furia Creciente' + lvl('furia_creciente'), recap.dmg.furia_creciente],
+                    ['Golpe Brutal' + lvl('golpe_brutal'), recap.dmg.golpe_brutal],
+                    ['Ejecución' + lvl('ejecucion'), recap.dmg.ejecucion],
+                    ['Cañón de Cristal' + lvl('canon_cristal'), recap.dmg.canon_cristal],
                     ['Maestría Furiosa', recap.dmg.furia_mastery],
                     ['Daño vs Boss', recap.dmg.boss_dmg],
-                    ['Maestro Elemental', recap.dmg.maestro_elemental],
-                    ['Eco de Combate', recap.dmg.eco_combate],
-                    ['Contraataque', recap.dmg.contraataque],
-                    ['Hemorragia (DoT)', recap.dmg.hemorragia],
-                    ['Hoja Tóxica (DoT)', recap.dmg.hoja_toxica],
-                    ['Furia Ardiente', recap.dmg.furia_ardiente],
+                    ['Maestro Elemental' + lvl('maestro_elemental'), recap.dmg.maestro_elemental],
+                    ['Eco de Combate' + lvl('eco_combate'), recap.dmg.eco_combate],
+                    ['Contraataque' + lvl('contraataque'), recap.dmg.contraataque],
+                    ['Hemorragia (DoT)' + lvl('hemorragia'), recap.dmg.hemorragia],
+                    ['Hoja Tóxica (DoT)' + lvl('hoja_toxica'), recap.dmg.hoja_toxica],
+                    ['Furia Ardiente' + lvl('furia_ardiente'), recap.dmg.furia_ardiente],
                 ];
                 const total = items.reduce((s, [, v]) => s + v, 0);
-                const shown = items.filter(([, v]) => v > 0);
+                const shown = items.filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
                 if (shown.length === 0) {
                     html = '<div class="recap-row" style="justify-content:center;color:#9ca3af;padding:12px;">No infligiste daño</div>';
                 } else {
@@ -3167,16 +3405,18 @@
                 const items = [
                     ['DEF (reducción)', recap.mitigation.def],
                     ['Bloqueo (50%)', recap.mitigation.block],
-                    ['Piel de Piedra', recap.mitigation.piedra_shield],
-                    ['Escudo Vital', recap.mitigation.vital_shield],
-                    ['Indestructible', recap.mitigation.indestructible],
-                    ['Fortaleza', recap.mitigation.fortaleza],
-                    ['Escudo Mágico', recap.mitigation.escudo_magico],
-                    ['Veterano Batalla', recap.mitigation.veterano],
+                    ['Piel de Piedra' + lvl('piel_piedra'), recap.mitigation.piedra_shield],
+                    ['Escudo Vital' + lvl('escudo_vital'), recap.mitigation.vital_shield],
+                    ['Indestructible' + lvl('indestructible'), recap.mitigation.indestructible],
+                    ['Fortaleza' + lvl('fortaleza'), recap.mitigation.fortaleza],
+                    ['Escudo Mágico' + lvl('escudo_magico'), recap.mitigation.escudo_magico],
+                    ['Veterano Batalla' + lvl('veterano_batalla'), recap.mitigation.veterano],
                     ['Maestría Resistente', recap.mitigation.resistente],
-                    ['Cañón de Cristal (+recibido)', recap.mitigation.canon_recibido],
+                    ['Evasión (daño evitado)', recap.mitigation.dodge_dmg],
+                    ['Golpes esquivados', recap.mitigation.dodge_hits],
+                    ['Cañón de Cristal (+recibido)' + lvl('canon_cristal'), recap.mitigation.canon_recibido],
                 ];
-                const shown = items.filter(([, v]) => v > 0);
+                const shown = items.filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
                 if (shown.length === 0) {
                     html = '<div class="recap-row" style="justify-content:center;color:#9ca3af;padding:12px;">No recibiste daño</div>';
                 } else {
@@ -3189,16 +3429,16 @@
             } else if (tab === 'heal') {
                 const items = [
                     ['Lifesteal (ataques)', recap.heal.lifesteal],
-                    ['Toque Rúnico', recap.heal.toque_runico],
-                    ['Regeneración', recap.heal.regeneracion],
+                    ['Toque Rúnico' + lvl('toque_runico'), recap.heal.toque_runico],
+                    ['Regeneración' + lvl('regeneracion'), recap.heal.regeneracion],
                     ['HP Regen (equipo)', recap.heal.hp_regen],
-                    ['Segundo Aliento', recap.heal.segundo_aliento],
+                    ['Segundo Aliento' + lvl('segundo_aliento'), recap.heal.segundo_aliento],
                     ['Lifesteal (DoTs)', recap.heal.dot_lifesteal],
                     ['Lifesteal (Eco)', recap.heal.echo_lifesteal],
                     ['Lifesteal (Contraataque)', recap.heal.counter_lifesteal],
                 ];
                 const total = items.reduce((s, [, v]) => s + v, 0);
-                const shown = items.filter(([, v]) => v > 0);
+                const shown = items.filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
                 if (shown.length === 0) {
                     html = '<div class="recap-row" style="justify-content:center;color:#9ca3af;padding:12px;">No te curaste</div>';
                 } else {
