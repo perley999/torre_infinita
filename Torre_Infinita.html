@@ -951,8 +951,8 @@
                 agi:  { baseCost: 20, scale: 1.6, percent: 0.02, label: '+2% AGI', icon: '🏃' },
                 souls:{ baseCost: 25, scale: 1.7, flat: 1, percent: 0, label: '+1 alma/piso', icon: '💀', maxLevel: 10 },
                 crit: { baseCost: 30, scale: 1.8, flat: 0, percent: 0.02, label: '+2% Crítico', icon: '🎯', maxLevel: 15 },
-                drop: { baseCost: 40, scale: 2.0, flat: 0, percent: 0.05, label: '+5% Drop', icon: '🎁', maxLevel: 10 },
                 pen:  { baseCost: 35, scale: 1.9, flat: 0, percent: 0.01, label: '+1% Penetración', icon: '💥', maxLevel: 10 },
+                bossDmg: { baseCost: 40, scale: 2.0, flat: 0, percent: 0.10, label: '+10% Daño vs Boss', icon: '👑', maxLevel: 10 },
                 critDmg: { baseCost: 30, scale: 1.8, flat: 0, percent: 0.20, label: '+20% Daño Crítico', icon: '💢', maxLevel: 10 },
             },
 
@@ -986,7 +986,7 @@
 
             // --- EQUIPMENT ---
             equipment: {
-                dropBaseChance: 50,
+                dropBaseChance: 70,
                 slots: ['weapon', 'armor', 'ring'],
                 // Stat pools per slot
                 statPools: {
@@ -1231,6 +1231,7 @@
                     contraataque: 0,  // Counterattack damage
                     maestro_elemental: 0, // Maestro Elemental bonus
                     furia_mastery: 0, // Maestría Furiosa bonus
+                    sangre_fria: 0,   // Sangre Fría guaranteed crit bonus
                     golpe_rapido: 0, // Golpe Rápido bonus
                     reflected: 0,     // damage reflected (reserve)
                 },
@@ -1285,7 +1286,7 @@
         const TALENT_POOL = {
             ofensivo: [
                 { id: 'multiataque', label: 'Multiataque', desc: 'Probabilidad de atacar múltiples veces',
-                  levels: [{ chance2: 15 }, { chance2: 20 }, { chance2: 20, chance3: 10 }] },
+                  levels: [{ chance: 20, hits: 2 }, { chance: 20, hits: 3 }, { chance: 20, hits: 4 }] },
 { id: 'primer_golpe', label: 'Primer Golpe', desc: 'Daño bonus en el primer ataque del combate',
                    levels: [{ dmgMult: 1.50 }, { dmgMult: 1.80 }, { dmgMult: 2.20 }] },
                 { id: 'golpe_preciso', label: 'Golpe Preciso', desc: 'Aumento de probabilidad crítica',
@@ -1296,12 +1297,12 @@
                   levels: [{ threshold: 0.20, mult: 2 }, { threshold: 0.25, mult: 2.5 }, { threshold: 0.30, mult: 3 }] },
 { id: 'canon_cristal', label: 'Cañón de Cristal', desc: 'Aumento de daño recibiendo más daño con HP<50%',
                    levels: [{ dmgBonus: 20, dmgTaken: 10 }, { dmgBonus: 30, dmgTaken: 15 }, { dmgBonus: 40, dmgTaken: 20 }] },
-                { id: 'maestria_critica', label: 'Maestría Crítica', desc: 'Golpe crítico garantizado cada X ataques',
+                { id: 'sangre_fria', label: 'Sangre Fría', desc: 'Cada X ataques, tu sangre fría te garantiza un golpe crítico',
                   levels: [{ everyN: 7 }, { everyN: 5 }, { everyN: 3 }] },
                 { id: 'golpe_penetrante', label: 'Golpe Penetrante', desc: 'Tus ataques ignoran % de la DEF del enemigo',
                   levels: [{ penPct: 10 }, { penPct: 20 }, { penPct: 30 }] },
                 { id: 'furia_creciente', label: 'Furia Creciente', desc: 'Cada ataque consecutivo hace +X% daño (máx acumulativo)',
-                  levels: [{ perHit: 5, maxStack: 10 }, { perHit: 10, maxStack: 10 }, { perHit: 15, maxStack: 10 }],
+                  levels: [{ perHit: 10, maxStack: 10 }, { perHit: 20, maxStack: 10 }, { perHit: 30, maxStack: 10 }],
                   note: 'Se resetea entre pisos.' },
                 { id: 'eco_combate', label: 'Eco de Combate', desc: 'Probabilidad de replicar el ataque con daño reducido',
                   levels: [{ chance: 15, dmgPct: 40 }, { chance: 20, dmgPct: 50 }, { chance: 25, dmgPct: 60 }] },
@@ -2063,15 +2064,17 @@
                 preciseBonus = TALENT_POOL.ofensivo.find(x => x.id === 'golpe_preciso').levels[t('golpe_preciso') - 1].flatCrit;
             }
 
-            // Talento: Maestría Crítica (crit garantizado cada N ataques)
+            // Talento: Sangre Fría (crit garantizado cada N ataques)
+            let sangreFriaProc = false;
             let masteryCritFlat = runState.masteryFlatCrit || 0;
-            if (t('maestria_critica') > 0) {
-                const everyN = TALENT_POOL.ofensivo.find(x => x.id === 'maestria_critica').levels[t('maestria_critica') - 1].everyN;
+            if (t('sangre_fria') > 0) {
+                const everyN = TALENT_POOL.ofensivo.find(x => x.id === 'sangre_fria').levels[t('sangre_fria') - 1].everyN;
                 if (!runState.critMasteryCounter) runState.critMasteryCounter = 0;
                 runState.critMasteryCounter++;
                 if (runState.critMasteryCounter >= everyN) {
                     runState.critMasteryCounter = 0;
                     masteryCritFlat = 100; // garantizado
+                    sangreFriaProc = true;
                 }
             }
 
@@ -2094,7 +2097,8 @@
             // Diminishing returns for percentage stats
             const effPen = diminishingReturns(p.pen || 0, BALANCE.combat.penCap, BALANCE.combat.penK) + (runState.masteryFlatPen || 0);
             const effCritDmg = diminishingReturns(p.critDamage || 0, BALANCE.combat.critDmgCap, BALANCE.combat.critDmgK);
-            const effBossDmg = diminishingReturns(p.bossDamage || 0, BALANCE.combat.bossDmgCap, BALANCE.combat.bossDmgK);
+            const effBossDmg = diminishingReturns(p.bossDamage || 0, BALANCE.combat.bossDmgCap, BALANCE.combat.bossDmgK)
+                + (metaState.upgrades.bossDmg.level * metaState.upgrades.bossDmg.percent * 100);
             const effHpRegen = diminishingReturns(p.hpRegen || 0, 15, 150) // 15% max regen cap (solo equipo)
                 + (runState.masteryFlatRegen || 0); // Maestría Regenerativa: flat post-DR, sin cap
 
@@ -2164,8 +2168,7 @@
                 // Talento: Multiataque
                 if (t('multiataque') > 0) {
                     const m = TALENT_POOL.ofensivo.find(x => x.id === 'multiataque').levels[t('multiataque') - 1];
-                    if (Math.random() * 100 < (m.chance3 || 0)) attacks = 3;
-                    else if (Math.random() * 100 < m.chance2) attacks = 2;
+                    if (Math.random() * 100 < m.chance) attacks = m.hits;
                 }
 
                 for (let i = 0; i < attacks; i++) {
@@ -2219,7 +2222,13 @@
                         const critMult = 1.5 + (effCritDmg + critDmgBonus) / 100;
                         dmg = Math.floor(dmg * critMult);
                         type = 'crit';
-                        if (rc) rc.dmg.crit += dmg - preDmg;
+                        if (rc) {
+                            if (sangreFriaProc) {
+                                rc.dmg.sangre_fria += dmg - preDmg;
+                            } else {
+                                rc.dmg.crit += dmg - preDmg;
+                            }
+                        }
                     }
 
                     // Maestría Furiosa: contador por ataque del héroe, proc en el mismo golpe
@@ -2586,8 +2595,7 @@
                          // Handle Multiataque for counterattacks too
                          if (t('multiataque') > 0) {
                              const m = TALENT_POOL.ofensivo.find(x => x.id === 'multiataque').levels[t('multiataque') - 1];
-                             if (Math.random() * 100 < (m.chance3 || 0)) attacks = 3;
-                             else if (Math.random() * 100 < m.chance2) attacks = 2;
+                             if (Math.random() * 100 < m.chance) attacks = m.hits;
                          }
 
                          for (let counterAttackIndex = 0; counterAttackIndex < attacks; counterAttackIndex++) {
@@ -2888,7 +2896,7 @@
             // Drop de equipo
             let equipPending = false;
             if (metaState.unlockedEquipment) {
-                const dropChance = BALANCE.equipment.dropBaseChance + (metaState.upgrades.drop.level * metaState.upgrades.drop.percent * 100);
+                const dropChance = BALANCE.equipment.dropBaseChance;
                 if (Math.random() * 100 < dropChance || runState.enemy.isBoss) {
                     const item = generateItem(runState.floor, runState.enemy.isBoss);
                     addLog(`🎁 Drop: ${item.name}`, 'loot');
@@ -3383,6 +3391,7 @@ runState.furiaStacks = 0;
                     ['Ejecución' + lvl('ejecucion'), recap.dmg.ejecucion],
                     ['Cañón de Cristal' + lvl('canon_cristal'), recap.dmg.canon_cristal],
                     ['Maestría Furiosa', recap.dmg.furia_mastery],
+                    ['Sangre Fría' + lvl('sangre_fria'), recap.dmg.sangre_fria],
                     ['Daño vs Boss', recap.dmg.boss_dmg],
                     ['Maestro Elemental' + lvl('maestro_elemental'), recap.dmg.maestro_elemental],
                     ['Eco de Combate' + lvl('eco_combate'), recap.dmg.eco_combate],
@@ -3609,7 +3618,8 @@ runState.furiaStacks = 0;
             const effPen = diminishingReturns((p.pen || 0), BALANCE.combat.penCap, BALANCE.combat.penK) + penFlat;
             const effCritDmg = diminishingReturns((p.critDamage || 0), BALANCE.combat.critDmgCap, BALANCE.combat.critDmgK);
             const critDmgBonus = metaState.upgrades.critDmg.level * metaState.upgrades.critDmg.percent * 100;
-            const effBossDmg = diminishingReturns((p.bossDamage || 0), BALANCE.combat.bossDmgCap, BALANCE.combat.bossDmgK);
+            const effBossDmg = diminishingReturns((p.bossDamage || 0), BALANCE.combat.bossDmgCap, BALANCE.combat.bossDmgK)
+                + (metaState.upgrades.bossDmg.level * metaState.upgrades.bossDmg.percent * 100);
             const effHpRegen = diminishingReturns((p.hpRegen || 0), 15, 150)
                 + (runState.masteryFlatRegen || 0); // Maestría Regenerativa: flat post-DR
 
@@ -3899,7 +3909,7 @@ runState.furiaStacks = 0;
             ];
 
             const keyLabels = {
-                chance: '% prob', chance2: '% prob 2 golpes', chance3: '% prob 3 golpes',
+                chance: '% prob', hits: ' golpes',
                 dmgMult: '× daño', flatCrit: ' crítico',
                 threshold: ' umbral HP', mult: '× daño', dmgBonus: '% daño',
                 dmgTaken: '% daño recibido', everyN: ' cada N golpes',

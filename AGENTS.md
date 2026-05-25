@@ -4,7 +4,7 @@
 
 Contexto completo para trabajar sobre este proyecto. Leer antes de modificar.
 
-**Versión actual**: 0.4.3 · Último tag: `v0.3.1`
+**Versión actual**: 0.4.4 · Último tag: `v0.4.3`
 
 ---
 

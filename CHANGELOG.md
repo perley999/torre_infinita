@@ -100,6 +100,23 @@ Todos los cambios notables en este proyecto.
 - Variable `reflejoBonus` → `golpeBonus` en runState, `reflejo_rapido` → `golpe_rapido` en recap tracking.
 - Nuevos campos en recap.mitigation: `dodge_hits`, `dodge_dmg` para tracking de evasión.
 
+## [0.4.4] - 2026-05-25
+
+### Añadido
+- **Sangre Fría**: nuevo nombre para el talento antes llamado Maestría Crítica. Crítico garantizado cada 7/5/3 ataques. Ahora con línea propia en el death recap en vez de mezclarse con críticos normales.
+- **Mejora permanente Daño vs Boss**: +10% por nivel, 10 niveles máx, costo base 40 (×2.0). Se aplica flat post-DR como la mejora de crítico.
+
+### Cambiado
+- **Multiataque**: chance plana 20% en todos los niveles, golpes escalan: 1→2, 2→3, 3→4. Ya no encadena.
+- **Furia Creciente**: buff sustancial — +10/20/30% por golpe (antes +5/10/15%). Máximo +300% en nivel 3.
+- **Drop base**: chance de drop de objetos en enemigos normales subió de 50% a 70%.
+- **Mejora de Drop eliminada**: removida del juego. Reemplazada por la mejora de Daño vs Boss.
+
+### Técnico
+- **id del talento**: `maestria_critica` → `sangre_fria` para evitar conflictos con la maestría de arma "Maestría Crítica".
+- **Recap**: nuevo campo `sangre_fria` para tracking separado de críticos garantizados por talento.
+- **Saves**: las partidas viejas con la mejora `drop` la ignoran silenciosamente al cargar.
+
 ## [Unreleased]
 
 ### Cambiado

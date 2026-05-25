@@ -10,9 +10,9 @@
 
 ### Multiataque
 - **Descripción**: Probabilidad de atacar múltiples veces
-- **Nivel 1**: 15% de atacar 2 veces
-- **Nivel 2**: 20% de atacar 2 veces
-- **Nivel 3**: 20% de atacar 2 veces, 10% de atacar 3 veces
+- **Nivel 1**: 20% de atacar 2 veces
+- **Nivel 2**: 20% de atacar 3 veces
+- **Nivel 3**: 20% de atacar 4 veces
 
 ### Primer Golpe
 - **Descripción**: Daño bonus en el primer ataque del combate
@@ -44,8 +44,8 @@
 - **Nivel 2**: +30% daño infligido, +15% daño recibido
 - **Nivel 3**: +40% daño infligido, +20% daño recibido
 
-### Maestría Crítica
-- **Descripción**: Golpe crítico garantizado cada X ataques
+### Sangre Fría
+- **Descripción**: Cada X ataques, tu sangre fría te garantiza un golpe crítico
 - **Nivel 1**: Crítico garantizado cada 7 ataques
 - **Nivel 2**: Crítico garantizado cada 5 ataques
 - **Nivel 3**: Crítico garantizado cada 3 ataques
@@ -58,9 +58,9 @@
 
 ### Furia Creciente
 - **Descripción**: Cada ataque consecutivo hace +X% daño (máx acumulativo)
-- **Nivel 1**: +5% por golpe, máximo 10 acumulaciones (50%)
-- **Nivel 2**: +10% por golpe, máximo 10 acumulaciones (100%)
-- **Nivel 3**: +15% por golpe, máximo 10 acumulaciones (150%)
+- **Nivel 1**: +10% por golpe, máximo 10 acumulaciones (100%)
+- **Nivel 2**: +20% por golpe, máximo 10 acumulaciones (200%)
+- **Nivel 3**: +30% por golpe, máximo 10 acumulaciones (300%)
 - _Nota_: Se resetea entre pisos.
 
 ### Eco de Combate
