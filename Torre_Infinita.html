@@ -130,7 +130,7 @@
         .arena-toggle {
             position: absolute;
             top: 12px;
-            left: 48px;
+            right: 48px;
             width: 32px;
             height: 32px;
             background: #2a2a4a;
@@ -398,7 +398,7 @@
             padding-top: 4px;
             border-top: 1px solid #1e293b;
             flex-wrap: wrap;
-            color: #7c3aed;
+            color: #9ca3af;
         }
         .advanced-toggle {
             width: 100%;
@@ -843,9 +843,9 @@
         <div class="header">
             <h1>🗼 Torre Infinita</h1>
             <button class="codex-btn" onclick="showCodex()" title="Talentos">📖</button>
-            <button class="help-btn" onclick="showTutorial()" title="Tutorial">?</button>
+            <button class="codex-btn" onclick="showLeaderboard()" id="leaderboard-btn" style="left:48px" title="🏆 Clasificación">🏆</button>
             <button class="arena-toggle" onclick="toggleArena()" id="arena-toggle" title="Escena de combate">🎬</button>
-            <button class="codex-btn" onclick="showLeaderboard()" id="leaderboard-btn" style="left:84px" title="🏆 Clasificación">🏆</button>
+            <button class="help-btn" onclick="showTutorial()" title="Tutorial">?</button>
             <div class="floor-display">
                 <span id="floor-number">Piso 1</span>
                 <span id="boss-indicator" class="boss-indicator" style="display:none">⚔️ JEFE</span>
@@ -974,6 +974,9 @@
             <button class="control-btn" id="btn-reforge" onclick="showReforgeModal()" disabled>🔨 Reforjar</button>
             <button class="control-btn" id="btn-enhance" onclick="showMaximizeModal()" disabled>⬆️ Maximizar</button>
         </div>
+        <div class="controls" id="char-controls">
+            <button class="control-btn" id="btn-character" onclick="showCharacterScreen()" disabled>👤 Personaje</button>
+        </div>
         <div style="text-align: center; margin-top: 4px;">
             <button onclick="resetGame()" style="background: transparent; border: 1px solid #3a2a2a; color: #6b4a4a; padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 0.75rem;">🗑️ Borrar progreso</button>
             <span id="save-indicator" style="font-size: 0.7rem; color: #4a6a4a; margin-left: 8px; opacity: 0; transition: opacity 0.3s;">✓ Guardado</span>
@@ -994,11 +997,11 @@
         </div>
     </div>
 
-    <!-- Talent Codex Modal -->
+    <!-- Codex Modal -->
     <div class="modal-overlay" id="codex-overlay">
         <div class="modal codex-modal">
-            <h2>📖 Codex de Talentos</h2>
-            <p class="codex-intro">37 talentos en 5 bloques. Se eligen cada 5 pisos (heroico cada 20). Cada talento tiene 3 niveles.</p>
+            <h2>📖 Codex</h2>
+            <p class="codex-intro">Talentos, maestrías y clases — toda la información del juego.</p>
             <div class="codex-content" id="codex-content"></div>
             <button class="modal-close" onclick="closeCodex()">Cerrar</button>
         </div>
@@ -1202,7 +1205,7 @@
                 tickMs: 100,
                 speedBase: 3000,
                 speedPerAgi: 100,
-                speedMin: 750,
+                speedMin: 1000,
                 minDamage: 1,
                 // Diminishing returns: cap × (stat / (stat + K))
                 critCap: 80, critK: 100,
@@ -1239,11 +1242,13 @@
             upgrades: {},
             bossAttempted: [], // pisos de jefe YA intentados (persistente entre runs)
             bossStats: {},    // stats guardadas del PRIMER intento de cada jefe
-            dataVersion: 3,   // Para migraciones futuras
+            dataVersion: 4,   // Para migraciones futuras
             heroLevel: 0,     // Nivel persistente del héroe (no se resetea al morir, arranca en 0)
             heroXp: 0,        // XP persistente del héroe
             heroBonuses: { hp: 0, atk: 0, def: 0, agi: 0 }, // Stats acumuladas por nivel
             playerName: 'Héroe', // Nombre del jugador (persistente)
+            playerClass: null,   // 'warrior' | 'warlock' | 'rogue' | 'monk' | null
+            playerSpec: null,    // id de especialización o null
             leaderboard: [],      // Top 10 mejores runs [{name, class, heroLevel, maxFloor, runTime, date}]
         };
 
@@ -1272,6 +1277,8 @@
                 heroXp: metaState.heroXp,
                 heroBonuses: metaState.heroBonuses,
                 playerName: metaState.playerName,
+                playerClass: metaState.playerClass,
+                playerSpec: metaState.playerSpec,
                 leaderboard: metaState.leaderboard,
             };
             for (const [key, u] of Object.entries(metaState.upgrades)) {
@@ -1306,6 +1313,8 @@
                 metaState.heroXp = data.heroXp ?? 0;
                 metaState.heroBonuses = data.heroBonuses ?? { hp: 0, atk: 0, def: 0, agi: 0 };
                 metaState.playerName = data.playerName ?? 'Héroe';
+                metaState.playerClass = data.playerClass ?? null;
+                metaState.playerSpec = data.playerSpec ?? null;
                 metaState.leaderboard = data.leaderboard ?? [];
                 metaState.dataVersion = data.dataVersion ?? 0;
                 // Migración v0→v1: recalcular heroBonuses con sistema escalonado
@@ -1333,6 +1342,13 @@
                     }
                     metaState.unlockedReforge = metaState.unlockedReforge ?? false;
                     metaState.dataVersion = 3;
+                    needsMigration = true;
+                }
+                // Migración v3→v4: agregar playerClass y playerSpec
+                if (metaState.dataVersion < 4) {
+                    metaState.playerClass = null;
+                    metaState.playerSpec = null;
+                    metaState.dataVersion = 4;
                     needsMigration = true;
                 }
                 if (data.upgrades) {
@@ -1380,11 +1396,13 @@
             metaState.equipment = { weapon: null, armor: null, ring: null };
             metaState.bossAttempted = [];
             metaState.bossStats = {};
-            metaState.dataVersion = 3;
+            metaState.dataVersion = 4;
             metaState.heroLevel = 0;
             metaState.heroXp = 0;
             metaState.heroBonuses = { hp: 0, atk: 0, def: 0, agi: 0 };
             metaState.playerName = 'Héroe';
+            metaState.playerClass = null;
+            metaState.playerSpec = null;
             metaState.leaderboard = [];
             for (const key of Object.keys(metaState.upgrades)) {
                 metaState.upgrades[key].level = 0;
@@ -1419,6 +1437,16 @@
             enemy: null,
             combatInterval: BALANCE.combat.tickMs,
             pendingChoice: null,
+            characterScreenActive: false,
+            classHits: 0,
+            firstHitDone: false,
+            nextHitMult: 1,
+            dodgeStreak: 0,
+            attackCounter: 0,
+            demonHits: 0,
+            demonActive: false,
+            demonHitsLeft: 0,
+            classComboStacks: 0,
             furyCounter: 0,
             toughCounter: 0,
             abilities: [], // Talentos activos en esta run (se resetean al morir/reiniciar)
@@ -1439,6 +1467,8 @@
             spellShieldCounter: 0,
             segundoAlientoUsed: false,
             bossesKilledThisRun: 0,
+            _staggerDmg: 0,
+            _staggerTick: 0,
             recap: null,
         };
 
@@ -1641,10 +1671,180 @@
         };
 
         // ============================================
+        // 3b. CLASES Y ESPECIALIZACIONES
+        // ============================================
+
+        const CLASS_CONFIG = {
+            warrior: { id: 'warrior', name: 'Guerrero', emoji: '🛡️', color: '#f97316',
+                statPerLevel: { hp: 20, atk: 2, def: 3, agi: 1 } },
+            warlock: { id: 'warlock', name: 'Brujo', emoji: '👹', color: '#a855f7',
+                statPerLevel: { hp: 5, atk: 4, def: 1, agi: 1 } },
+            rogue: { id: 'rogue', name: 'Pícaro', emoji: '☠️', color: '#10b981',
+                statPerLevel: { hp: 10, atk: 2, def: 1, agi: 4 } },
+            monk: { id: 'monk', name: 'Monje', emoji: '🐉', color: '#f59e0b',
+                statPerLevel: { hp: 15, atk: 2, def: 2, agi: 3 } },
+        };
+
+        const CLASS_PASSIVES = {
+            warrior: {
+                id: 'rafaga_golpes', name: 'Ráfaga de Golpes',
+                desc: 'Cada 3 golpes consecutivos, el 4° hace daño ×N',
+                eval: (hl) => ({ mult: 2.0 + Math.max(0, hl - 50) * 0.004 }),
+            },
+            warlock: {
+                id: 'pacto_oscuro', name: 'Pacto Oscuro',
+                desc: '+X% robo de vida, +Y% daño DoTs',
+                eval: (hl) => ({
+                    lifestealPct: 8 + Math.floor(Math.max(0, hl - 50) / 100) * 2,
+                    dotDmgPct: 10 + Math.floor(Math.max(0, hl - 50) / 100) * 2,
+                }),
+            },
+            rogue: {
+                id: 'golpe_sigiloso', name: 'Golpe Sigiloso',
+                desc: 'Primer ataque siempre crítico +X% daño',
+                eval: (hl) => ({ bonusDmg: 25 + Math.floor(Math.max(0, hl - 50) / 100) * 10 }),
+            },
+            monk: {
+                id: 'flujo_chi', name: 'Flujo de Chi',
+                desc: 'Velocidad +X%, Dodge +Y%',
+                eval: (hl) => ({
+                    speedPct: 15 + Math.floor(Math.max(0, hl - 50) / 100) * 5,
+                    dodgePct: 5 + Math.floor(Math.max(0, hl - 50) / 100),
+                }),
+            },
+        };
+
+        const SPECIALIZATIONS = {
+            warrior: [
+                { id: 'arms', name: 'Armas', desc: 'Maestro de armas de dos manos' },
+                { id: 'fury', name: 'Furia', desc: 'Berserker que empuña dos armas' },
+                { id: 'protection', name: 'Protección', desc: 'Guerrero con escudo' },
+            ],
+            warlock: [
+                { id: 'affliction', name: 'Aflicción', desc: 'Maestro de maldiciones y DoTs' },
+                { id: 'demonology', name: 'Demonología', desc: 'Invocador de demonios' },
+                { id: 'destruction', name: 'Destrucción', desc: 'Caos y fuego puro' },
+            ],
+            rogue: [
+                { id: 'assassination', name: 'Asesinato', desc: 'Venenos y dagas letales' },
+                { id: 'outlaw', name: 'Forajido', desc: 'Estilo pirata y oportunismo' },
+                { id: 'subtlety', name: 'Sutileza', desc: 'Ataques desde las sombras' },
+            ],
+            monk: [
+                { id: 'brewmaster', name: 'Maestro Cervecero', desc: 'Tanque que distribuye daño' },
+                { id: 'mistweaver', name: 'Tejedor de Bruma', desc: 'Canaliza energía curativa' },
+                { id: 'windwalker', name: 'Vagabundo del Viento', desc: 'Golpes rápidos y precisos' },
+            ],
+        };
+
+        const SPEC_PASSIVES = {
+            // Guerrero
+            'arms': {
+                id: 'maestro_armas', name: 'Maestro de Armas',
+                desc: 'Al derrotar un enemigo, el próximo golpe hace ×N daño',
+                eval: (hl) => ({ mult: 3.0 + Math.max(0, hl - 100) * 0.01 }),
+            },
+            'fury': {
+                id: 'frenesi_batalla', name: 'Frenesí de Batalla',
+                desc: 'Cada golpe consecutivo: +X% ATK (máx 10 acumulaciones)',
+                eval: (hl) => ({ atkPerHit: 2 + Math.floor(Math.max(0, hl - 100) / 200) }),
+            },
+            'protection': {
+                id: 'muro_escudo', name: 'Muro de Escudo',
+                desc: '+X% DEF, +Y% de DEF convertido a ATK',
+                eval: (hl) => {
+                    const x = 15 + Math.floor(Math.max(0, hl - 100) / 20);
+                    return { defPct: x, defToAtkPct: x - 5 };
+                },
+            },
+            // Brujo
+            'affliction': {
+                id: 'afliccion_eterna', name: 'Aflicción Eterna',
+                desc: 'Debuffs duran ×N tiempo, +Y% daño DoTs',
+                eval: (hl) => ({
+                    durationMult: 2.0 + Math.max(0, hl - 100) * 0.005,
+                    dotDmgPct: 20 + Math.floor(Math.max(0, hl - 100) / 100) * 10,
+                }),
+            },
+            'demonology': {
+                id: 'esencia_demoníaca', name: 'Esencia Demoníaca',
+                desc: 'Al matar: X% de invocar un demonio que golpea Y veces',
+                eval: (hl) => ({
+                    chance: 30 + Math.floor(Math.max(0, hl - 100) / 100) * 5,
+                    hits: 3 + Math.floor(Math.max(0, hl - 100) / 100),
+                }),
+            },
+            'destruction': {
+                id: 'caos_ardiente', name: 'Caos Ardiente',
+                desc: '+X% crit chance base, críticos hacen ×Y daño',
+                eval: (hl) => ({
+                    critPct: 10 + Math.floor(Math.max(0, hl - 100) / 100) * 2,
+                    critMult: 3.5 + Math.max(0, hl - 100) * 0.003,
+                }),
+            },
+            // Pícaro
+            'assassination': {
+                id: 'venenos_letales', name: 'Venenos Letales',
+                desc: 'X% de aplicar veneno: Y% HP cada 3 ticks',
+                eval: (hl) => ({
+                    chance: 30 + Math.floor(Math.max(0, hl - 100) / 100) * 5,
+                    dmgPct: 5 + Math.floor(Math.max(0, hl - 100) / 100),
+                }),
+            },
+            'outlaw': {
+                id: 'golpe_oportunidad', name: 'Golpe de Oportunidad',
+                desc: 'X% de atacar dos veces',
+                eval: (hl) => ({ chance: 20 + Math.floor(Math.max(0, hl - 100) / 100) * 5 }),
+            },
+            'subtlety': {
+                id: 'danza_sombras', name: 'Danza de Sombras',
+                desc: 'Al esquivar, el próximo golpe hace ×N daño',
+                eval: (hl) => ({ mult: 3.0 + Math.max(0, hl - 100) * 0.005 }),
+            },
+            // Monje
+            'brewmaster': {
+                id: 'cuerpo_jade', name: 'Cuerpo de Jade',
+                desc: 'X% de daño diferido 2s, +Y% reducción plana',
+                eval: (hl) => ({
+                    staggerPct: 15 + Math.floor(Math.max(0, hl - 100) / 100) * 5,
+                    flatReduction: 5 + Math.floor(Math.max(0, hl - 100) / 200) * 2,
+                }),
+            },
+            'mistweaver': {
+                id: 'armonia_celestial', name: 'Armonía Celestial',
+                desc: 'Cada 5 ataques: curás X% de tu HP máximo',
+                eval: (hl) => ({ healPct: 8 + Math.floor(Math.max(0, hl - 100) / 100) * 2 }),
+            },
+            'windwalker': {
+                id: 'tormenta_patadas', name: 'Tormenta de Patadas',
+                desc: 'Cada 3 golpes no esquivados, el 4° hace +X% daño',
+                eval: (hl) => ({ dmgPct: 30 + Math.floor(Math.max(0, hl - 100) / 100) * 20 }),
+            },
+        };
+
+        function getClassPassiveValue(passiveId, key, heroLevel) {
+            for (const cls of Object.values(CLASS_PASSIVES)) {
+                if (cls.id === passiveId) {
+                    const vals = cls.eval(heroLevel);
+                    return vals[key] !== undefined ? vals[key] : vals;
+                }
+            }
+            return null;
+        }
+
+        function getSpecPassiveValue(specId, key, heroLevel) {
+            const spec = SPEC_PASSIVES[specId];
+            if (!spec) return null;
+            const vals = spec.eval(heroLevel);
+            return key ? (vals[key] !== undefined ? vals[key] : vals) : vals;
+        }
+
+        // ============================================
         // 4. CÁLCULOS
         // ============================================
         function speedToInterval(speed) {
-            return Math.max(BALANCE.combat.speedMin, BALANCE.combat.speedBase - (speed * BALANCE.combat.speedPerAgi));
+            const interval = BALANCE.combat.speedBase - (speed * BALANCE.combat.speedPerAgi);
+            return Math.max(BALANCE.combat.speedMin, interval);
         }
 
         function getUpgradeCost(key) {
@@ -1839,6 +2039,8 @@
                 runState.enemy.atk = quemadura.originalAtk;
             }
             runState.enemyDebuffs = [];
+            runState._staggerDmg = 0;
+            runState._staggerTick = 0;
         }
 
         // T4 — applyDebuff()
@@ -1850,6 +2052,14 @@
                     const me = TALENT_POOL.heroico.find(x => x.id === 'maestro_elemental').levels[tl['maestro_elemental'] - 1];
                     d.ticksLeft = (d.ticksLeft || 0) + me.extraTicks;
                     d.duration = (d.duration || 0) + me.extraTicks;
+                }
+                // Aflicción spec: debuffs last ×N time
+                if (d.type === 'dot' && metaState.playerSpec === 'affliction' && metaState.heroLevel >= 100) {
+                    const afflDuration = getSpecPassiveValue('affliction', 'durationMult', metaState.heroLevel);
+                    if (afflDuration > 1) {
+                        d.ticksLeft = Math.floor((d.ticksLeft || 0) * afflDuration);
+                        d.duration = Math.floor((d.duration || 0) * afflDuration);
+                    }
                 }
                 return d;
             };
@@ -1880,8 +2090,13 @@
         }
 
         // T5 — processDebuffs()
-        function processDebuffs(lifestealPct) {
+        function processDebuffs(lifestealPct, warlockDotBonusPct) {
             const tl = runState.talentLevels || {};
+            // ─── AFLICCIÓN (spec): +Y% DoT damage ───
+            let afflictionDotBonus = 0;
+            if (metaState.playerSpec === 'affliction' && metaState.heroLevel >= 100) {
+                afflictionDotBonus = getSpecPassiveValue('affliction', 'dotDmgPct', metaState.heroLevel) || 0;
+            }
             const t = (id) => tl[id] || 0;
             const p = runState.player;
             const e = runState.enemy;
@@ -1902,7 +2117,15 @@
                         db.ticksLeft--;
                         // Percentage-based damage from enemy max HP
                         if (db.dmgPctPerTick > 0) {
-                            const dotDmg = Math.max(1, Math.floor(e.maxHp * db.dmgPctPerTick / 100));
+                            let dotDmg = Math.max(1, Math.floor(e.maxHp * db.dmgPctPerTick / 100));
+                            // Warlock Pacto Oscuro: +Y% DoT damage
+                            if (warlockDotBonusPct > 0) {
+                                dotDmg = Math.floor(dotDmg * (1 + warlockDotBonusPct / 100));
+                            }
+                            // Aflicción spec: +Y% DoT damage
+                            if (afflictionDotBonus > 0) {
+                                dotDmg = Math.floor(dotDmg * (1 + afflictionDotBonus / 100));
+                            }
                             e.hp -= dotDmg;
                             const rc = runState.recap;
                             if (rc) {
@@ -1914,11 +2137,11 @@
                                 const heal = Math.floor(dotDmg * lifestealPct / 100);
                                 if (heal > 0) {
                                     p.hp = Math.min(p.maxHp, p.hp + heal);
-                                    spawnFloat('player-floats', `+${heal} (DoT)`, 'heal');
+                                    spawnFloat('player-floats', `+${formatNum(heal)} (DoT)`, 'heal');
                                     if (rc) rc.heal.dot_lifesteal += heal;
                                 }
                             }
-                            spawnFloat('enemy-floats', `-${dotDmg} (DoT)`, 'crit', 'left');
+                            spawnFloat('enemy-floats', `-${formatNum(dotDmg)} (DoT)`, 'crit', 'left');
                         }
                     }
                     if (db.ticksLeft <= 0) {
@@ -2311,8 +2534,45 @@
                 currentLifesteal = Math.min(currentLifesteal + av.flatLifesteal, BALANCE.combat.lifestealCap);
             }
 
-            // T5 — Process debuffs at TOP of combatTick
-            processDebuffs(currentLifesteal);
+            // ─── CLASE: Pacto Oscuro (Warlock) — lifesteal boost ───
+            let warlockDotDmgPct = 0;
+            if (metaState.playerClass === 'warlock' && metaState.heroLevel >= 50) {
+                const pacto = getClassPassiveValue('pacto_oscuro', null, metaState.heroLevel);
+                if (pacto) {
+                    currentLifesteal = Math.min(currentLifesteal + (pacto.lifestealPct || 0), BALANCE.combat.lifestealCap);
+                    warlockDotDmgPct = pacto.dotDmgPct || 0;
+                }
+            }
+
+            // ─── CLASE: Flujo de Chi (Monk) — dodge boost ───
+            let monkDodgeBonus = 0;
+            if (metaState.playerClass === 'monk' && metaState.heroLevel >= 50) {
+                const flujo = getClassPassiveValue('flujo_chi', null, metaState.heroLevel);
+                if (flujo) {
+                    monkDodgeBonus = flujo.dodgePct || 0;
+                }
+            }
+
+            // T5 — Process debuffs at TOP of combatTick (pass warlockDotDmgPct for DoT boost)
+            processDebuffs(currentLifesteal, warlockDotDmgPct);
+
+            // ─── Stagger damage over time (Maestro Cervecero spec) ───
+            if (runState._staggerDmg && runState._staggerDmg > 0) {
+                if (!runState._staggerTick) runState._staggerTick = 0;
+                runState._staggerTick++;
+                if (runState._staggerTick >= 2) { // Every 2 ticks (200ms) apply stagger
+                    runState._staggerTick = 0;
+                    const perTick = Math.max(1, Math.floor(runState._staggerDmg / 20));
+                    const actual = Math.min(perTick, runState._staggerDmg);
+                    runState._staggerDmg -= actual;
+                    p.hp -= actual;
+                    spawnFloat('player-floats', `-${formatNum(actual)} (🍺)`, 'normal');
+                    if (runState._staggerDmg <= 0) {
+                        runState._staggerDmg = 0;
+                        runState._staggerTick = 0;
+                    }
+                }
+            }
 
             // Golpe Helado: decrement frozen ticks and cooldown every tick
             if (runState.frozenTicks > 0) runState.frozenTicks--;
@@ -2364,7 +2624,7 @@
             const baseDodge = derived.dodge;
             const equipDodgePct = (p.dodgeRating || 0) / BALANCE.combat.dodgeRatingRatio;
             const rawDodge = baseDodge + equipDodgePct;
-            const totalDodge = Math.floor(diminishingReturns(rawDodge, BALANCE.combat.dodgeCap, BALANCE.combat.dodgeK)) + (runState.masteryFlatDodge || 0) + (t('reflejos_felinos') > 0 ? TALENT_POOL.defensivo.find(x => x.id === 'reflejos_felinos').levels[t('reflejos_felinos') - 1].flatDodge : 0) + trinityFlat;
+            const totalDodge = Math.floor(diminishingReturns(rawDodge, BALANCE.combat.dodgeCap, BALANCE.combat.dodgeK)) + (runState.masteryFlatDodge || 0) + (t('reflejos_felinos') > 0 ? TALENT_POOL.defensivo.find(x => x.id === 'reflejos_felinos').levels[t('reflejos_felinos') - 1].flatDodge : 0) + trinityFlat + (monkDodgeBonus || 0);
             const totalBlock = Math.floor(diminishingReturns(derived.block, BALANCE.combat.blockCap, BALANCE.combat.blockK)) + (runState.masteryFlatBlock || 0) + trinityFlat;
 
             // Diminishing returns for percentage stats
@@ -2384,7 +2644,7 @@
                     const regen = Math.floor(p.maxHp * effHpRegen / 100);
                     if (regen > 0 && p.hp < p.maxHp) {
                         p.hp = Math.min(p.maxHp, p.hp + regen);
-                        spawnFloat('player-floats', `+${regen}`, 'heal');
+                        spawnFloat('player-floats', `+${formatNum(regen)}`, 'heal');
                         if (runState.recap) runState.recap.heal.hp_regen += regen;
                     }
                 }
@@ -2406,11 +2666,11 @@
                         const heal = Math.floor(fireDmg * currentLifesteal / 100);
                         if (heal > 0) {
                             p.hp = Math.min(p.maxHp, p.hp + heal);
-                            spawnFloat('player-floats', `+${heal} (🔥)`, 'heal');
+                            spawnFloat('player-floats', `+${formatNum(heal)} (🔥)`, 'heal');
                             if (runState.recap) runState.recap.heal.lifesteal += heal;
                         }
                     }
-                    spawnFloat('enemy-floats', `-${fireDmg} (🔥)`, 'crit', 'left');
+                    spawnFloat('enemy-floats', `-${formatNum(fireDmg)} (🔥)`, 'crit', 'left');
 
                     // 20% chance to apply/refresh burn (3s = 30 ticks)
                     if (Math.random() * 100 < fa.chance) {
@@ -2432,16 +2692,74 @@
                 }
             }
 
+            // ─── CLASE: Flujo de Chi (Monk) — speed override post-cap ───
+            let monkSpeedPct = 0;
+            if (metaState.playerClass === 'monk' && metaState.heroLevel >= 50) {
+                const flujo = getClassPassiveValue('flujo_chi', null, metaState.heroLevel);
+                if (flujo) monkSpeedPct = flujo.speedPct || 0;
+            }
+
+            // ─── CLASE: Ráfaga de Golpes (Warrior) — count hits ───
+            // Reset classHits if enemy changed (new enemy)
+            if (!runState._lastEnemyId || runState._lastEnemyId !== runState.enemy?.name + runState.floor) {
+                runState.classHits = 0;
+                runState._lastEnemyId = runState.enemy?.name + runState.floor;
+            }
+
+            // ─── CLASE: Golpe Sigiloso (Rogue) — track per enemy ───
+            if (!runState._rogueEnemyId || runState._rogueEnemyId !== runState.enemy?.name + runState.floor) {
+                runState.firstHitDone = false;
+                runState._rogueEnemyId = runState.enemy?.name + runState.floor;
+            }
+
             // Jugador ataca
             p.attackTimer -= BALANCE.combat.tickMs;
             if (p.attackTimer <= 0) {
-                p.attackTimer = speedToInterval(p.agi);
+                // Apply Monk Flujo de Chi: speed% post-cap with 750ms floor
+                let attackInterval = speedToInterval(p.agi);
+                if (monkSpeedPct > 0) {
+                    attackInterval = Math.floor(attackInterval * (1 - monkSpeedPct / 100));
+                    attackInterval = Math.max(750, attackInterval);
+                }
+                p.attackTimer = attackInterval;
+
+                // ─── Forajido (spec): Golpe de Oportunidad — extra attack chance ───
+                let extraAttacks = 0;
+                if (metaState.playerSpec === 'outlaw' && metaState.heroLevel >= 100) {
+                    const outlawVal = getSpecPassiveValue('outlaw', 'chance', metaState.heroLevel);
+                    if (outlawVal && Math.random() * 100 < outlawVal) {
+                        extraAttacks = 1;
+                    }
+                }
                 
-                let attacks = 1;
+                let attacks = 1 + extraAttacks;
                 // Talento: Multiataque
                 if (t('multiataque') > 0) {
                     const m = TALENT_POOL.ofensivo.find(x => x.id === 'multiataque').levels[t('multiataque') - 1];
-                    if (Math.random() * 100 < m.chance) attacks = m.hits;
+                    if (Math.random() * 100 < m.chance) attacks += m.hits - 1;
+                }
+
+                // ─── Tejedor de Bruma (spec): Armonía Celestial — heal every 5 attacks ───
+                if (metaState.playerSpec === 'mistweaver' && metaState.heroLevel >= 100) {
+                    runState.attackCounter++;
+                    if (runState.attackCounter >= 5) {
+                        runState.attackCounter = 0;
+                        const mistHealPct = getSpecPassiveValue('mistweaver', 'healPct', metaState.heroLevel);
+                        if (mistHealPct > 0) {
+                            const heal = Math.floor(p.maxHp * mistHealPct / 100);
+                            p.hp = Math.min(p.maxHp, p.hp + heal);
+                            spawnFloat('player-floats', `+${formatNum(heal)} (bruma)`, 'heal');
+                        }
+                    }
+                }
+
+                // ─── Demonología (spec): demonio activo pega ───
+                if (runState.demonActive && runState.demonHitsLeft > 0) {
+                    const demonDmg = Math.floor(p.atk * 0.5);
+                    e.hp -= demonDmg;
+                    runState.demonHitsLeft--;
+                    spawnFloat('enemy-floats', `-${formatNum(demonDmg)} (👹)`, 'crit', 'right');
+                    if (runState.demonHitsLeft <= 0) runState.demonActive = false;
                 }
 
                 for (let i = 0; i < attacks; i++) {
@@ -2501,6 +2819,115 @@
                             } else {
                                 rc.dmg.crit += dmg - preDmg;
                             }
+                        }
+                    }
+
+                    // ─── CLASE: Ráfaga de Golpes (Warrior) — 4th hit ×N ───
+                    if (metaState.playerClass === 'warrior' && metaState.heroLevel >= 50) {
+                        runState.classHits++;
+                        if (runState.classHits >= 4) {
+                            runState.classHits = 0;
+                            const rafaga = getClassPassiveValue('rafaga_golpes', 'mult', metaState.heroLevel);
+                            if (rafaga > 1) {
+                                const preDmg = dmg;
+                                dmg = Math.floor(dmg * rafaga);
+                                spawnFloat('enemy-floats', '🌪️RÁFAGA!', 'crit', 'left');
+                                if (rc) dmg = dmg; // track if needed
+                            }
+                        }
+                    }
+
+                    // ─── CLASE: Golpe Sigiloso (Rogue) — first hit always crit + bonus ───
+                    if (metaState.playerClass === 'rogue' && metaState.heroLevel >= 50 && !runState.firstHitDone) {
+                        runState.firstHitDone = true;
+                        const sigiloso = getClassPassiveValue('golpe_sigiloso', 'bonusDmg', metaState.heroLevel);
+                        // Force this hit to be a crit with bonus damage
+                        const preDmg = dmg;
+                        const critDmgBonus = metaState.upgrades.critDmg.level * metaState.upgrades.critDmg.percent * 100;
+                        const rogueCritMult = 1.5 + (effCritDmg + critDmgBonus) / 100 + (sigiloso || 0) / 100;
+                        dmg = Math.floor(dmg * rogueCritMult);
+                        type = 'crit';
+                        spawnFloat('enemy-floats', '🗡️SIGILO!', 'crit', 'left');
+                        if (rc) rc.dmg.crit += dmg - preDmg;
+                    }
+
+                    // ─── ARMAS (spec): Maestro de Armas — next hit ×N ───
+                    if (runState.nextHitMult > 1) {
+                        const preDmg = dmg;
+                        dmg = Math.floor(dmg * runState.nextHitMult);
+                        runState.nextHitMult = 1;
+                        spawnFloat('enemy-floats', '⚔️MAESTRO!', 'crit', 'left');
+                    }
+
+                    // ─── FURIA (spec): Frenesí de Batalla — +X% ATK per hit, max 10 ───
+                    if (metaState.playerSpec === 'fury' && metaState.heroLevel >= 100) {
+                        runState.classComboStacks = Math.min((runState.classComboStacks || 0) + 1, 10);
+                        const furyAtk = getSpecPassiveValue('fury', 'atkPerHit', metaState.heroLevel);
+                        if (furyAtk > 0 && runState.classComboStacks > 1) {
+                            const preDmg = dmg;
+                            const furyMult = 1 + (furyAtk * runState.classComboStacks) / 100;
+                            dmg = Math.floor(dmg * furyMult);
+                        }
+                    }
+
+                    // ─── PROTECCIÓN (spec): Muro de Escudo — DEF→ATK conversion ───
+                    if (metaState.playerSpec === 'protection' && metaState.heroLevel >= 100) {
+                        const muro = getSpecPassiveValue('protection', null, metaState.heroLevel);
+                        if (muro && muro.defToAtkPct > 0) {
+                            const preDmg = dmg;
+                            const defToAtk = Math.floor(p.def * muro.defToAtkPct / 100);
+                            if (defToAtk > 0) {
+                                dmg += defToAtk;
+                            }
+                        }
+                    }
+
+                    // ─── DESTRUCCIÓN (spec): Caos Ardiente — +crit chance, crits ×Y ───
+                    if (metaState.playerSpec === 'destruction' && metaState.heroLevel >= 100) {
+                        const caos = getSpecPassiveValue('destruction', null, metaState.heroLevel);
+                        if (caos) {
+                            // Add to effective crit chance and crit multiplier
+                            const destrCritChance = caos.critPct || 0;
+                            if (Math.random() * 100 < destrCritChance) {
+                                const preDmg = dmg;
+                                const critDmgBonus = metaState.upgrades.critDmg.level * metaState.upgrades.critDmg.percent * 100;
+                                const destrCritMult = 1.5 + (effCritDmg + critDmgBonus) / 100;
+                                const caosMult = caos.critMult || 3.5;
+                                dmg = Math.floor(dmg * Math.max(destrCritMult, caosMult));
+                                type = 'crit';
+                                if (rc) rc.dmg.crit += dmg - preDmg;
+                            }
+                        }
+                    }
+
+                    // ─── VAGABUNDO DEL VIENTO (spec): Tormenta de Patadas ───
+                    if (metaState.playerSpec === 'windwalker' && metaState.heroLevel >= 100) {
+                        runState.dodgeStreak = (runState.dodgeStreak || 0) + 1;
+                        if (runState.dodgeStreak >= 4) {
+                            runState.dodgeStreak = 0;
+                            const windBonus = getSpecPassiveValue('windwalker', 'dmgPct', metaState.heroLevel);
+                            if (windBonus > 0) {
+                                const preDmg = dmg;
+                                dmg = Math.floor(dmg * (1 + windBonus / 100));
+                                spawnFloat('enemy-floats', '🌪️PATADA!', 'crit', 'left');
+                            }
+                        }
+                    }
+
+                    // ─── SUTILEZA (spec): Danza de Sombras — from dodge bonus ───
+                    // (Handled in enemy attack section, but apply the stored multiplier here)
+                    if (runState.nextHitMult > 1) {
+                        // Already handled above, but check if from Sutileza
+                        // nextHitMult is consumed above in Armas check. Use separate tracker.
+                    }
+
+                    // ─── ASESINATO (spec): Venenos Letales — poison on hit ───
+                    if (metaState.playerSpec === 'assassination' && metaState.heroLevel >= 100) {
+                        const asesinato = getSpecPassiveValue('assassination', null, metaState.heroLevel);
+                        if (asesinato && Math.random() * 100 < (asesinato.chance || 0)) {
+                            const poisonDmg = Math.max(1, Math.floor(e.maxHp * (asesinato.dmgPct || 0) / 100 / 3));
+                            e.hp -= poisonDmg;
+                            spawnFloat('enemy-floats', `-${formatNum(poisonDmg)} (☠️)`, 'crit', 'right');
                         }
                     }
 
@@ -2571,7 +2998,7 @@
                     }
 
                     e.hp -= dmg;
-                    const dmgText = type === 'crit' ? `-${dmg}!` : `-${dmg}`;
+                    const dmgText = type === 'crit' ? `-${formatNum(dmg)}!` : `-${formatNum(dmg)}`;
                     spawnFloat('enemy-floats', dmgText, type);
                     flashElement('enemy-card');
                     arenaLunge('hero');
@@ -2582,8 +3009,10 @@
                         const heal = Math.floor(dmg * currentLifesteal / 100);
                         if (heal > 0) {
                             p.hp = Math.min(p.maxHp, p.hp + heal);
-                            spawnFloat('player-floats', `+${heal}`, 'heal');
+                            spawnFloat('player-floats', `+${formatNum(heal)}`, 'heal');
                             if (rc) rc.heal.lifesteal += heal;
+
+
                         }
                     }
 
@@ -2612,11 +3041,11 @@
                                 const heal = Math.floor(echoDmg * currentLifesteal / 100);
                                 if (heal > 0) {
                                     p.hp = Math.min(p.maxHp, p.hp + heal);
-                                    spawnFloat('player-floats', `+${heal} (eco)`, 'heal');
+                                    spawnFloat('player-floats', `+${formatNum(heal)} (eco)`, 'heal');
                                     if (rc) rc.heal.echo_lifesteal += heal;
                                 }
                             }
-                            spawnFloat('enemy-floats', `-${echoDmg} (eco)`, 'crit', 'right');
+                            spawnFloat('enemy-floats', `-${formatNum(echoDmg)} (eco)`, 'crit', 'right');
                         }
                     }
 
@@ -2730,6 +3159,14 @@
                         if (t('golpe_rapido') > 0) {
                             runState.golpeBonus = TALENT_POOL.defensivo.find(x => x.id === 'golpe_rapido').levels[t('golpe_rapido') - 1].dmgBonus;
                         }
+                        // ─── SUTILEZA (spec): Danza de Sombras — on dodge, next hit ×N ───
+                        if (metaState.playerSpec === 'subtlety' && metaState.heroLevel >= 100) {
+                            const sutileza = getSpecPassiveValue('subtlety', 'mult', metaState.heroLevel);
+                            if (sutileza > 1) {
+                                runState.nextHitMult = sutileza;
+                                spawnFloat('player-floats', '🌑SOMBRA!', 'heal');
+                            }
+                        }
                         return;
                     }
 
@@ -2745,12 +3182,49 @@
                 // Crítico enemigo (solo bosses o variantes)
                 if (e.isBoss && Math.random() < 0.10) { dmg *= 2; type = 'crit'; }
 
+                // ─── PROTECCIÓN (spec): Muro de Escudo — DEF boost ───
+                let protectionDefBonus = 0;
+                if (metaState.playerSpec === 'protection' && metaState.heroLevel >= 100) {
+                    const muro = getSpecPassiveValue('protection', null, metaState.heroLevel);
+                    if (muro) {
+                        protectionDefBonus = Math.floor(p.def * (muro.defPct || 0) / 100);
+                        // DEF→ATK handled in player attack phase
+                    }
+                }
+
                 // Block check
                 if (Math.random() * 100 < totalBlock) {
                     const preDmg = dmg;
                     dmg = Math.floor(dmg * 0.5);
                     type = 'block';
                     if (rcMit) rcMit.mitigation.block += preDmg - dmg;
+                }
+
+                // ─── MAESTRO CERVECERO (spec): Cuerpo de Jade — stagger ───
+                if (metaState.playerSpec === 'brewmaster' && metaState.heroLevel >= 100) {
+                    const cuerpo = getSpecPassiveValue('brewmaster', null, metaState.heroLevel);
+                    if (cuerpo) {
+                        // Flat reduction first
+                        const flatRed = cuerpo.flatReduction || 0;
+                        if (flatRed > 0) {
+                            const preDmg = dmg;
+                            dmg = Math.max(1, dmg - flatRed);
+                            if (rcMit) rcMit.mitigation.indestructible += preDmg - dmg;
+                        }
+                        // Stagger: defer X% damage over 2s (20 ticks)
+                        const staggerPct = cuerpo.staggerPct || 0;
+                        if (staggerPct > 0 && dmg > 0) {
+                            const staggered = Math.floor(dmg * staggerPct / 100);
+                            dmg -= staggered;
+                            // Apply staggered damage over 20 ticks
+                            if (staggered > 0) {
+                                const dotPerTick = Math.max(1, Math.floor(staggered / 20));
+                                // Simulate as a debuff over time
+                                runState._staggerDmg = (runState._staggerDmg || 0) + staggered;
+                                if (!runState._staggerTick) runState._staggerTick = 0;
+                            }
+                        }
+                    }
                 }
 
                 // Maestría Resistente: contador + reducción en el MISMO ataque cada 5 golpes
@@ -2836,7 +3310,7 @@
                     if (rcMit) rcMit.mitigation.vital_shield += absorbed;
                 }
                 if (totalAbsorbed > 0 && dmg > 0) {
-                    spawnFloat('player-floats', `-${totalAbsorbed}🛡️`, 'block');
+                    spawnFloat('player-floats', `-${formatNum(totalAbsorbed)}🛡️`, 'block');
                 }
                 if (rcMit) rcMit.mitigation.total_taken += dmg;
 
@@ -2849,7 +3323,7 @@
                         // New shield is stronger: replace
                         runState.piedraShield = { amount: shieldAmount, ticksLeft: pp.duration * 10 };
                         runState.shieldMax = (runState.vitalShield || 0) + shieldAmount;
-                        spawnFloat('player-floats', `🛡️+${shieldAmount}`, 'block');
+                        spawnFloat('player-floats', `🛡️+${formatNum(shieldAmount)}`, 'block');
                     } else {
                         // Current shield is better: just refresh duration
                         runState.piedraShield.ticksLeft = pp.duration * 10;
@@ -2857,7 +3331,7 @@
                 }
 
                 p.hp -= dmg;
-                const playerDmgText = type === 'crit' ? `-${dmg}!` : `-${dmg}`;
+                const playerDmgText = type === 'crit' ? `-${formatNum(dmg)}!` : `-${formatNum(dmg)}`;
                 spawnFloat('player-floats', playerDmgText, type);
                 flashElement('player-card');
                 arenaLunge('enemy');
@@ -2976,16 +3450,18 @@
                              }
 
                              e.hp -= counterDmg;
-                             const dmgText = counterType === 'crit' ? `-${counterDmg}!` : `-${counterDmg}`;
-                             spawnFloat('enemy-floats', dmgText, counterType);
+                              const dmgText = counterType === 'crit' ? `-${formatNum(counterDmg)}!` : `-${formatNum(counterDmg)}`;
+                              spawnFloat('enemy-floats', dmgText, counterType);
 
                              // Lifesteal (ya incluye equipo + maestría + asalto vampírico, flat post-DR)
                              if (currentLifesteal > 0) {
                                  const heal = Math.floor(counterDmg * currentLifesteal / 100);
                                  if (heal > 0) {
                                      p.hp = Math.min(p.maxHp, p.hp + heal);
-                                     spawnFloat('player-floats', `+${heal}`, 'heal');
-                                     if (runState.recap) runState.recap.heal.contraataque += heal;
+                                     spawnFloat('player-floats', `+${formatNum(heal)}`, 'heal');
+                                      if (runState.recap) runState.recap.heal.contraataque += heal;
+
+
                                  }
                              }
 
@@ -2998,7 +3474,7 @@
                                      const healPct = TALENT_POOL.sustain.find(x => x.id === 'toque_runico').levels[t('toque_runico') - 1].healPct;
                                      const heal = Math.floor(p.maxHp * healPct / 100);
                                      p.hp = Math.min(p.maxHp, p.hp + heal);
-                                     spawnFloat('player-floats', `+${heal} (runa)`, 'heal');
+                            spawnFloat('player-floats', `+${formatNum(heal)} (runa)`, 'heal');
                                      if (runState.recap) runState.recap.heal.contraataque += heal;
                                  }
                              }
@@ -3014,11 +3490,11 @@
                                          const heal = Math.floor(echoDmg * currentLifesteal / 100);
                                          if (heal > 0) {
                                              p.hp = Math.min(p.maxHp, p.hp + heal);
-                                             spawnFloat('player-floats', `+${heal} (eco)`, 'heal');
+                                             spawnFloat('player-floats', `+${formatNum(heal)} (eco)`, 'heal');
                                              if (runState.recap) runState.recap.heal.contraataque += heal;
                                          }
                                      }
-                                     spawnFloat('enemy-floats', `-${echoDmg} (eco)`, 'crit', 'right');
+                                     spawnFloat('enemy-floats', `-${formatNum(echoDmg)} (eco)`, 'crit', 'right');
                                  }
                              }
 
@@ -3116,8 +3592,8 @@
                 const sa = TALENT_POOL.sustain.find(x => x.id === 'segundo_aliento').levels[t('segundo_aliento') - 1];
                 const heal = Math.floor(p.maxHp * sa.healPct / 100);
                 p.hp = Math.min(p.maxHp, p.hp + heal);
-                addLog(`💨 ¡Segundo Aliento! +${heal} HP`, 'system');
-                spawnFloat('player-floats', `+${heal} (2A)`, 'heal');
+                addLog(`💨 ¡Segundo Aliento! +${formatNum(heal)} HP`, 'system');
+                spawnFloat('player-floats', `+${formatNum(heal)} (2A)`, 'heal');
                 if (runState.recap) runState.recap.heal.segundo_aliento += heal;
             }
 
@@ -3131,8 +3607,10 @@
                     if (p.hp < p.maxHp) {
                         const heal = Math.floor(p.maxHp * hpPctPer2s / 100);
                         p.hp = Math.min(p.maxHp, p.hp + heal);
-                        spawnFloat('player-floats', `+${heal}`, 'heal');
+                        spawnFloat('player-floats', `+${formatNum(heal)}`, 'heal');
                         if (runState.recap) runState.recap.heal.regeneracion += heal;
+
+
                     }
                 }
             }
@@ -3158,7 +3636,7 @@
             // XP
             const xpGain = runState.floor;
             runState.xp += xpGain;
-            addLog(`+${xpGain} XP`, 'system');
+            addLog(`+${formatNum(xpGain)} XP`, 'system');
 
             // Souls per floor (display only — awarded at death, not accumulated)
             const floor = runState.trainingMode ? runState.trainingFloor : runState.floor;
@@ -3169,7 +3647,27 @@
             } else {
                 soulsPerKill = Math.floor(floor * BALANCE.souls.baseMult + (floor * metaState.upgrades.souls.level * metaState.upgrades.souls.flat));
             }
-            addLog(`+${soulsPerKill} 💀`, 'system');
+            addLog(`+${formatNum(soulsPerKill)} 💀`, 'system');
+
+            // ─── ARMAS (spec): Maestro de Armas — next hit ×N on kill ───
+            if (metaState.playerSpec === 'arms' && metaState.heroLevel >= 100) {
+                const armsMult = getSpecPassiveValue('arms', 'mult', metaState.heroLevel);
+                if (armsMult > 1) {
+                    runState.nextHitMult = armsMult;
+                    addLog('⚔️ Maestro de Armas: próximo golpe potenciado.', 'system');
+                }
+            }
+
+            // ─── DEMONOLOGÍA (spec): Esencia Demoníaca — invocar demonio ───
+            if (metaState.playerSpec === 'demonology' && metaState.heroLevel >= 100 && !runState.trainingMode) {
+                const demoChance = getSpecPassiveValue('demonology', 'chance', metaState.heroLevel);
+                const demoHits = getSpecPassiveValue('demonology', 'hits', metaState.heroLevel);
+                if (demoChance > 0 && Math.random() * 100 < demoChance) {
+                    runState.demonActive = true;
+                    runState.demonHitsLeft = demoHits;
+                    addLog(`👹 ¡Demonio invocado! (${demoHits} golpes)`, 'system');
+                }
+            }
 
             // Essence drop (solo modo normal — jefe siempre, normal 50%)
             if (!runState.trainingMode) {
@@ -3255,7 +3753,7 @@
                         addLog('🍀 ¡Maestría Afortunada duplica las almas!', 'loot');
                     }
                     metaState.souls += totalSouls;
-                    addLog(`💀 Entrenamiento terminado. Enemigos derrotados: ${killed}. +${totalSouls} almas.`, 'death');
+                    addLog(`💀 Entrenamiento terminado. Enemigos derrotados: ${killed}. +${formatNum(totalSouls)} almas.`, 'death');
                 } else {
                     addLog(`💀 Entrenamiento terminado. No derrotaste ningún enemigo.`, 'death');
                 }
@@ -3287,7 +3785,7 @@
                 addLog('🔨 ¡Forja desbloqueada! Ahora podés reforjar maestrías y maximizar equipo.', 'victory');
                 saveGame();
             }
-            addLog(`💀 Caíste en el piso ${runState.floor}. +${totalSouls} almas.`, 'death');
+            addLog(`💀 Caíste en el piso ${runState.floor}. +${formatNum(totalSouls)} almas.`, 'death');
 
             // Leaderboard entry (tower mode only) — una entrada por persona
             if (runState.runStartTime) {
@@ -3310,9 +3808,10 @@
                         }
                     }
                 } else {
+                    const lbClass = metaState.playerClass ? getClassName(metaState.playerClass) : 'Héroe';
                     metaState.leaderboard.push({
                         name: metaState.playerName,
-                        class: 'Héroe',
+                        class: lbClass,
                         heroLevel: metaState.heroLevel,
                         maxFloor: metaState.maxFloor,
                         runTime: formatRunTime(elapsed),
@@ -3369,11 +3868,35 @@
 
                 runState.xpToNext = BALANCE.levelUp.xpScale * runState.level;
 
+                // Clase: añadir stats por nivel (primer bonus al pasar a nivel 51)
+                if (metaState.playerClass && runState.level > 50) {
+                    const cfg = CLASS_CONFIG[metaState.playerClass];
+                    if (cfg) {
+                        runState.runBonuses.hp += cfg.statPerLevel.hp;
+                        runState.runBonuses.atk += cfg.statPerLevel.atk;
+                        runState.runBonuses.def += cfg.statPerLevel.def;
+                        runState.runBonuses.agi += cfg.statPerLevel.agi;
+                    }
+                }
+
                 // Persistir nivel y bonuses a metaState
                 metaState.heroLevel = runState.level;
                 metaState.heroXp = runState.xp;
                 metaState.heroBonuses = { ...runState.runBonuses };
                 saveGame();
+
+                // Desbloquear clase al nivel 50
+                if (runState.level === 50 && !metaState.playerClass) {
+                    startCombat(); // calcula stats sin clase
+                    showClassSelection();
+                    return;
+                }
+                // Desbloquear especialización al nivel 100
+                if (runState.level === 100 && metaState.playerClass && !metaState.playerSpec) {
+                    startCombat();
+                    showSpecSelection();
+                    return;
+                }
 
                 startCombat();
             } else {
@@ -3499,10 +4022,496 @@
                 runState.furiaStacks = 0;
                 startCombat();
             }
+            updateButtons();
         }
 
         // ============================================
-        // 6b. COMPARACIÓN DE EQUIPO
+        // 6b. CLASES — Helpers y Modales
+        // ============================================
+
+        function calcularClassBonuses(heroLevel, playerClass) {
+            const result = { hp: 0, atk: 0, def: 0, agi: 0 };
+            if (!playerClass || !CLASS_CONFIG[playerClass] || heroLevel < 50) return result;
+            const config = CLASS_CONFIG[playerClass];
+            const levels = Math.max(0, heroLevel - 50);
+            result.hp = levels * config.statPerLevel.hp;
+            result.atk = levels * config.statPerLevel.atk;
+            result.def = levels * config.statPerLevel.def;
+            result.agi = levels * config.statPerLevel.agi;
+            return result;
+        }
+
+        function getClassConfig(classId) {
+            return CLASS_CONFIG[classId] || null;
+        }
+
+        function getClassName(classId) {
+            const cfg = CLASS_CONFIG[classId];
+            return cfg ? cfg.name : 'Héroe';
+        }
+
+        function getSpecName(specId) {
+            for (const specs of Object.values(SPECIALIZATIONS)) {
+                const found = specs.find(s => s.id === specId);
+                if (found) return found.name;
+            }
+            return null;
+        }
+
+        function getClassPassive(classId) {
+            return CLASS_PASSIVES[classId] || null;
+        }
+
+        function getSpecPassive(specId) {
+            return SPEC_PASSIVES[specId] || null;
+        }
+
+        // ─── Modal: Selección de Clase (nivel 50) ──────────
+        function showClassSelection() {
+            runState.pendingChoice = 'class';
+            const overlay = document.getElementById('choice-overlay');
+            document.getElementById('choice-title').textContent = '🏛️ Elige tu Clase';
+            document.getElementById('choice-desc').textContent = 'Has alcanzado el nivel 50. Elige una clase para potenciar tus stats por nivel.';
+            const grid = document.getElementById('choice-grid');
+            grid.innerHTML = '';
+            for (const cls of Object.values(CLASS_CONFIG)) {
+                const btn = document.createElement('button');
+                btn.className = 'choice-btn';
+                btn.style.borderLeft = `4px solid ${cls.color}`;
+                const passive = CLASS_PASSIVES[cls.id];
+                const pv = passive ? passive.eval(50) : {};
+                const pDesc = passive ? Object.entries(pv).map(([k, v]) => {
+                    if (k === 'mult') return `×${v.toFixed(2)}`;
+                    if (k === 'speedPct') return `${v}% vel`;
+                    if (k === 'dodgePct') return `${v}% eva`;
+                    if (k === 'lifestealPct') return `${v}% lifesteal`;
+                    if (k === 'dotDmgPct') return `${v}% DoT`;
+                    if (k === 'bonusDmg') return `+${v}%`;
+                    return `${k}:${v}`;
+                }).join(' ') : '';
+                btn.innerHTML = `
+                    <span class="title" style="color:${cls.color}">${cls.emoji} ${cls.name}</span>
+                    <span class="desc">❤️+${cls.statPerLevel.hp}/nv ⚔️+${cls.statPerLevel.atk}/nv 🛡️+${cls.statPerLevel.def}/nv 🏃+${cls.statPerLevel.agi}/nv</span>
+                    <span class="desc" style="color:#fbbf24;font-size:0.75rem;">${passive ? passive.name + ': ' + passive.desc : ''}</span>
+                `;
+                btn.onclick = () => {
+                    metaState.playerClass = cls.id;
+                    metaState.playerSpec = null;
+                    // Recalcular class bonuses en runBonuses
+                    if (runState.active) {
+                        const cb = calcularClassBonuses(runState.level, cls.id);
+                        // Remove old class bonuses first (based on previous class)
+                        const prevCb = calcularClassBonuses(runState.level, null); // 0
+                        runState.runBonuses.hp += cb.hp;
+                        runState.runBonuses.atk += cb.atk;
+                        runState.runBonuses.def += cb.def;
+                        runState.runBonuses.agi += cb.agi;
+                        metaState.heroBonuses = { ...runState.runBonuses };
+                    }
+                    addLog(`🏛️ ¡${cls.name} seleccionado! La pasiva ${passive ? passive.name : ''} está activa.`, 'system');
+                    // Cerrar overlay manualmente sin floor++ ni startCombat
+                    document.getElementById('choice-overlay').classList.remove('visible');
+                    runState.pendingChoice = null;
+                    if (runState.level >= 100 && !metaState.playerSpec) {
+                        saveGame();
+                        showSpecSelection();
+                    } else {
+                        saveGame();
+                        render();
+                        updateButtons();
+                    }
+                };
+                grid.appendChild(btn);
+            }
+            overlay.classList.add('visible');
+        }
+
+        // ─── Modal: Selección de Especialización (nivel 100) ─
+        function showSpecSelection() {
+            if (!metaState.playerClass) {
+                addLog('❌ Necesitás elegir una clase primero (nivel 50) antes de especializarte.', 'system');
+                checkLevelUp();
+                return;
+            }
+            runState.pendingChoice = 'spec';
+            const overlay = document.getElementById('choice-overlay');
+            document.getElementById('choice-title').textContent = '⚡ Elige tu Especialización';
+            document.getElementById('choice-desc').textContent = `Has alcanzado el nivel 100. Especializá a tu ${getClassName(metaState.playerClass)}.`;
+            const grid = document.getElementById('choice-grid');
+            grid.innerHTML = '';
+            const specs = SPECIALIZATIONS[metaState.playerClass] || [];
+            for (const spec of specs) {
+                const btn = document.createElement('button');
+                btn.className = 'choice-btn';
+                const passive = SPEC_PASSIVES[spec.id];
+                const pv = passive ? passive.eval(100) : {};
+                const pDesc = passive ? Object.entries(pv).map(([k, v]) => {
+                    if (typeof v === 'number') return `${k}: ${v.toFixed(2)}`;
+                    return `${k}:${v}`;
+                }).join(' · ') : '';
+                btn.innerHTML = `
+                    <span class="title">${spec.name}</span>
+                    <span class="desc">${spec.desc}</span>
+                    <span class="desc" style="color:#fbbf24;font-size:0.75rem;">${passive ? passive.name + ': ' + pDesc : ''}</span>
+                `;
+                btn.onclick = () => {
+                    metaState.playerSpec = spec.id;
+                    addLog(`⚡ Especialización: ${spec.name} activada.`, 'system');
+                    // Cerrar overlay manualmente sin floor++ ni startCombat
+                    document.getElementById('choice-overlay').classList.remove('visible');
+                    runState.pendingChoice = null;
+                    saveGame();
+                    render();
+                    updateButtons();
+                };
+                grid.appendChild(btn);
+            }
+            overlay.classList.add('visible');
+        }
+
+        // ─── Modal: Cambio de Especialización ───────────────
+        function showSpecChangeConfirm() {
+            if (!metaState.playerClass || !metaState.playerSpec) {
+                addLog('❌ Necesitás tener clase y especialización para cambiarla.', 'system');
+                return;
+            }
+            const overlay = document.getElementById('choice-overlay');
+            document.getElementById('choice-title').textContent = '⚡ Cambiar Especialización';
+            const cost = Math.floor(metaState.souls * 0.1);
+            const grid = document.getElementById('choice-grid');
+            grid.innerHTML = '';
+            document.getElementById('choice-desc').innerHTML = `
+                Especialización actual: ⚡ ${getSpecName(metaState.playerSpec)}<br>
+                Costo: ${formatNum(cost)} 💀 (10% de tus almas)<br>
+                Elegí una nueva especialización:
+            `;
+            const specs = SPECIALIZATIONS[metaState.playerClass] || [];
+            for (const spec of specs) {
+                if (spec.id === metaState.playerSpec) continue;
+                const passive = SPEC_PASSIVES[spec.id];
+                const pv = passive ? passive.eval(Math.max(100, runState.level)) : {};
+                const pDesc = passive ? Object.entries(pv).map(([k, v]) => {
+                    if (typeof v === 'number') return `${k}: ${v.toFixed(2)}`;
+                    return `${k}: ${v}`;
+                }).join(' · ') : '';
+                const btn = document.createElement('button');
+                btn.className = 'choice-btn';
+                btn.innerHTML = `
+                    <span class="title">${spec.name}</span>
+                    <span class="desc">${spec.desc}</span>
+                    <span class="desc" style="color:#fbbf24;font-size:0.75rem;">${passive ? passive.name + ': ' + pDesc : ''}</span>
+                `;
+                btn.onclick = () => {
+                    document.getElementById('choice-title').textContent = '⚠️ Confirmar Cambio';
+                    document.getElementById('choice-desc').innerHTML = `
+                        ¿Cambiar de <strong>${getSpecName(metaState.playerSpec)}</strong> a <strong>${spec.name}</strong>?<br>
+                        Costo: ${formatNum(cost)} 💀<br>
+                        ${cost > 0 ? `Te quedarán ${formatNum(metaState.souls - cost)} 💀` : ''}
+                    `;
+                    grid.innerHTML = `
+                        <button class="choice-btn" onclick="confirmSpecChange('${spec.id}')">
+                            <span class="title" style="color:#4ade80;">✅ Sí, cambiar a ${spec.name}</span>
+                        </button>
+                        <button class="choice-btn" onclick="showSpecChangeConfirm()">
+                            <span class="title" style="color:#9ca3af;">🔙 Volver</span>
+                        </button>
+                    `;
+                };
+                grid.appendChild(btn);
+            }
+            // Botón para volver atrás sin cambiar
+            const backBtn = document.createElement('button');
+            backBtn.className = 'choice-btn';
+            backBtn.style.cssText = 'background:transparent;border:1px solid #4a4a6a;border-radius:8px;padding:10px;cursor:pointer;color:#9ca3af;text-align:center;margin-top:8px;';
+            backBtn.textContent = '🔙 Volver';
+            backBtn.onclick = () => {
+                document.getElementById('choice-overlay').classList.remove('visible');
+                runState.pendingChoice = null;
+                if (runState.characterScreenActive) renderCharacterScreen();
+            };
+            grid.appendChild(backBtn);
+            overlay.classList.add('visible');
+        }
+
+        function confirmSpecChange(newSpec) {
+            if (!metaState.playerClass || !metaState.playerSpec) return;
+            const cost = Math.floor(metaState.souls * 0.1);
+            metaState.souls -= cost;
+            metaState.playerSpec = newSpec;
+            addLog(`⚡ Especialización cambiada a ${getSpecName(newSpec)}.`, 'system');
+            const overlay = document.getElementById('choice-overlay');
+            if (overlay) overlay.classList.remove('visible');
+            runState.pendingChoice = null;
+            saveGame();
+            render();
+            if (runState.characterScreenActive) renderCharacterScreen();
+        }
+
+        // ─── Modal: Confirmación Cambio de Clase ────────────
+        let _pendingNewClass = null;
+
+        function showClassChangeConfirm() {
+            if (!metaState.playerClass) {
+                addLog('❌ Aún no tenés clase seleccionada.', 'system');
+                return;
+            }
+            const overlay = document.getElementById('choice-overlay');
+            document.getElementById('choice-title').textContent = '🔄 Cambiar de Clase';
+            const cost = Math.floor(metaState.souls * 0.5);
+            const grid = document.getElementById('choice-grid');
+            grid.innerHTML = '';
+            document.getElementById('choice-desc').innerHTML = `
+                Clase actual: ${CLASS_CONFIG[metaState.playerClass]?.emoji || ''} ${getClassName(metaState.playerClass)}<br>
+                Costo: ${formatNum(cost)} 💀 (50% de tus almas)<br>
+                Elegí una nueva clase:
+            `;
+            for (const cls of Object.values(CLASS_CONFIG)) {
+                if (cls.id === metaState.playerClass) continue;
+                const btn = document.createElement('button');
+                btn.className = 'choice-btn';
+                btn.style.borderLeft = `4px solid ${cls.color}`;
+                btn.innerHTML = `
+                    <span class="title" style="color:${cls.color}">${cls.emoji} ${cls.name}</span>
+                    <span class="desc">❤️+${cls.statPerLevel.hp}/nv ⚔️+${cls.statPerLevel.atk}/nv 🛡️+${cls.statPerLevel.def}/nv 🏃+${cls.statPerLevel.agi}/nv</span>
+                `;
+                btn.onclick = () => {
+                    _pendingNewClass = cls.id;
+                    // Segundo paso: confirmar
+                    document.getElementById('choice-title').textContent = '⚠️ Confirmar Cambio';
+                    document.getElementById('choice-desc').innerHTML = `
+                        ¿Cambiar de ${getClassName(metaState.playerClass)} a <strong style="color:${cls.color}">${cls.emoji} ${cls.name}</strong>?<br>
+                        Costo: ${formatNum(cost)} 💀<br>
+                        ${cost > 0 ? `Te quedarán ${formatNum(metaState.souls - cost)} 💀` : ''}
+                    `;
+                    grid.innerHTML = `
+                        <button class="choice-btn" onclick="confirmClassChange('${cls.id}')">
+                            <span class="title" style="color:#4ade80;">✅ Sí, cambiar a ${cls.name}</span>
+                        </button>
+                        <button class="choice-btn" onclick="cancelClassChange()">
+                            <span class="title" style="color:#ef4444;">❌ Cancelar</span>
+                        </button>
+                    `;
+                };
+                grid.appendChild(btn);
+            }
+            // Botón para volver atrás sin cambiar clase
+            const backBtn = document.createElement('button');
+            backBtn.className = 'choice-btn';
+            backBtn.style.cssText = 'background:transparent;border:1px solid #4a4a6a;border-radius:8px;padding:10px;cursor:pointer;color:#9ca3af;text-align:center;margin-top:8px;';
+            backBtn.textContent = '🔙 Volver';
+            backBtn.onclick = () => {
+                document.getElementById('choice-overlay').classList.remove('visible');
+                runState.pendingChoice = null;
+                if (runState.characterScreenActive) renderCharacterScreen();
+            };
+            grid.appendChild(backBtn);
+            overlay.classList.add('visible');
+        }
+
+        function confirmClassChange(newClass) {
+            const cost = Math.floor(metaState.souls * 0.5);
+            metaState.souls -= cost;
+            metaState.playerClass = newClass;
+            metaState.playerSpec = null; // reset spec on class change
+            addLog(`🔄 Clase cambiada a ${getClassName(newClass)}.`, 'system');
+            // Close overlay without incrementing floor (closeChoice does floor++)
+            const overlay = document.getElementById('choice-overlay');
+            if (overlay) overlay.classList.remove('visible');
+            runState.pendingChoice = null;
+            // Recalcular class bonuses
+            if (runState.active) {
+                const tiered = calcTieredBonuses(runState.level);
+                const cbNew = calcularClassBonuses(runState.level, newClass);
+                runState.runBonuses = {
+                    hp: tiered.hp + cbNew.hp,
+                    atk: tiered.atk + cbNew.atk,
+                    def: tiered.def + cbNew.def,
+                    agi: tiered.agi + cbNew.agi,
+                };
+                metaState.heroBonuses = { ...runState.runBonuses };
+            }
+            saveGame();
+            render();
+        }
+
+        function cancelClassChange() {
+            _pendingNewClass = null;
+            const overlay = document.getElementById('choice-overlay');
+            if (overlay) overlay.classList.remove('visible');
+            runState.pendingChoice = null;
+        }
+
+        // ─── Pantalla Personaje ─────────────────────────────
+        function showCharacterScreen() {
+            runState.characterScreenActive = true;
+            render();
+            // Give render() a tick to update DOM, then create overlay with fresh stats
+            setTimeout(renderCharacterScreen, 50);
+        }
+
+        function closeCharacterScreen() {
+            runState.characterScreenActive = false;
+            const existing = document.getElementById('char-screen-overlay');
+            if (existing) existing.remove();
+            render();
+        }
+
+        function renderCharacterScreen() {
+            const game = document.getElementById('game');
+            // Remove existing overlay if any
+            const existing = document.getElementById('char-screen-overlay');
+            if (existing) existing.remove();
+            // Build full overlay
+            const overlay = document.createElement('div');
+            overlay.id = 'char-screen-overlay';
+            overlay.style.cssText = 'position:fixed;inset:0;background:#0a0a12;z-index:999;overflow-y:auto;padding:20px;max-width:480px;margin:0 auto;';
+            const p = runState.player;
+            const classColor = metaState.playerClass ? (CLASS_CONFIG[metaState.playerClass]?.color || '#3b82f6') : '#3b82f6';
+            const emoji = metaState.playerClass ? (CLASS_CONFIG[metaState.playerClass]?.emoji || '🤺') : '🤺';
+            const className = metaState.playerClass ? getClassName(metaState.playerClass) : 'Héroe';
+
+            let html = `
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                    <h2 style="color:${classColor};margin:0;">${emoji} ${metaState.playerName} — ${className}</h2>
+                    <button onclick="closeCharacterScreen()" style="background:#3b82f6;color:white;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;font-weight:600;">🔙 Volver al juego</button>
+                </div>
+                <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:12px;padding:16px;border:2px solid ${classColor};margin-bottom:12px;">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                        <span style="color:#9ca3af;">Nivel ${runState.level}</span>
+                        <span style="color:#fbbf24;">🏛️ ${className}</span>
+                        ${metaState.playerSpec ? `<span style="color:#a78bfa;">⚡ ${getSpecName(metaState.playerSpec)}</span>` : ''}
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+                        <div style="background:#111118;border-radius:8px;padding:8px;border:1px solid #2a2a4a;">
+                            <div style="font-size:0.7rem;color:#9ca3af;margin-bottom:4px;">❤️ HP</div>
+                            <div style="font-weight:700;font-size:1.1rem;color:#ef4444;">${formatNum(p.maxHp)}</div>
+                            <div style="font-size:0.6rem;color:#6b7280;">
+                                Base ${formatNum(BALANCE.player.hp)} | Nv ${formatNum(runState.runBonuses.hp)} | Eq ${formatNum(calcEqStat('hp'))}
+                                ${metaState.playerClass ? `| Clase ${formatNum(calcularClassBonuses(runState.level, metaState.playerClass).hp)}` : ''}
+                            </div>
+                        </div>
+                        <div style="background:#111118;border-radius:8px;padding:8px;border:1px solid #2a2a4a;">
+                            <div style="font-size:0.7rem;color:#9ca3af;margin-bottom:4px;">⚔️ ATK</div>
+                            <div style="font-weight:700;font-size:1.1rem;color:#f59e0b;">${formatNum(p.atk)}</div>
+                            <div style="font-size:0.6rem;color:#6b7280;">
+                                Base ${formatNum(BALANCE.player.atk)} | Nv ${formatNum(runState.runBonuses.atk)} | Eq ${formatNum(calcEqStat('atk'))}
+                                ${metaState.playerClass ? `| Clase ${formatNum(calcularClassBonuses(runState.level, metaState.playerClass).atk)}` : ''}
+                            </div>
+                        </div>
+                        <div style="background:#111118;border-radius:8px;padding:8px;border:1px solid #2a2a4a;">
+                            <div style="font-size:0.7rem;color:#9ca3af;margin-bottom:4px;">🛡️ DEF</div>
+                            <div style="font-weight:700;font-size:1.1rem;color:#3b82f6;">${formatNum(p.def)}</div>
+                            <div style="font-size:0.6rem;color:#6b7280;">
+                                Base ${formatNum(BALANCE.player.def)} | Nv ${formatNum(runState.runBonuses.def)} | Eq ${formatNum(calcEqStat('def'))}
+                                ${metaState.playerClass ? `| Clase ${formatNum(calcularClassBonuses(runState.level, metaState.playerClass).def)}` : ''}
+                            </div>
+                        </div>
+                        <div style="background:#111118;border-radius:8px;padding:8px;border:1px solid #2a2a4a;">
+                            <div style="font-size:0.7rem;color:#9ca3af;margin-bottom:4px;">🏃 AGI</div>
+                            <div style="font-weight:700;font-size:1.1rem;color:#10b981;">${formatNum(p.agi)}</div>
+                            <div style="font-size:0.6rem;color:#6b7280;">
+                                Base ${formatNum(BALANCE.player.agi)} | Nv ${formatNum(runState.runBonuses.agi)} | Eq ${formatNum(calcEqStat('agi'))}
+                                ${metaState.playerClass ? `| Clase ${formatNum(calcularClassBonuses(runState.level, metaState.playerClass).agi)}` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div style="background:#1a1a2e;border-radius:12px;padding:12px;border:1px solid #2a2a4a;margin-bottom:12px;">
+                    <h3 style="color:#a78bfa;font-size:0.95rem;margin-bottom:8px;">📊 Stats Derivadas</h3>
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:0.8rem;">
+                        <span>🎯 CRIT <b style="color:#f59e0b;">${document.getElementById('player-crit')?.textContent || '0%'}</b></span>
+                        <span>🛡️ BLOQ <b style="color:#3b82f6;">${document.getElementById('player-block')?.textContent || '0%'}</b></span>
+                        <span>💨 EVA <b style="color:#10b981;">${document.getElementById('player-dodge')?.textContent || '0%'}</b></span>
+                        <span>💥 PEN <b style="color:#a78bfa;">${document.getElementById('player-pen')?.textContent || '0%'}</b></span>
+                        <span>💢 CRIT DMG <b style="color:#ef4444;">${document.getElementById('player-crit-dmg')?.textContent || '+50%'}</b></span>
+                        <span>👑 VS BOSS <b style="color:#f59e0b;">${document.getElementById('player-boss-dmg')?.textContent || '+0%'}</b></span>
+                        <span>💚 REGEN <b style="color:#22c55e;">${document.getElementById('player-hp-regen')?.textContent || '0%'}</b></span>
+                        <span>🧛 LIFESTEAL <b style="color:#ef4444;">${document.getElementById('player-lifesteal')?.textContent || '0%'}</b></span>
+                    </div>
+                </div>
+                <div style="background:#1a1a2e;border-radius:12px;padding:12px;border:1px solid #2a2a4a;margin-bottom:12px;">
+                    <h3 style="color:#a78bfa;font-size:0.95rem;margin-bottom:8px;">🎒 Equipo <span style="font-size:0.7rem;color:#6b7280;font-weight:400;">(click para reforjar/maximizar)</span></h3>
+                    <div style="display:flex;flex-direction:column;gap:8px;">
+                        ${['weapon', 'armor', 'ring'].map(slot => {
+                            const item = metaState.equipment[slot];
+                            const icons = { weapon: '🗡️', armor: '🛡️', ring: '💍' };
+                            if (!item) return `<div style="background:#111118;border-radius:8px;padding:12px;border:1px solid #2a2a4a;font-size:0.75rem;color:#6b7280;text-align:center;">${icons[slot]} ${slot === 'weapon' ? 'Arma' : slot === 'armor' ? 'Armadura' : 'Anillo'} — Vacío</div>`;
+                            const panelHTML = buildEquipPanelHTML(item);
+                            return `<div style="cursor:pointer;" onclick="showMaximizeModal()">${panelHTML}</div>`;
+                        }).join('')}
+                    </div>
+                </div>
+                <div style="background:#1a1a2e;border-radius:12px;padding:12px;border:1px solid #2a2a4a;margin-bottom:12px;">
+                    <h3 style="color:#a78bfa;font-size:0.95rem;margin-bottom:8px;">⚡ Pasivas</h3>`;
+
+            // Class passive
+            const classPassive = metaState.playerClass ? CLASS_PASSIVES[metaState.playerClass] : null;
+            if (classPassive) {
+                const vals = classPassive.eval(runState.level);
+                const valStr = Object.entries(vals).map(([k, v]) => {
+                    if (k === 'mult') return `×${v.toFixed(2)}`;
+                    if (k === 'speedPct') return `${v}% vel`;
+                    if (k === 'dodgePct') return `${v}% eva`;
+                    if (k === 'lifestealPct') return `${v}% lifesteal`;
+                    if (k === 'dotDmgPct') return `${v}% DoT`;
+                    if (k === 'bonusDmg') return `+${v}%`;
+                    return `${k}: ${typeof v === 'number' ? v.toFixed(1) : v}`;
+                }).join(' · ');
+                html += `<div style="padding:8px 0;border-bottom:1px solid #2a2a4a;">
+                    <div style="font-weight:600;color:#fbbf24;font-size:0.85rem;">${CLASS_CONFIG[metaState.playerClass]?.emoji} ${classPassive.name}</div>
+                    <div style="font-size:0.75rem;color:#9ca3af;">${classPassive.desc}</div>
+                    <div style="font-size:0.7rem;color:#60a5fa;">Actual: ${valStr}</div>
+                </div>`;
+            }
+            // Spec passive
+            if (metaState.playerSpec) {
+                const specPassive = SPEC_PASSIVES[metaState.playerSpec];
+                if (specPassive) {
+                    const vals = specPassive.eval(Math.max(100, runState.level));
+                    const valStr = Object.entries(vals).map(([k, v]) => {
+                        if (typeof v === 'number') return `${k}: ${v.toFixed(2)}`;
+                        return `${k}: ${v}`;
+                    }).join(' · ');
+                    html += `<div style="padding:8px 0;border-bottom:1px solid #2a2a4a;">
+                        <div style="font-weight:600;color:#a78bfa;font-size:0.85rem;">⚡ ${specPassive.name} <span style="color:#9ca3af;font-weight:400;">(${getSpecName(metaState.playerSpec)})</span></div>
+                        <div style="font-size:0.75rem;color:#9ca3af;">${specPassive.desc}</div>
+                        <div style="font-size:0.7rem;color:#60a5fa;">Actual: ${valStr}</div>
+                    </div>`;
+                }
+            } else if (metaState.playerClass) {
+                html += `<div style="padding:8px 0;color:#6b7280;font-size:0.8rem;">Sin especialización activa. Alcanzá el nivel 100 para elegir una.</div>`;
+            } else {
+                html += `<div style="padding:8px 0;color:#6b7280;font-size:0.8rem;">Sin clase activa. Alcanzá el nivel 50 para elegir una.</div>`;
+            }
+
+            html += `</div>
+                <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+                    ${metaState.playerClass && metaState.playerSpec ? `<button onclick="showSpecChangeConfirm()" style="flex:1;min-width:120px;background:transparent;border:1px solid #a78bfa;color:#a78bfa;border-radius:8px;padding:10px;cursor:pointer;font-weight:600;">⚡ Cambiar especialización</button>` : ''}
+                    ${metaState.playerClass ? `<button onclick="showClassChangeConfirm()" style="flex:1;min-width:120px;background:transparent;border:1px solid #ef4444;color:#ef4444;border-radius:8px;padding:10px;cursor:pointer;font-weight:600;">🔄 Cambiar clase</button>` : ''}
+                    <button onclick="closeCharacterScreen()" style="flex:1;min-width:120px;background:#3b82f6;color:white;border:none;border-radius:8px;padding:10px;cursor:pointer;font-weight:600;">🔙 Volver al juego</button>
+                </div>
+            `;
+            overlay.innerHTML = html;
+            document.body.appendChild(overlay);
+        }
+
+        // Helper: calculate flat equipment stat for character screen breakdown
+        function calcEqStat(stat) {
+            let total = 0;
+            for (const slot of ['weapon', 'armor', 'ring']) {
+                const item = metaState.equipment[slot];
+                if (item && item.stats[stat]) {
+                    const enhMult = 1 + (item.enhance || 0) * 0.1;
+                    let val = Math.floor(item.stats[stat] * enhMult);
+                    if (item.bonusStat && item.bonusStat.stat === stat) val += item.bonusStat.bonus;
+                    total += val;
+                }
+            }
+            return total;
+        }
+
+        // ============================================
+        // 6c. COMPARACIÓN DE EQUIPO
         // ============================================
         let pendingEquipOldItem = null;
         let pendingEquipNewItem = null;
@@ -3524,16 +4533,20 @@
 
             const enhanceBadge = (item.enhance || 0) > 0 ? `<span class="enhance-badge">+${item.enhance}</span>` : '';
             const nameHTML = `<div class="equip-name ${rarityClass}">${item.name}${enhanceBadge}</div>`;
-            const rarityHTML = `<div class="equip-stats">${item.rarity} &nbsp;|&nbsp; ilvl ${Math.floor(calcIlvl(item, useBaseIlvl))}</div>`;
+            const rarityHTML = `<div class="equip-stats">${item.rarity} &nbsp;|&nbsp; ilvl ${formatNum(Math.floor(calcIlvl(item, useBaseIlvl)))}</div>`;
 
             const statLines = Object.entries(item.stats)
                 .filter(([, v]) => v > 0)
                 .map(([k, v]) => {
                     const label = percentStats.includes(k) ? statLabels[k] : k.toUpperCase();
+                    // En comparación base (useBaseIlvl=true): mostrar valor crudo, sin bonus ni azul
+                    if (useBaseIlvl) {
+                        return `<span class="equip-stat-line">${icons[k] || ''} +${formatNum(v)} ${label}</span>`;
+                    }
                     const isBonus = item.bonusStat && item.bonusStat.stat === k;
                     const displayVal = isBonus ? v + item.bonusStat.bonus : v;
                     const cls = isBonus ? 'equip-stat-line has-bonus' : 'equip-stat-line';
-                    return `<span class="${cls}">${icons[k] || ''} +${displayVal} ${label}</span>`;
+                    return `<span class="${cls}">${icons[k] || ''} +${formatNum(displayVal)} ${label}</span>`;
                 }).join('');
 
             const masteryStars = item.mastery ? '⭐'.repeat(item.mastery.level) : '';
@@ -3677,7 +4690,7 @@ runState.furiaStacks = 0;
                     addLog('🍀 ¡Maestría Afortunada duplica las almas!', 'loot');
                 }
                 metaState.souls += totalSouls;
-                addLog(`✅ Entrenamiento terminado. Enemigos derrotados: ${killed}. +${totalSouls} almas.`, 'victory');
+                addLog(`✅ Entrenamiento terminado. Enemigos derrotados: ${killed}. +${formatNum(totalSouls)} almas.`, 'victory');
             } else {
                 addLog('✅ Entrenamiento terminado. No derrotaste ningún enemigo.', 'system');
             }
@@ -3808,6 +4821,24 @@ runState.furiaStacks = 0;
             runState.xp = metaState.heroXp;
             runState.xpToNext = BALANCE.levelUp.xpScale * (runState.level || 1);
             runState.runBonuses = { ...metaState.heroBonuses };
+            // Añadir class bonuses si hay clase
+            if (metaState.playerClass) {
+                const cb = calcularClassBonuses(runState.level, metaState.playerClass);
+                runState.runBonuses.hp += cb.hp;
+                runState.runBonuses.atk += cb.atk;
+                runState.runBonuses.def += cb.def;
+                runState.runBonuses.agi += cb.agi;
+            }
+            runState.characterScreenActive = false;
+            runState.classHits = 0;
+            runState.firstHitDone = false;
+            runState.nextHitMult = 1;
+            runState.dodgeStreak = 0;
+            runState.attackCounter = 0;
+            runState.demonHits = 0;
+            runState.classComboStacks = 0;
+            runState.demonActive = false;
+            runState.demonHitsLeft = 0;
             runState.abilities = []; // Talentos se resetean cada run
             runState.talentLevels = {}; // Progreso de talentos se resetea cada run
             runState.hasRevived = false;
@@ -3831,6 +4862,16 @@ runState.furiaStacks = 0;
             }
             addLog('🗼 Nueva run iniciada', 'system');
             startCombat();
+            // Si el jugador tiene nivel 50+ y no eligió clase, mostramos selección
+            if (runState.level >= 50 && !metaState.playerClass && !runState.trainingMode) {
+                showClassSelection();
+                return;
+            }
+            // Si tiene clase pero no especialización y nivel >= 100, mostramos selección
+            if (runState.level >= 100 && metaState.playerClass && !metaState.playerSpec && !runState.trainingMode) {
+                showSpecSelection();
+                return;
+            }
             updateButtons();
         }
 
@@ -3862,6 +4903,16 @@ runState.furiaStacks = 0;
             runState.xp = 0;
             runState.xpToNext = BALANCE.levelUp.xpBase;
             runState.runBonuses = { hp: 0, atk: 0, def: 0, agi: 0 };
+            runState.characterScreenActive = false;
+            runState.classHits = 0;
+            runState.firstHitDone = false;
+            runState.nextHitMult = 1;
+            runState.dodgeStreak = 0;
+            runState.attackCounter = 0;
+            runState.demonHits = 0;
+            runState.demonActive = false;
+            runState.demonHitsLeft = 0;
+            runState.classComboStacks = 0;
             document.getElementById('combat-log').innerHTML = '';
             addLog('🔄 Run reiniciada', 'system');
             render(); updateButtons();
@@ -3889,9 +4940,14 @@ runState.furiaStacks = 0;
                 document.getElementById('boss-indicator').style.display = runState.floor % 10 === 0 ? 'block' : 'none';
             }
             
-            // Player
-            document.getElementById('player-name').textContent = `🛡️ ${metaState.playerName}`;
+            // Player — class colors and emoji
+            const classColor = metaState.playerClass ? (CLASS_CONFIG[metaState.playerClass]?.color || '#3b82f6') : '#3b82f6';
+            const classEmoji = metaState.playerClass ? (CLASS_CONFIG[metaState.playerClass]?.emoji || '🤺') : '🤺';
+            document.getElementById('player-name').textContent = `${classEmoji} ${metaState.playerName}`;
+            document.getElementById('player-name').style.color = classColor;
             document.getElementById('player-level').textContent = `Nivel ${runState.level}`;
+            document.getElementById('player-level').style.background = classColor;
+            document.getElementById('player-card').style.borderColor = classColor;
             const xpPct = (runState.xp / runState.xpToNext) * 100;
             document.getElementById('player-xp-bar').style.width = xpPct + '%';
             
@@ -3905,17 +4961,17 @@ runState.furiaStacks = 0;
                 document.getElementById('player-hp-bar').style.width = shieldPct + '%';
                 document.getElementById('player-hp-bar').className = 'hp-bar shield';
                 const baseHp = Math.max(0, p.hp - totalShield);
-                document.getElementById('player-hp-text').textContent = `${baseHp} +${totalShield}🛡️`;
+                document.getElementById('player-hp-text').textContent = `${formatNum(baseHp)} +${formatNum(totalShield)}🛡️`;
             } else {
                 // Normal HP display
                 document.getElementById('player-hp-bar').style.width = pPct + '%';
                 document.getElementById('player-hp-bar').className = 'hp-bar' + (pPct <= 25 ? ' low' : pPct <= 50 ? ' mid' : '');
-                document.getElementById('player-hp-text').textContent = `${Math.max(0, p.hp)} / ${p.maxHp}`;
+                document.getElementById('player-hp-text').textContent = `${formatNum(Math.max(0, p.hp))} / ${formatNum(p.maxHp)}`;
             }
             const derived = getDerivedStats(p.atk, p.def, p.agi);
-            document.getElementById('player-atk').textContent = p.atk;
-            document.getElementById('player-def').textContent = p.def;
-            document.getElementById('player-agi').textContent = p.agi;
+            document.getElementById('player-atk').textContent = formatNum(p.atk);
+            document.getElementById('player-def').textContent = formatNum(p.def);
+            document.getElementById('player-agi').textContent = formatNum(p.agi);
             // Equipment crit rating converts to % with ratio 13 (linear conversion)
             const equipCritPct = (p.critRating || 0) / 13;
             const tl = runState.talentLevels || {};
@@ -3937,7 +4993,12 @@ runState.furiaStacks = 0;
             if (t('reflejos_felinos') > 0) {
                 dodgeFlat += TALENT_POOL.defensivo.find(x => x.id === 'reflejos_felinos').levels[t('reflejos_felinos') - 1].flatDodge;
             }
-            const totalDodge = Math.floor(diminishingReturns(rawDodge, BALANCE.combat.dodgeCap, BALANCE.combat.dodgeK)) + dodgeFlat;
+            // Monk Flujo de Chi dodge bonus
+            let renderMonkDodge = 0;
+            if (metaState.playerClass === 'monk' && metaState.heroLevel >= 50) {
+                renderMonkDodge = getClassPassiveValue('flujo_chi', 'dodgePct', metaState.heroLevel) || 0;
+            }
+            const totalDodge = Math.floor(diminishingReturns(rawDodge, BALANCE.combat.dodgeCap, BALANCE.combat.dodgeK)) + dodgeFlat + renderMonkDodge;
             const totalBlock = Math.floor(diminishingReturns(derived.block, BALANCE.combat.blockCap, BALANCE.combat.blockK)) + (runState.masteryFlatBlock || 0) + trinityFlat;
             const baseLS = diminishingReturns((p.lifesteal || 0), BALANCE.combat.lifestealCap, BALANCE.combat.lifestealK);
             let totalLifesteal = Math.min(baseLS + (runState.masteryFlatLifesteal || 0), BALANCE.combat.lifestealCap);
@@ -3975,11 +5036,11 @@ runState.furiaStacks = 0;
                 const ePct = Math.max(0, (e.hp / e.maxHp) * 100);
                 document.getElementById('enemy-hp-bar').style.width = ePct + '%';
                 document.getElementById('enemy-hp-bar').className = 'hp-bar' + (ePct <= 25 ? ' low' : ePct <= 50 ? ' mid' : '');
-                document.getElementById('enemy-hp-text').textContent = `${Math.max(0, e.hp)} / ${e.maxHp}`;
+                document.getElementById('enemy-hp-text').textContent = `${formatNum(Math.max(0, e.hp))} / ${formatNum(e.maxHp)}`;
                 document.getElementById('enemy-name').textContent = `${e.isBoss ? '👑' : '👹'} ${e.name}`;
-                document.getElementById('enemy-atk').textContent = e.atk;
-                document.getElementById('enemy-def').textContent = e.def;
-                document.getElementById('enemy-agi').textContent = e.agi;
+                document.getElementById('enemy-atk').textContent = formatNum(e.atk);
+                document.getElementById('enemy-def').textContent = formatNum(e.def);
+                document.getElementById('enemy-agi').textContent = formatNum(e.agi);
                 document.getElementById('enemy-card').className = 'fighter enemy' + (e.isBoss ? ' boss' : '');
             }
 
@@ -4064,20 +5125,20 @@ runState.furiaStacks = 0;
             const trainingCounter = document.getElementById('training-counter');
             if (runState.trainingMode) {
                 trainingCounter.style.display = 'block';
-                document.getElementById('training-enemies-count').textContent = runState.enemiesDefeated;
+                document.getElementById('training-enemies-count').textContent = formatNum(runState.enemiesDefeated);
             } else {
                 trainingCounter.style.display = 'none';
             }
 
-            document.getElementById('souls-count').textContent = metaState.souls;
-            document.getElementById('essence-count').textContent = metaState.essence;
+            document.getElementById('souls-count').textContent = formatNum(metaState.souls);
+            document.getElementById('essence-count').textContent = formatNum(metaState.essence);
 
             // Accumulated stats from leveling
             const r = runState.runBonuses;
-            document.getElementById('acc-hp').textContent = `+${r.hp}`;
-            document.getElementById('acc-atk').textContent = `+${r.atk}`;
-            document.getElementById('acc-def').textContent = `+${r.def}`;
-            document.getElementById('acc-agi').textContent = `+${r.agi}`;
+            document.getElementById('acc-hp').textContent = `+${formatNum(r.hp)}`;
+            document.getElementById('acc-atk').textContent = `+${formatNum(r.atk)}`;
+            document.getElementById('acc-def').textContent = `+${formatNum(r.def)}`;
+            document.getElementById('acc-agi').textContent = `+${formatNum(r.agi)}`;
 
             // Equipment
             for (const slot of ['weapon', 'armor', 'ring']) {
@@ -4106,13 +5167,13 @@ runState.furiaStacks = 0;
                             const isBonus = item.bonusStat && item.bonusStat.stat === k;
                             const displayVal = isBonus ? enhanced + item.bonusStat.bonus : enhanced;
                             const cls = isBonus ? 'equip-stat-line has-bonus' : 'equip-stat-line';
-                            return `<span class="${cls}">${icons[k] || ''} +${displayVal} ${label}</span>`;
+                            return `<span class="${cls}">${icons[k] || ''} +${formatNum(displayVal)} ${label}</span>`;
                         }).join('');
                     const masteryStars = item.mastery ? '⭐'.repeat(item.mastery.level) : '';
                     const masteryLine = item.mastery ? `<span class="equip-stat-line" style="color:#fbbf24">${masteryStars} ${item.mastery.label}</span>` : '';
                     const enhanceBadge = (item.enhance || 0) > 0 ? `<span class="enhance-badge">+${item.enhance}</span>` : '';
                     el.className = `equip-slot ${slot} filled ${rarityClass}`;
-                    el.innerHTML = `<div class="equip-name">${item.name}${enhanceBadge}</div><div class="equip-stats">${item.rarity} | ilvl ${Math.floor(calcIlvl(item))}</div>${statLines}${masteryLine}`;
+                    el.innerHTML = `<div class="equip-name">${item.name}${enhanceBadge}</div><div class="equip-stats">${item.rarity} | ilvl ${formatNum(Math.floor(calcIlvl(item)))}</div>${statLines}${masteryLine}`;
                 } else {
                     el.className = `equip-slot ${slot}`;
                     el.innerHTML = `${slot === 'weapon' ? '🗡️' : slot === 'armor' ? '🛡️' : '💍'} Vacío`;
@@ -4140,8 +5201,12 @@ runState.furiaStacks = 0;
                 btn.className = 'upgrade-btn';
                 btn.disabled = isMaxed || metaState.souls < cost;
                 btn.onclick = () => !isMaxed && buyUpgrade(key);
-                btn.innerHTML = `<span>${u.icon} ${u.label}</span><span class="level">${levelText}${cumulative}</span><span class="cost">${isMaxed ? '✅ MAX' : `💀 ${cost}`}</span>`;
+                btn.innerHTML = `<span>${u.icon} ${u.label}</span><span class="level">${levelText}${cumulative}</span><span class="cost">${isMaxed ? '✅ MAX' : `💀 ${formatNum(cost)}`}</span>`;
                 grid.appendChild(btn);
+            }
+            // Update character screen overlay if active
+            if (runState.characterScreenActive && document.getElementById('char-screen-overlay')) {
+                renderCharacterScreen();
             }
             } catch(e) { console.error('❌ Render error:', e, e.stack); }
         }
@@ -4151,6 +5216,8 @@ runState.furiaStacks = 0;
             document.getElementById('btn-restart').disabled = !runState.active;
             const btnTraining = document.getElementById('btn-training');
             btnTraining.disabled = !metaState.unlockedTraining || runState.active;
+            // Character button — visible siempre, activo solo fuera de run/training
+            document.getElementById('btn-character').disabled = runState.active;
             // Reforge/enhance buttons
             const forgeControls = document.getElementById('forge-controls');
             if (metaState.unlockedReforge) {
@@ -4191,10 +5258,17 @@ runState.furiaStacks = 0;
                 for (let i = 0; i < lb.length; i++) {
                     const e = lb[i];
                     const rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : '';
+                    // Find class emoji for leaderboard entry
+                    let lbEmoji = '🤺';
+                    if (e.class) {
+                        for (const cls of Object.values(CLASS_CONFIG)) {
+                            if (cls.name === e.class) { lbEmoji = cls.emoji; break; }
+                        }
+                    }
                     html += `<tr>
                         <td class="rank ${rankClass}">${i + 1}</td>
                         <td class="name">${e.name}</td>
-                        <td>${e.class}</td>
+                        <td>${lbEmoji} ${e.class}</td>
                         <td>${e.heroLevel}</td>
                         <td>${e.maxFloor}</td>
                         <td class="time">${e.runTime}</td>
@@ -4412,7 +5486,7 @@ runState.furiaStacks = 0;
                     const isBonus = item.bonusStat && item.bonusStat.stat === k;
                     const displayVal = isBonus ? enhanced + item.bonusStat.bonus : enhanced;
                     const cls = isBonus ? 'equip-stat-line has-bonus' : 'equip-stat-line';
-                    statsHtml += `<span class="${cls}">${icons[k] || ''} +${displayVal} ${label}</span>`;
+                    statsHtml += `<span class="${cls}">${icons[k] || ''} +${formatNum(displayVal)} ${label}</span>`;
                 }
             }
 
@@ -4455,11 +5529,20 @@ runState.furiaStacks = 0;
             item.enhance = enhance + 1;
 
             // Bonus stat at +5 and +10
-            if (item.enhance === 5 || item.enhance === 10) {
+            if (item.enhance === 5) {
                 const bonus = getRandomBonusStat(item);
                 if (bonus) {
                     item.bonusStat = bonus;
-                    addLog(`✨ ${item.name} alcanzó +${item.enhance}! Stat bonus: ${bonus.stat.toUpperCase()} +${bonus.bonus}`, 'loot');
+                    addLog(`✨ ${item.name} alcanzó +5! Stat bonus: ${bonus.stat.toUpperCase()} +${formatNum(bonus.bonus)}`, 'loot');
+                }
+            } else if (item.enhance === 10) {
+                if (item.bonusStat) {
+                    // Duplica el bonus sobre la MISMA stat: +25% → +50%
+                    const stat = item.bonusStat.stat;
+                    const baseVal = item.stats[stat] || 0;
+                    const enhMult = 1 + (item.enhance || 0) * 0.1;
+                    item.bonusStat.bonus = Math.floor(baseVal * enhMult * 0.5);
+                    addLog(`✨ ${item.name} alcanzó +10! Stat bonus mejorado: ${item.bonusStat.stat.toUpperCase()} +${formatNum(item.bonusStat.bonus)}`, 'loot');
                 }
             }
 
@@ -4489,9 +5572,10 @@ runState.furiaStacks = 0;
             const stat = eligible[Math.floor(Math.random() * eligible.length)];
             const baseVal = item.stats[stat] || 0;
             const enhMult = 1 + (item.enhance || 0) * 0.1;
-            const bonus = Math.floor(baseVal * enhMult * 0.25);
+            const mult = item.enhance >= 10 ? 0.5 : 0.25;
+            const bonus = Math.floor(baseVal * enhMult * mult);
             item.bonusStat = { stat, bonus };
-            addLog(`🔄 Bonus stat cambiado a ${stat.toUpperCase()} +${bonus}`, 'loot');
+            addLog(`🔄 Bonus stat cambiado a ${stat.toUpperCase()} +${formatNum(bonus)}`, 'loot');
             saveGame();
             render();
             selectMaximizeSlot(slot);
@@ -4505,6 +5589,20 @@ runState.furiaStacks = 0;
         // ============================================
         // 8. UTILIDADES Y UI
         // ============================================
+        // Formatea números ≥1000 a notación k (ej: 1234 → 1.2k)
+        function formatNum(n) {
+            if (n >= 1000000000) {
+                return (n / 1000000000).toFixed(1).replace(/\.0$/, '') + 'B';
+            }
+            if (n >= 1000000) {
+                return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+            }
+            if (n >= 1000) {
+                return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+            }
+            return String(n);
+        }
+
         function addLog(text, type = '') {
             const log = document.getElementById('combat-log');
             const entry = document.createElement('div');
@@ -4592,6 +5690,7 @@ runState.furiaStacks = 0;
 
         function buildCodexHTML() {
             const blocks = [
+                { icon: '🏛️', name: 'Clases', classes: null, isClasses: true },
                 { icon: '⚔️', name: 'Ofensivo', talents: TALENT_POOL.ofensivo },
                 { icon: '🛡️', name: 'Defensivo', talents: TALENT_POOL.defensivo },
                 { icon: '💀', name: 'Estado', talents: TALENT_POOL.estado },
@@ -4627,7 +5726,69 @@ runState.furiaStacks = 0;
                 html += `<span class="arrow">▶</span>`;
                 html += `</div>`;
                 html += `<div class="codex-block-body" id="codex-body-${bi}">`;
-                if (block.isMasteries) {
+                if (block.isClasses) {
+                    // Render classes
+                    const _hl = runState.level || 0;
+                    for (const cls of Object.values(CLASS_CONFIG)) {
+                        const cPassive = CLASS_PASSIVES[cls.id];
+                        const v50 = cPassive ? cPassive.eval(50) : null;
+                        const v100 = cPassive ? cPassive.eval(100) : null;
+                        const v500 = cPassive ? cPassive.eval(500) : null;
+                        const formatPassiveVals = (v) => {
+                            if (!v) return '—';
+                            return Object.entries(v).map(([k, val]) => {
+                                if (k === 'mult') return `×${val.toFixed(2)}`;
+                                if (k === 'speedPct') return `+${val}% vel`;
+                                if (k === 'dodgePct') return `+${val}% eva`;
+                                if (k === 'lifestealPct') return `+${val}% ls`;
+                                if (k === 'dotDmgPct') return `+${val}% DoT`;
+                                if (k === 'bonusDmg') return `+${val}%`;
+                                return `${k}: ${val}`;
+                            }).join(' · ');
+                        };
+                        html += `<div class="codex-talent" style="border-left: 3px solid ${cls.color}; padding-left: 10px; margin-bottom: 10px;">`;
+                        html += `<div class="codex-talent-name" style="color:${cls.color};">${cls.emoji} ${cls.name}</div>`;
+                        html += `<div style="font-size:0.7rem;color:#9ca3af;margin:2px 0 4px 0;">
+                            ❤️+${cls.statPerLevel.hp}/nv · ⚔️+${cls.statPerLevel.atk}/nv · 🛡️+${cls.statPerLevel.def}/nv · 🏃+${cls.statPerLevel.agi}/nv
+                        </div>`;
+                        // Class passive
+                        if (cPassive) {
+                            html += `<div class="codex-talent" style="margin-top:4px;">`;
+                            html += `<div class="codex-talent-name" style="font-size:0.8rem;color:#fbbf24;">${cls.emoji} ${cPassive.name}</div>`;
+                            html += `<div class="codex-talent-desc" style="font-size:0.7rem;">${cPassive.desc}</div>`;
+                            html += `<div class="codex-talent-levels" style="font-size:0.7rem;">
+                                <span><b>Nv.50:</b> ${formatPassiveVals(v50)}</span>
+                                <span><b>Nv.100:</b> ${formatPassiveVals(v100)}</span>
+                                <span><b>Nv.500:</b> ${formatPassiveVals(v500)}</span>
+                            </div></div>`;
+                        }
+                        // Specializations
+                        const specs = SPECIALIZATIONS[cls.id] || [];
+                        for (const spec of specs) {
+                            const sp = SPEC_PASSIVES[spec.id];
+                            const sv100 = sp ? sp.eval(100) : null;
+                            const sv500 = sp ? sp.eval(500) : null;
+                            const formatSpecVals = (v) => {
+                                if (!v) return '—';
+                                return Object.entries(v).map(([k, val]) => {
+                                    if (typeof val === 'number') return `${k}: ${val.toFixed(2)}`;
+                                    return `${k}: ${val}`;
+                                }).join(' · ');
+                            };
+                            html += `<div class="codex-talent" style="margin-top:4px;padding-left:8px;border-left:1px dashed #3a3a5a;">`;
+                            html += `<div class="codex-talent-name" style="font-size:0.8rem;color:#a78bfa;">⚡ ${spec.name}</div>`;
+                            html += `<div class="codex-talent-desc" style="font-size:0.7rem;">${spec.desc}</div>`;
+                            if (sp) {
+                                html += `<div class="codex-talent-levels" style="font-size:0.7rem;">
+                                    <span><b>Nv.100:</b> ${formatSpecVals(sv100)}</span>
+                                    <span><b>Nv.500:</b> ${formatSpecVals(sv500)}</span>
+                                </div>`;
+                            }
+                            html += `</div>`;
+                        }
+                        html += `</div>`;
+                    }
+                } else if (block.isMasteries) {
                     // Render masteries by slot
                     const slotIcons = { weapon: '🗡️', armor: '🛡️', ring: '💍' };
                     const slotNames = { weapon: 'Arma', armor: 'Armadura', ring: 'Anillo' };
@@ -4702,7 +5863,8 @@ runState.furiaStacks = 0;
             const heroEl = document.getElementById('arena-hero');
             const enemyEl = document.getElementById('arena-enemy');
             if (!heroEl || !enemyEl) return;
-            heroEl.textContent = '🤺';
+            const arenaEmoji = metaState.playerClass ? (CLASS_CONFIG[metaState.playerClass]?.emoji || '🤺') : '🤺';
+            heroEl.textContent = arenaEmoji;
             enemyEl.textContent = getArenaEmoji(runState.enemy?.name);
             if (runState.enemy?.isBoss) enemyEl.style.fontSize = '3.4rem';
             else enemyEl.style.fontSize = '';
@@ -4747,7 +5909,7 @@ runState.furiaStacks = 0;
         // Init
         const hasSave = loadGame();
         if (hasSave) {
-            addLog(`💾 Progreso cargado — 💀 ${metaState.souls} almas | Piso máx: ${metaState.maxFloor}`, 'system');
+            addLog(`💾 Progreso cargado — 💀 ${formatNum(metaState.souls)} almas | Piso máx: ${metaState.maxFloor}`, 'system');
             if (metaState.unlockedEquipment) {
                 document.getElementById('equip-section').classList.remove('locked');
                 document.querySelector('#equip-section h2').textContent = '🎒 Equipo (Desbloqueado)';
@@ -4764,8 +5926,8 @@ runState.furiaStacks = 0;
             metaState.unlockedReforge = true;
             saveGame();
         }
-        // Restaurar preferencia de arena
-        if (localStorage.getItem('torre_arena_hidden') === '1') {
+        // Arena oculta por defecto; el jugador elige mostrarla
+        if (localStorage.getItem('torre_arena_hidden') !== '0') {
             document.getElementById('arena').classList.add('hidden');
             document.getElementById('arena-toggle').classList.add('active');
         }

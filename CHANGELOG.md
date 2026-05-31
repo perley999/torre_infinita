@@ -117,12 +117,29 @@ Todos los cambios notables en este proyecto.
 - **Recap**: nuevo campo `sangre_fria` para tracking separado de críticos garantizados por talento.
 - **Saves**: las partidas viejas con la mejora `drop` la ignoran silenciosamente al cargar.
 
-## [Unreleased]
+## [0.5.0] - 2026-05-31
+
+### Añadido
+- **Sistema de Clases**: 4 clases (Guerrero, Brujo, Pícaro, Monje) con stats por nivel de héroe, pasivas escalables y colores/emojis dinámicos. Se desbloquean al nivel 50.
+- **Sistema de Especializaciones**: 3 especializaciones por clase (12 total), cada una con pasiva única que escala con nivel de héroe. Se desbloquean al nivel 100.
+- **Pantalla Personaje**: overlay dedicado con desglose de stats por fuente (Base + Héroe + Clase + Equipo + Mejoras), stats derivadas, pasivas activas, equipo clickeable.
+- **Cambio de Clase**: modal con costo del 50% de almas, confirmación en dos pasos, resetea especialización.
+- **Cambio de Especialización**: modal con costo del 10% de almas, disponible desde la pantalla Personaje.
+- **Clases.md**: documentación completa de clases y especializaciones siguiendo el estilo de Talentos.md.
+- **Clases en el Codex**: nuevo bloque 🏛️ Clases en el codex del juego con valores a Nv.50/100/500.
 
 ### Cambiado
-- Equipamiento: budget de stats ahora usa fórmula logarítmica `budgetBase × log2(floor + 1) × statMult` en vez de lineal por piso.
-- Equipamiento: corregido bug donde `rarity.length` (longitud del string) se usaba como multiplicador, haciendo que "Poco común" y "Legendario" tuvieran el mismo budget.
-- `budgetPerFloor: 1.0` → `budgetBase: 5` con curva logarítmica.
+- **Speed cap global**: `BALANCE.combat.speedMin` 750ms → 1000ms. Monje Flujo de Chi permite 750ms post-cap.
+- **formatNum()**: ahora soporta M (millones) y B (billones) además de k.
+- **Codex**: título cambiado a "📖 Codex" con intro genérica para incluir talentos, maestrías y clases.
+- **dataVersion**: migración v3→v4 con nuevos campos `playerClass` y `playerSpec`.
+- **Warrior color**: #ef4444 → #f97316 para diferenciar de enemigos rojos.
+
+### Corregido
+- `closeChoice()` ya no se usa en selección de clase/especialización (evita floor++ espurio y doble startCombat).
+- Al cargar partida con nivel ≥ 100 y sin especialización, ahora pregunta por una.
+- Al elegir clase con nivel ≥ 100 (partida guardada), ahora encadena la selección de especialización.
+- `confirmClassChange()` ya no incrementaba el piso incorrectamente.
 
 ## [0.2.2] - 2026-05-18
 
