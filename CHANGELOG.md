@@ -2,6 +2,79 @@
 
 Todos los cambios notables en este proyecto.
 
+## [0.5.1] - 2026-06-01
+
+### Añadido
+- **Barra de acciones compacta**: 5 botones en una sola fila (Iniciar, Reiniciar, Training, Forja, Personaje) con 3 estados visuales (sin run, run activa, training mode).
+- **Modal de Forja unificado**: un solo botón abre modal con Reforjar y Maximizar.
+- **Equipo horizontal en Personaje**: el bloque de equipo ahora usa el mismo layout horizontal que tenía en la pantalla principal.
+
+### Cambiado
+- **Pantalla Personaje**: mismo ancho que el menú principal (padding fuera del max-width).
+- **Botón "Volver al juego" superior eliminado**: solo queda el botón inferior renombrado a "🔙 Volver".
+- **Equipo removido del menú principal**: ahora solo se ve desde la pantalla Personaje.
+
+### Corregido
+- El bloque de equipo en Personaje mostraba mensaje de bloqueo en lugar de slots vacíos si no estaba desbloqueado.
+
+## [0.5.0] - 2026-05-31
+
+### Añadido
+- **Sistema de Clases**: 4 clases (Guerrero, Brujo, Pícaro, Monje) con stats por nivel de héroe, pasivas escalables y colores/emojis dinámicos. Se desbloquean al nivel 50.
+- **Sistema de Especializaciones**: 3 especializaciones por clase (12 total), cada una con pasiva única que escala con nivel de héroe. Se desbloquean al nivel 100.
+- **Pantalla Personaje**: overlay dedicado con desglose de stats por fuente (Base + Héroe + Clase + Equipo + Mejoras), stats derivadas, pasivas activas, equipo clickeable.
+- **Cambio de Clase**: modal con costo del 50% de almas, confirmación en dos pasos, resetea especialización.
+- **Cambio de Especialización**: modal con costo del 10% de almas, disponible desde la pantalla Personaje.
+- **Clases.md**: documentación completa de clases y especializaciones siguiendo el estilo de Talentos.md.
+- **Clases en el Codex**: nuevo bloque 🏛️ Clases en el codex del juego con valores a Nv.50/100/500.
+
+### Cambiado
+- **Speed cap global**: `BALANCE.combat.speedMin` 750ms → 1000ms. Monje Flujo de Chi permite 750ms post-cap.
+- **formatNum()**: ahora soporta M (millones) y B (billones) además de k.
+- **Codex**: título cambiado a "📖 Codex" con intro genérica para incluir talentos, maestrías y clases.
+- **dataVersion**: migración v3→v4 con nuevos campos `playerClass` y `playerSpec`.
+- **Warrior color**: #ef4444 → #f97316 para diferenciar de enemigos rojos.
+
+### Corregido
+- `closeChoice()` ya no se usa en selección de clase/especialización (evita floor++ espurio y doble startCombat).
+- Al cargar partida con nivel ≥ 100 y sin especialización, ahora pregunta por una.
+- Al elegir clase con nivel ≥ 100 (partida guardada), ahora encadena la selección de especialización.
+- `confirmClassChange()` ya no incrementaba el piso incorrectamente.
+
+## [0.4.4] - 2026-05-25
+
+### Añadido
+- **Sangre Fría**: nuevo nombre para el talento antes llamado Maestría Crítica. Crítico garantizado cada 7/5/3 ataques. Ahora con línea propia en el death recap en vez de mezclarse con críticos normales.
+- **Mejora permanente Daño vs Boss**: +10% por nivel, 10 niveles máx, costo base 40 (×2.0). Se aplica flat post-DR como la mejora de crítico.
+
+### Cambiado
+- **Multiataque**: chance plana 20% en todos los niveles, golpes escalan: 1→2, 2→3, 3→4. Ya no encadena.
+- **Furia Creciente**: buff sustancial — +10/20/30% por golpe (antes +5/10/15%). Máximo +300% en nivel 3.
+- **Drop base**: chance de drop de objetos en enemigos normales subió de 50% a 70%.
+- **Mejora de Drop eliminada**: removida del juego. Reemplazada por la mejora de Daño vs Boss.
+
+### Técnico
+- **id del talento**: `maestria_critica` → `sangre_fria` para evitar conflictos con la maestría de arma "Maestría Crítica".
+- **Recap**: nuevo campo `sangre_fria` para tracking separado de críticos garantizados por talento.
+- **Saves**: las partidas viejas con la mejora `drop` la ignoran silenciosamente al cargar.
+
+## [0.4.3] - 2026-05-25
+
+### Añadido
+- **Death recap completo**: pantalla post-mortem con 3 tabs (Daño/Mitigación/Curación), desglose por fuente, niveles de talento mostrados, ordenado por valor. Incluye seguimiento de evasión (golpes esquivados y daño evitado).
+- **Contraataque rework**: ahora ejecuta un ataque completo del jugador con todas las sinergias de talentos (multiataque, penetración, crítico, golpe brutal, ejecución, furia creciente, debuffs, eco de combate, etc.) en vez de reflejar % del daño recibido.
+
+### Cambiado
+- **Primer Golpe**: buff sustancial — +50/80/120% de daño en primer golpe (antes ×1.25/1.40/1.60).
+- **Cañón de Cristal**: el bonus de daño ahora aplica siempre (no solo bajo 30% HP). El umbral de daño recibido extra subió a 50% HP (antes 30%).
+- **Reflejo Rápido renombrado a Golpe Rápido**: consistencia interna en naming.
+- **Contraataque**: ahora escala con lifesteal, debuffs y pasivas del jugador.
+- **Death recap**: talentos ahora muestran su nivel junto al nombre, filas ordenadas de mayor a menor valor.
+
+### Técnico
+- Variable `reflejoBonus` → `golpeBonus` en runState, `reflejo_rapido` → `golpe_rapido` en recap tracking.
+- Nuevos campos en recap.mitigation: `dodge_hits`, `dodge_dmg` para tracking de evasión.
+
 ## [0.4.2] - 2026-05-24
 
 ### Añadido
@@ -82,64 +155,6 @@ Todos los cambios notables en este proyecto.
 ### Corregido
 - **Talentos se resetean entre runs**: las habilidades de nivel 5/10/15/20 ahora viven en `runState.abilities` (RAM) en vez de `metaState.abilities` (localStorage). Se pierden al morir/reiniciar y se eligen de nuevo cada run.
 - **Orden UI**: bloque de almas movido justo antes de Mejoras Permanentes.
-
-## [0.4.3] - 2026-05-25
-
-### Añadido
-- **Death recap completo**: pantalla post-mortem con 3 tabs (Daño/Mitigación/Curación), desglose por fuente, niveles de talento mostrados, ordenado por valor. Incluye seguimiento de evasión (golpes esquivados y daño evitado).
-- **Contraataque rework**: ahora ejecuta un ataque completo del jugador con todas las sinergias de talentos (multiataque, penetración, crítico, golpe brutal, ejecución, furia creciente, debuffs, eco de combate, etc.) en vez de reflejar % del daño recibido.
-
-### Cambiado
-- **Primer Golpe**: buff sustancial — +50/80/120% de daño en primer golpe (antes ×1.25/1.40/1.60).
-- **Cañón de Cristal**: el bonus de daño ahora aplica siempre (no solo bajo 30% HP). El umbral de daño recibido extra subió a 50% HP (antes 30%).
-- **Reflejo Rápido renombrado a Golpe Rápido**: consistencia interna en naming.
-- **Contraataque**: ahora escala con lifesteal, debuffs y pasivas del jugador.
-- **Death recap**: talentos ahora muestran su nivel junto al nombre, filas ordenadas de mayor a menor valor.
-
-### Técnico
-- Variable `reflejoBonus` → `golpeBonus` en runState, `reflejo_rapido` → `golpe_rapido` en recap tracking.
-- Nuevos campos en recap.mitigation: `dodge_hits`, `dodge_dmg` para tracking de evasión.
-
-## [0.4.4] - 2026-05-25
-
-### Añadido
-- **Sangre Fría**: nuevo nombre para el talento antes llamado Maestría Crítica. Crítico garantizado cada 7/5/3 ataques. Ahora con línea propia en el death recap en vez de mezclarse con críticos normales.
-- **Mejora permanente Daño vs Boss**: +10% por nivel, 10 niveles máx, costo base 40 (×2.0). Se aplica flat post-DR como la mejora de crítico.
-
-### Cambiado
-- **Multiataque**: chance plana 20% en todos los niveles, golpes escalan: 1→2, 2→3, 3→4. Ya no encadena.
-- **Furia Creciente**: buff sustancial — +10/20/30% por golpe (antes +5/10/15%). Máximo +300% en nivel 3.
-- **Drop base**: chance de drop de objetos en enemigos normales subió de 50% a 70%.
-- **Mejora de Drop eliminada**: removida del juego. Reemplazada por la mejora de Daño vs Boss.
-
-### Técnico
-- **id del talento**: `maestria_critica` → `sangre_fria` para evitar conflictos con la maestría de arma "Maestría Crítica".
-- **Recap**: nuevo campo `sangre_fria` para tracking separado de críticos garantizados por talento.
-- **Saves**: las partidas viejas con la mejora `drop` la ignoran silenciosamente al cargar.
-
-## [0.5.0] - 2026-05-31
-
-### Añadido
-- **Sistema de Clases**: 4 clases (Guerrero, Brujo, Pícaro, Monje) con stats por nivel de héroe, pasivas escalables y colores/emojis dinámicos. Se desbloquean al nivel 50.
-- **Sistema de Especializaciones**: 3 especializaciones por clase (12 total), cada una con pasiva única que escala con nivel de héroe. Se desbloquean al nivel 100.
-- **Pantalla Personaje**: overlay dedicado con desglose de stats por fuente (Base + Héroe + Clase + Equipo + Mejoras), stats derivadas, pasivas activas, equipo clickeable.
-- **Cambio de Clase**: modal con costo del 50% de almas, confirmación en dos pasos, resetea especialización.
-- **Cambio de Especialización**: modal con costo del 10% de almas, disponible desde la pantalla Personaje.
-- **Clases.md**: documentación completa de clases y especializaciones siguiendo el estilo de Talentos.md.
-- **Clases en el Codex**: nuevo bloque 🏛️ Clases en el codex del juego con valores a Nv.50/100/500.
-
-### Cambiado
-- **Speed cap global**: `BALANCE.combat.speedMin` 750ms → 1000ms. Monje Flujo de Chi permite 750ms post-cap.
-- **formatNum()**: ahora soporta M (millones) y B (billones) además de k.
-- **Codex**: título cambiado a "📖 Codex" con intro genérica para incluir talentos, maestrías y clases.
-- **dataVersion**: migración v3→v4 con nuevos campos `playerClass` y `playerSpec`.
-- **Warrior color**: #ef4444 → #f97316 para diferenciar de enemigos rojos.
-
-### Corregido
-- `closeChoice()` ya no se usa en selección de clase/especialización (evita floor++ espurio y doble startCombat).
-- Al cargar partida con nivel ≥ 100 y sin especialización, ahora pregunta por una.
-- Al elegir clase con nivel ≥ 100 (partida guardada), ahora encadena la selección de especialización.
-- `confirmClassChange()` ya no incrementaba el piso incorrectamente.
 
 ## [0.2.2] - 2026-05-18
 

@@ -503,16 +503,6 @@
         /* ============================================
            EQUIPMENT
            ============================================ */
-        .equipment-section {
-            background: #1a1a2e;
-            border-radius: 12px;
-            padding: 12px;
-            border: 1px solid #2a2a4a;
-        }
-
-        .equipment-section.locked { opacity: 0.5; pointer-events: none; filter: grayscale(1); }
-        .equipment-section h2 { font-size: 0.9rem; color: #a78bfa; margin-bottom: 8px; text-align: center; }
-
         .equip-slots { display: flex; gap: 8px; justify-content: center; }
         .equip-slot {
             flex: 1;
@@ -603,15 +593,19 @@
         .upgrade-btn .cost { color: #f59e0b; font-weight: 600; }
         .upgrade-btn .level { color: #9ca3af; font-size: 0.65rem; }
 
-        .controls { display: flex; gap: 8px; }
-        .control-btn {
-            flex: 1; padding: 10px; border: none; border-radius: 8px;
-            font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.15s ease;
+        .action-btn {
+            flex: 1; padding: 8px 4px; border: none; border-radius: 8px;
+            font-size: 0.78rem; font-weight: 600; cursor: pointer;
+            transition: all 0.15s ease; white-space: nowrap;
+            color: white;
         }
-        .control-btn.start { background: linear-gradient(135deg, #22c55e, #16a34a); color: white; }
-        .control-btn.restart { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
-        .control-btn.training { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; }
-        .control-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .action-btn.start { background: linear-gradient(135deg, #22c55e, #16a34a); }
+        .action-btn.restart { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .action-btn.training { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        .action-btn.forge { background: linear-gradient(135deg, #a78bfa, #7c3aed); }
+        .action-btn.character { background: linear-gradient(135deg, #6b7280, #4b5563); border: 1px solid #9ca3af; }
+        .action-btn:disabled { opacity: 0.5; filter: grayscale(1); cursor: not-allowed; }
+        #action-bar { display: flex; gap: 8px; }
 
         /* Training floor selector */
         .training-slider {
@@ -926,16 +920,6 @@
             <div class="log-entry system">Bienvenido a la Torre Infinita. ¡Pulsa Iniciar!</div>
         </div>
 
-        <!-- Equipment -->
-        <div class="equipment-section locked" id="equip-section">
-            <h2>🎒 Equipo (Se desbloquea tras superar piso 10)</h2>
-            <div class="equip-slots">
-                <div class="equip-slot weapon" id="slot-weapon">🗡️ Vacío</div>
-                <div class="equip-slot armor" id="slot-armor">🛡️ Vacío</div>
-                <div class="equip-slot ring" id="slot-ring">💍 Vacío</div>
-            </div>
-        </div>
-
         <!-- Accumulated Stats -->
         <div class="acc-stats-section">
             <h2>📊 Estadísticas acumuladas</h2>
@@ -959,23 +943,13 @@
             <div class="upgrade-grid" id="upgrade-grid"></div>
         </div>
 
-        <!-- Controls -->
-        <div class="controls" id="run-controls">
-            <button class="control-btn start" id="btn-start" onclick="startRun()">Iniciar Run</button>
-            <button class="control-btn restart" id="btn-restart" onclick="restartRun()" disabled>Reiniciar</button>
-        </div>
-        <div class="controls" id="training-controls" style="display: none;">
-            <button class="control-btn training" id="btn-training-end" onclick="endTraining()">⏹️ Terminar Entrenamiento</button>
-        </div>
-        <div class="controls" id="training-start-controls">
-            <button class="control-btn training" id="btn-training" onclick="showTrainingModal()" disabled>🏋️ Entrenamiento</button>
-        </div>
-        <div class="controls" id="forge-controls" style="display: none;">
-            <button class="control-btn" id="btn-reforge" onclick="showReforgeModal()" disabled>🔨 Reforjar</button>
-            <button class="control-btn" id="btn-enhance" onclick="showMaximizeModal()" disabled>⬆️ Maximizar</button>
-        </div>
-        <div class="controls" id="char-controls">
-            <button class="control-btn" id="btn-character" onclick="showCharacterScreen()" disabled>👤 Personaje</button>
+        <!-- Action Bar -->
+        <div id="action-bar">
+            <button class="action-btn start" id="btn-start" onclick="startRun()">▶ Iniciar</button>
+            <button class="action-btn restart" id="btn-restart" onclick="restartRun()" disabled>🔄 Reiniciar</button>
+            <button class="action-btn training" id="btn-training" onclick="showTrainingModal()" disabled>🏋️ Training</button>
+            <button class="action-btn forge" id="btn-forge" onclick="showForjaModal()" disabled>🔨 Forja</button>
+            <button class="action-btn character" id="btn-character" onclick="showCharacterScreen()" disabled>👤</button>
         </div>
         <div style="text-align: center; margin-top: 4px;">
             <button onclick="resetGame()" style="background: transparent; border: 1px solid #3a2a2a; color: #6b4a4a; padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 0.75rem;">🗑️ Borrar progreso</button>
@@ -1103,6 +1077,18 @@
                 <p style="text-align:center;color:#9ca3af;">Cargando...</p>
             </div>
             <button class="modal-close" onclick="closeMaximizeModal()">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- Forja Modal -->
+    <div class="modal-overlay" id="forja-overlay">
+        <div class="modal">
+            <h2>🔨 Forja</h2>
+            <div style="display:flex;flex-direction:column;gap:12px;margin:16px 0;">
+                <button class="action-btn training" onclick="showReforgeModal();closeForjaModal()" style="padding:12px;">🔨 Reforjar Maestría (3-8🩸)</button>
+                <button class="action-btn start" onclick="showMaximizeModal();closeForjaModal()" style="padding:12px;">⬆️ Maximizar Equipo (1-38🩸)</button>
+            </div>
+            <button class="modal-close" onclick="closeForjaModal()">Cerrar</button>
         </div>
     </div>
 
@@ -1417,8 +1403,6 @@
             runState.enemy = null;
             runState.recap = initRecap();
             document.getElementById('combat-log').innerHTML = '';
-            document.getElementById('equip-section').classList.add('locked');
-            document.querySelector('#equip-section h2').textContent = '🎒 Equipo (Se desbloquea tras superar piso 10)';
             addLog('🗼 Progreso borrado. Nueva run iniciada.', 'system');
             render();
             updateButtons();
@@ -3698,8 +3682,6 @@
             if (runState.floor === 10 && !metaState.unlockedEquipment) {
                 metaState.unlockedEquipment = true;
                 addLog('🔓 ¡SISTEMA DE EQUIPO DESBLOQUEADO!', 'victory');
-                document.getElementById('equip-section').classList.remove('locked');
-                document.querySelector('#equip-section h2').textContent = '🎒 Equipo (Desbloqueado)';
                 saveGame();
             }
 
@@ -4364,17 +4346,14 @@
             // Build full overlay
             const overlay = document.createElement('div');
             overlay.id = 'char-screen-overlay';
-            overlay.style.cssText = 'position:fixed;inset:0;background:#0a0a12;z-index:999;overflow-y:auto;padding:20px;max-width:480px;margin:0 auto;';
+            overlay.style.cssText = 'position:fixed;inset:0;background:#0a0a12;z-index:999;overflow-y:auto;';
             const p = runState.player;
             const classColor = metaState.playerClass ? (CLASS_CONFIG[metaState.playerClass]?.color || '#3b82f6') : '#3b82f6';
             const emoji = metaState.playerClass ? (CLASS_CONFIG[metaState.playerClass]?.emoji || '🤺') : '🤺';
             const className = metaState.playerClass ? getClassName(metaState.playerClass) : 'Héroe';
 
             let html = `
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-                    <h2 style="color:${classColor};margin:0;">${emoji} ${metaState.playerName} — ${className}</h2>
-                    <button onclick="closeCharacterScreen()" style="background:#3b82f6;color:white;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;font-weight:600;">🔙 Volver al juego</button>
-                </div>
+                <h2 style="color:${classColor};margin:0 0 16px 0;">${emoji} ${metaState.playerName} — ${className}</h2>
                 <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:12px;padding:16px;border:2px solid ${classColor};margin-bottom:12px;">
                     <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
                         <span style="color:#9ca3af;">Nivel ${runState.level}</span>
@@ -4429,18 +4408,26 @@
                         <span>🧛 LIFESTEAL <b style="color:#ef4444;">${document.getElementById('player-lifesteal')?.textContent || '0%'}</b></span>
                     </div>
                 </div>
+                ${!metaState.unlockedEquipment ? `
+                <div style="background:#1a1a2e;border-radius:12px;padding:12px;border:1px solid #2a2a4a;margin-bottom:12px;">
+                    <h3 style="color:#a78bfa;font-size:0.95rem;margin-bottom:8px;">🎒 Equipo</h3>
+                    <div style="font-size:0.85rem;color:#6b7280;text-align:center;padding:16px;">🔒 Se desbloquea tras superar el piso 10</div>
+                </div>
+                ` : `
                 <div style="background:#1a1a2e;border-radius:12px;padding:12px;border:1px solid #2a2a4a;margin-bottom:12px;">
                     <h3 style="color:#a78bfa;font-size:0.95rem;margin-bottom:8px;">🎒 Equipo <span style="font-size:0.7rem;color:#6b7280;font-weight:400;">(click para reforjar/maximizar)</span></h3>
-                    <div style="display:flex;flex-direction:column;gap:8px;">
+                    <div class="equip-slots">
                         ${['weapon', 'armor', 'ring'].map(slot => {
                             const item = metaState.equipment[slot];
                             const icons = { weapon: '🗡️', armor: '🛡️', ring: '💍' };
-                            if (!item) return `<div style="background:#111118;border-radius:8px;padding:12px;border:1px solid #2a2a4a;font-size:0.75rem;color:#6b7280;text-align:center;">${icons[slot]} ${slot === 'weapon' ? 'Arma' : slot === 'armor' ? 'Armadura' : 'Anillo'} — Vacío</div>`;
+                            if (!item) return `<div class="equip-slot ${slot}">${icons[slot]} Vacío</div>`;
+                            const rarityClass = item.rarity.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-');
                             const panelHTML = buildEquipPanelHTML(item);
-                            return `<div style="cursor:pointer;" onclick="showMaximizeModal()">${panelHTML}</div>`;
+                            return `<div class="equip-slot ${slot} filled rarity-${rarityClass}" style="cursor:pointer;" onclick="showMaximizeModal()">${panelHTML}</div>`;
                         }).join('')}
                     </div>
                 </div>
+                `}
                 <div style="background:#1a1a2e;border-radius:12px;padding:12px;border:1px solid #2a2a4a;margin-bottom:12px;">
                     <h3 style="color:#a78bfa;font-size:0.95rem;margin-bottom:8px;">⚡ Pasivas</h3>`;
 
@@ -4488,10 +4475,10 @@
                 <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
                     ${metaState.playerClass && metaState.playerSpec ? `<button onclick="showSpecChangeConfirm()" style="flex:1;min-width:120px;background:transparent;border:1px solid #a78bfa;color:#a78bfa;border-radius:8px;padding:10px;cursor:pointer;font-weight:600;">⚡ Cambiar especialización</button>` : ''}
                     ${metaState.playerClass ? `<button onclick="showClassChangeConfirm()" style="flex:1;min-width:120px;background:transparent;border:1px solid #ef4444;color:#ef4444;border-radius:8px;padding:10px;cursor:pointer;font-weight:600;">🔄 Cambiar clase</button>` : ''}
-                    <button onclick="closeCharacterScreen()" style="flex:1;min-width:120px;background:#3b82f6;color:white;border:none;border-radius:8px;padding:10px;cursor:pointer;font-weight:600;">🔙 Volver al juego</button>
+                    <button onclick="closeCharacterScreen()" style="flex:1;min-width:120px;background:#3b82f6;color:white;border:none;border-radius:8px;padding:10px;cursor:pointer;font-weight:600;">🔙 Volver</button>
                 </div>
             `;
-            overlay.innerHTML = html;
+            overlay.innerHTML = `<div style="max-width:480px;margin:0 auto;padding:20px;">${html}</div>`;
             document.body.appendChild(overlay);
         }
 
@@ -4665,10 +4652,6 @@ runState.furiaStacks = 0;
             runState.shieldMax = 0;
             runState.piedraShield = { amount: 0, ticksLeft: 0 };
             document.getElementById('combat-log').innerHTML = '';
-            if (metaState.unlockedEquipment) {
-                document.getElementById('equip-section').classList.remove('locked');
-                document.querySelector('#equip-section h2').textContent = '🎒 Equipo (Desbloqueado)';
-            }
             addLog(`🏋️ Entrenamiento iniciado — Piso ${floor}`, 'system');
             startCombat();
             updateButtons();
@@ -4856,10 +4839,6 @@ runState.furiaStacks = 0;
             runState.runStartTime = Date.now();
             runState.recap = initRecap();
             document.getElementById('combat-log').innerHTML = '';
-            if (metaState.unlockedEquipment) {
-                document.getElementById('equip-section').classList.remove('locked');
-                document.querySelector('#equip-section h2').textContent = '🎒 Equipo (Desbloqueado)';
-            }
             addLog('🗼 Nueva run iniciada', 'system');
             startCombat();
             // Si el jugador tiene nivel 50+ y no eligió clase, mostramos selección
@@ -5140,46 +5119,6 @@ runState.furiaStacks = 0;
             document.getElementById('acc-def').textContent = `+${formatNum(r.def)}`;
             document.getElementById('acc-agi').textContent = `+${formatNum(r.agi)}`;
 
-            // Equipment
-            for (const slot of ['weapon', 'armor', 'ring']) {
-                const el = document.getElementById(`slot-${slot}`);
-                const item = metaState.equipment[slot];
-                if (item) {
-                    const rarityClass = `rarity-${item.rarity.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-')}`;
-                    const percentStats = ['crit', 'dodge', 'lifesteal', 'pen', 'critDamage', 'bossDamage', 'hpRegen'];
-                    const statLabels = {
-                        crit: 'CRIT', dodge: 'EVA', lifesteal: 'Lifesteal',
-                        pen: 'PEN', critDamage: 'CRIT DMG', bossDamage: 'VS BOSS',
-                        hpRegen: 'HP REGEN',
-                    };
-                    const enhMult = 1 + (item.enhance || 0) * 0.1;
-                    const statLines = Object.entries(item.stats)
-                        .filter(([, v]) => v > 0)
-                        .map(([k, v]) => {
-                            const icons = {
-                                hp: '❤️', atk: '⚔️', def: '🛡️', agi: '🏃',
-                                crit: '🎯', dodge: '💨', lifesteal: '🧛',
-                                pen: '💥', critDamage: '💢', bossDamage: '👑',
-                                hpRegen: '💚',
-                            };
-                            const label = percentStats.includes(k) ? statLabels[k] : k.toUpperCase();
-                            const enhanced = Math.floor(v * enhMult);
-                            const isBonus = item.bonusStat && item.bonusStat.stat === k;
-                            const displayVal = isBonus ? enhanced + item.bonusStat.bonus : enhanced;
-                            const cls = isBonus ? 'equip-stat-line has-bonus' : 'equip-stat-line';
-                            return `<span class="${cls}">${icons[k] || ''} +${formatNum(displayVal)} ${label}</span>`;
-                        }).join('');
-                    const masteryStars = item.mastery ? '⭐'.repeat(item.mastery.level) : '';
-                    const masteryLine = item.mastery ? `<span class="equip-stat-line" style="color:#fbbf24">${masteryStars} ${item.mastery.label}</span>` : '';
-                    const enhanceBadge = (item.enhance || 0) > 0 ? `<span class="enhance-badge">+${item.enhance}</span>` : '';
-                    el.className = `equip-slot ${slot} filled ${rarityClass}`;
-                    el.innerHTML = `<div class="equip-name">${item.name}${enhanceBadge}</div><div class="equip-stats">${item.rarity} | ilvl ${formatNum(Math.floor(calcIlvl(item)))}</div>${statLines}${masteryLine}`;
-                } else {
-                    el.className = `equip-slot ${slot}`;
-                    el.innerHTML = `${slot === 'weapon' ? '🗡️' : slot === 'armor' ? '🛡️' : '💍'} Vacío`;
-                }
-            }
-
             // Upgrades
             const grid = document.getElementById('upgrade-grid');
             grid.innerHTML = '';
@@ -5212,25 +5151,51 @@ runState.furiaStacks = 0;
         }
 
         function updateButtons() {
-            document.getElementById('btn-start').disabled = runState.active;
-            document.getElementById('btn-restart').disabled = !runState.active;
-            const btnTraining = document.getElementById('btn-training');
-            btnTraining.disabled = !metaState.unlockedTraining || runState.active;
-            // Character button — visible siempre, activo solo fuera de run/training
-            document.getElementById('btn-character').disabled = runState.active;
-            // Reforge/enhance buttons
-            const forgeControls = document.getElementById('forge-controls');
-            if (metaState.unlockedReforge) {
-                forgeControls.style.display = 'flex';
-                document.getElementById('btn-reforge').disabled = runState.active;
-                document.getElementById('btn-enhance').disabled = runState.active;
+            const start = document.getElementById('btn-start');
+            const restart = document.getElementById('btn-restart');
+            const training = document.getElementById('btn-training');
+            const forge = document.getElementById('btn-forge');
+            const character = document.getElementById('btn-character');
+
+            if (runState.trainingMode) {
+                // ── Training mode ──────────────────────────────
+                start.style.display = 'none';
+                restart.style.display = 'none';
+                training.style.display = 'flex';
+                training.textContent = '⏹️ Terminar';
+                training.className = 'action-btn training';
+                training.onclick = endTraining;
+                training.disabled = false;
+                forge.style.display = 'flex';
+                forge.disabled = true;
+                character.disabled = true;
+            } else if (runState.active) {
+                // ── Run active ─────────────────────────────────
+                start.style.display = 'none';
+                restart.style.display = 'flex';
+                restart.disabled = false;
+                training.style.display = 'flex';
+                training.textContent = '🏋️ Training';
+                training.className = 'action-btn training';
+                training.onclick = showTrainingModal;
+                training.disabled = true;
+                forge.style.display = 'flex';
+                forge.disabled = true;
+                character.disabled = true;
             } else {
-                forgeControls.style.display = 'none';
+                // ── Idle — no run ──────────────────────────────
+                start.style.display = 'flex';
+                start.disabled = false;
+                restart.style.display = 'none';
+                training.style.display = 'flex';
+                training.textContent = '🏋️ Training';
+                training.className = 'action-btn training';
+                training.onclick = showTrainingModal;
+                training.disabled = !metaState.unlockedTraining;
+                forge.style.display = 'flex';
+                forge.disabled = !metaState.unlockedReforge;
+                character.disabled = false;
             }
-            // Show/hide controls based on training mode
-            document.getElementById('run-controls').style.display = runState.trainingMode ? 'none' : 'flex';
-            document.getElementById('training-controls').style.display = runState.trainingMode ? 'flex' : 'none';
-            document.getElementById('training-start-controls').style.display = runState.trainingMode ? 'none' : 'flex';
         }
 
         // ============================================
@@ -5282,6 +5247,16 @@ runState.furiaStacks = 0;
 
         function closeLeaderboard() {
             document.getElementById('leaderboard-overlay').classList.remove('visible');
+        }
+
+        // ─── Forja Modal ─────────────────────────────────
+        function showForjaModal() {
+            if (!metaState.unlockedReforge) return;
+            document.getElementById('forja-overlay').classList.add('visible');
+        }
+
+        function closeForjaModal() {
+            document.getElementById('forja-overlay').classList.remove('visible');
         }
 
         // ============================================
@@ -5910,10 +5885,6 @@ runState.furiaStacks = 0;
         const hasSave = loadGame();
         if (hasSave) {
             addLog(`💾 Progreso cargado — 💀 ${formatNum(metaState.souls)} almas | Piso máx: ${metaState.maxFloor}`, 'system');
-            if (metaState.unlockedEquipment) {
-                document.getElementById('equip-section').classList.remove('locked');
-                document.querySelector('#equip-section h2').textContent = '🎒 Equipo (Desbloqueado)';
-            }
         } else {
             // First boot: prompt for player name
             const name = prompt('¿Cuál es tu nombre, héroe?', 'Héroe');
