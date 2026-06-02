@@ -532,6 +532,8 @@
         .rarity-raro { color: #3b82f6; }
         .rarity-epico { color: #a78bfa; }
         .rarity-legendario { color: #f59e0b; }
+        .rarity-ancestral { color: #c2410c; }
+        .rarity-mitico { color: #818cf8; }
 
         /* === ACCUMULATED STATS === */
         .acc-stats-section {
@@ -709,6 +711,27 @@
             font-weight: 600; cursor: pointer;
         }
 
+        /* === DUNGEON MODAL === */
+        .dungeon-slot-grid { display: grid; gap: 8px; margin: 12px 0; }
+        .dungeon-slot {
+            background: #2a2a4a; border: 1px solid #3a3a5a; border-radius: 10px;
+            padding: 14px; cursor: pointer; transition: all 0.15s ease; text-align: center;
+        }
+        .dungeon-slot:hover:not(.locked) { background: #3a3a5a; border-color: #a78bfa; }
+        .dungeon-slot.locked { cursor: not-allowed; opacity: 0.5; }
+        .dungeon-slot .slot-title { font-weight: 600; color: #c084fc; display: block; font-size: 1rem; }
+        .dungeon-slot .slot-desc { font-size: 0.8rem; color: #9ca3af; margin-top: 4px; }
+        .dungeon-slot .slot-status { font-size: 0.75rem; color: #6b7280; margin-top: 6px; }
+        .dungeon-level-list { display: flex; flex-direction: column; gap: 6px; max-height: 240px; overflow-y: auto; }
+        .dungeon-level-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+        .dungeon-level-row:hover { background: #3a3a5a; border-color: #a78bfa; }
+        .dungeon-level-row.next { border-color: #f59e0b; }
+        .dungeon-level-row .level-label { font-weight: 600; color: #c084fc; min-width: 60px; }
+        .dungeon-level-row .level-desc { font-size: 0.8rem; color: #9ca3af; flex: 1; margin: 0 8px; }
+        .dungeon-level-row .level-status { font-size: 0.75rem; color: #6b7280; }
+        .dungeon-level-row .level-status.paid { color: #f59e0b; }
+        .dungeon-attempts { text-align: center; color: #9ca3af; font-size: 0.85rem; margin: 8px 0; }
+        .dungeon-attempts span { color: #fbbf24; font-weight: 600; }
         /* === DEATH RECAP MODAL === */
         .recap-modal { max-width: 420px; }
         .recap-tabs { display: flex; gap: 4px; margin-bottom: 12px; }
@@ -949,6 +972,7 @@
             <button class="action-btn restart" id="btn-restart" onclick="restartRun()" disabled>🔄 Reiniciar</button>
             <button class="action-btn training" id="btn-training" onclick="showTrainingModal()" disabled>🏋️ Training</button>
             <button class="action-btn forge" id="btn-forge" onclick="showForjaModal()" disabled>🔨 Forja</button>
+            <button class="action-btn" id="btn-dungeon" onclick="showDungeonSelection()" style="display:none">🏰 Mazmorra</button>
             <button class="action-btn character" id="btn-character" onclick="showCharacterScreen()" disabled>👤</button>
         </div>
         <div style="text-align: center; margin-top: 4px;">
@@ -1092,6 +1116,28 @@
         </div>
     </div>
 
+    <!-- Dungeon Selection Modal -->
+    <div class="modal-overlay" id="dungeon-overlay">
+        <div class="modal">
+            <h2>🏰 Mazmorras</h2>
+            <div id="dungeon-content" style="margin:12px 0;">
+                <p style="text-align:center;color:#9ca3af;">Cargando...</p>
+            </div>
+            <button class="modal-close" onclick="closeDungeonSelection()">Salir</button>
+        </div>
+    </div>
+
+    <!-- Dungeon Complete Modal -->
+    <div class="modal-overlay" id="dungeon-complete-overlay">
+        <div class="modal">
+            <h2>🎉 ¡Mazmorra Superada!</h2>
+            <div id="dungeon-complete-content" style="margin:12px 0;">
+                <p style="text-align:center;color:#9ca3af;">Completaste la mazmorra.</p>
+            </div>
+            <button class="modal-close" onclick="closeDungeonComplete()">Volver a Mazmorras</button>
+        </div>
+    </div>
+
     <script>
         // ============================================
         // 1. BALANCE CENTRALIZADO
@@ -1166,7 +1212,7 @@
                 statPools: {
                     weapon: { primary: ['atk'], secondary: ['crit', 'lifesteal', 'pen', 'critDamage', 'bossDamage'] },
                     armor: { primary: ['def'], secondary: ['hp', 'dodge', 'hpRegen', 'block'] },
-                    ring: { primary: ['atk', 'def', 'agi'], secondary: ['hp', 'atk', 'def', 'agi', 'crit', 'dodge', 'pen', 'critDamage', 'bossDamage', 'hpRegen'] },
+                    ring: { primary: ['atk', 'def', 'agi'], secondary: ['atk', 'def', 'agi', 'crit', 'dodge', 'pen', 'critDamage', 'bossDamage', 'hpRegen'] },
                 },
                 // Budget multipliers per stat type
                 budgetMult: {
@@ -1178,10 +1224,12 @@
                     primary: 1.0, // atk, def as primary
                 },
                 rarities: [
-                    { name: 'Poco común', weights: [70, 0, 0, 0],  statMult: 1.0 },
-                    { name: 'Raro',         weights: [25, 60, 0, 0], statMult: 1.5 },
-                    { name: 'Épico',        weights: [5, 30, 0, 0],  statMult: 2.0 },
-                    { name: 'Legendario',   weights: [0, 10, 0, 0],  statMult: 3.0 },
+                    { name: 'Poco común', weights: [70, 0, 0, 0, 0, 0],  statMult: 1.0 },
+                    { name: 'Raro',         weights: [25, 60, 0, 0, 0, 0], statMult: 1.5 },
+                    { name: 'Épico',        weights: [5, 30, 0, 0, 0, 0],  statMult: 2.0 },
+                    { name: 'Legendario',   weights: [0, 10, 0, 0, 0, 0],  statMult: 3.0 },
+                    { name: 'Ancestral',    weights: [0, 0, 0, 0, 0, 0],  statMult: 3.0 },
+                    { name: 'Mítico',       weights: [0, 0, 0, 0, 0, 0],  statMult: 4.0 },
                 ],
                 budgetBase: 5,
             },
@@ -1209,6 +1257,22 @@
                 baseMult: 2,
             },
 
+            // --- DUNGEON ---
+            dungeon: {
+                maxFloors: 10,
+                dailyAttempts: 3,
+                soulCostBase: 500,
+                soulCostMult: 2,
+                dropRates: {
+                    boss: { legendario: 97, ancestral: 2, mythic: 1 },
+                    minibossChance: 60,
+                    minibossMult: 0.5,
+                    normalChance: 5,
+                    ancestralCap: 10,
+                    mythicCap: 5,
+                    capLevel: 9,
+                },
+            },
             // --- DoT COMBAT ---
         };
 
@@ -1236,6 +1300,14 @@
             playerClass: null,   // 'warrior' | 'warlock' | 'rogue' | 'monk' | null
             playerSpec: null,    // id de especialización o null
             leaderboard: [],      // Top 10 mejores runs [{name, class, heroLevel, maxFloor, runTime, date}]
+            dungeon: {
+                unlockedLevels: [],
+                attemptsToday: 0,
+                lastAttemptDate: '',
+                currentDifficulty: 0,
+                currentFloor: 0,
+                completedToday: false,
+            },
         };
 
         // Inicializar upgrades desde BALANCE
@@ -1266,6 +1338,7 @@
                 playerClass: metaState.playerClass,
                 playerSpec: metaState.playerSpec,
                 leaderboard: metaState.leaderboard,
+                dungeon: { ...metaState.dungeon },
             };
             for (const [key, u] of Object.entries(metaState.upgrades)) {
                 data.upgrades[key] = { level: u.level };
@@ -1303,6 +1376,7 @@
                 metaState.playerSpec = data.playerSpec ?? null;
                 metaState.leaderboard = data.leaderboard ?? [];
                 metaState.dataVersion = data.dataVersion ?? 0;
+                metaState.dungeon = data.dungeon ?? { unlockedLevels: [], attemptsToday: 0, lastAttemptDate: '', currentDifficulty: 0, currentFloor: 0, completedToday: false };
                 // Migración v0→v1: recalcular heroBonuses con sistema escalonado
                 let needsMigration = false;
                 if (metaState.dataVersion < 1) {
@@ -1390,6 +1464,7 @@
             metaState.playerClass = null;
             metaState.playerSpec = null;
             metaState.leaderboard = [];
+            metaState.dungeon = { unlockedLevels: [], attemptsToday: 0, lastAttemptDate: '', currentDifficulty: 0, currentFloor: 0, completedToday: false };
             for (const key of Object.keys(metaState.upgrades)) {
                 metaState.upgrades[key].level = 0;
             }
@@ -1454,6 +1529,9 @@
             _staggerDmg: 0,
             _staggerTick: 0,
             recap: null,
+            // Dungeon mode
+            dungeonMode: false,
+            dungeonDifficulty: 0,
         };
 
         function initRecap() {
@@ -1638,19 +1716,19 @@
 
         const MASTERIES = {
             weapon: [
-                { id: 'crit_mastery', label: 'Maestría Crítica', desc: 'Aumenta tu probabilidad crítica de forma plana (post-DR)', values: [5, 10, 15] },
-                { id: 'vampiric', label: 'Maestría Vampírica', desc: 'Aumenta el robo de vida de forma plana (post-DR)', values: [5, 7.5, 10] },
-                { id: 'fury', label: 'Maestría Furiosa', desc: 'Cada X ataques, tu golpe hace daño ×2', thresholds: [7, 5, 3] },
+                { id: 'crit_mastery', label: 'Maestría Crítica', desc: 'Aumenta tu probabilidad crítica de forma plana (post-DR)', values: [5, 10, 15, 20] },
+                { id: 'vampiric', label: 'Maestría Vampírica', desc: 'Aumenta el robo de vida de forma plana (post-DR)', values: [5, 7.5, 10, 15] },
+                { id: 'fury', label: 'Maestría Furiosa', desc: 'Cada X ataques, tu golpe hace daño ×2', thresholds: [7, 5, 3, 2] },
             ],
             armor: [
-                { id: 'block_mastery', label: 'Maestría Bloqueo', desc: 'Aumenta tu probabilidad de bloqueo de forma plana (post-DR)', values: [2.5, 5, 7.5] },
-                { id: 'regen_mastery', label: 'Maestría Regenerativa', desc: 'Regenerás % de tu HP máximo cada 1s durante el combate', values: [5, 7.5, 10] },
-                { id: 'tough_mastery', label: 'Maestría Resistente', desc: 'Cada 5 golpes recibidos, reducís % del daño de ese golpe', values: [5, 10, 15] },
+                { id: 'block_mastery', label: 'Maestría Bloqueo', desc: 'Aumenta tu probabilidad de bloqueo de forma plana (post-DR)', values: [2.5, 5, 7.5, 10] },
+                { id: 'regen_mastery', label: 'Maestría Regenerativa', desc: 'Regenerás % de tu HP máximo cada 1s durante el combate', values: [5, 7.5, 10, 15] },
+                { id: 'tough_mastery', label: 'Maestría Resistente', desc: 'Cada 5 golpes recibidos, reducís % del daño de ese golpe', values: [5, 10, 15, 20] },
             ],
             ring: [
-                { id: 'dodge_mastery', label: 'Maestría Evasiva', desc: 'Aumenta tu probabilidad de evasión de forma plana (post-DR)', values: [2.5, 5, 7.5] },
-                { id: 'pen_mastery', label: 'Maestría Perforante', desc: 'Aumenta tu penetración de forma plana (post-DR)', values: [5, 7.5, 10] },
-                { id: 'fortune_mastery', label: 'Maestría Afortunada', desc: 'Probabilidad de duplicar las almas obtenidas al morir', values: [10, 20, 30] },
+                { id: 'dodge_mastery', label: 'Maestría Evasiva', desc: 'Aumenta tu probabilidad de evasión de forma plana (post-DR)', values: [2.5, 5, 7.5, 10] },
+                { id: 'pen_mastery', label: 'Maestría Perforante', desc: 'Aumenta tu penetración de forma plana (post-DR)', values: [5, 7.5, 10, 15] },
+                { id: 'fortune_mastery', label: 'Maestría Afortunada', desc: 'Probabilidad de duplicar las almas obtenidas al morir', values: [10, 20, 30, 40] },
             ],
         };
 
@@ -1672,12 +1750,12 @@
         const CLASS_PASSIVES = {
             warrior: {
                 id: 'rafaga_golpes', name: 'Ráfaga de Golpes',
-                desc: 'Cada 3 golpes consecutivos, el 4° hace daño ×N',
+                desc: 'Cada 3 golpes consecutivos, el 4° hace ×2~×3.8 daño',
                 eval: (hl) => ({ mult: 2.0 + Math.max(0, hl - 50) * 0.004 }),
             },
             warlock: {
                 id: 'pacto_oscuro', name: 'Pacto Oscuro',
-                desc: '+X% robo de vida, +Y% daño DoTs',
+                desc: '+8~12% lifesteal y +10~14% daño DoTs',
                 eval: (hl) => ({
                     lifestealPct: 8 + Math.floor(Math.max(0, hl - 50) / 100) * 2,
                     dotDmgPct: 10 + Math.floor(Math.max(0, hl - 50) / 100) * 2,
@@ -1685,12 +1763,12 @@
             },
             rogue: {
                 id: 'golpe_sigiloso', name: 'Golpe Sigiloso',
-                desc: 'Primer ataque siempre crítico +X% daño',
+                desc: 'Primer ataque de cada combate: crítico garantizado con +25~+65% daño',
                 eval: (hl) => ({ bonusDmg: 25 + Math.floor(Math.max(0, hl - 50) / 100) * 10 }),
             },
             monk: {
                 id: 'flujo_chi', name: 'Flujo de Chi',
-                desc: 'Velocidad +X%, Dodge +Y%',
+                desc: '+15~35% velocidad de ataque y +5~9% evasión',
                 eval: (hl) => ({
                     speedPct: 15 + Math.floor(Math.max(0, hl - 50) / 100) * 5,
                     dodgePct: 5 + Math.floor(Math.max(0, hl - 50) / 100),
@@ -1700,24 +1778,24 @@
 
         const SPECIALIZATIONS = {
             warrior: [
-                { id: 'arms', name: 'Armas', desc: 'Maestro de armas de dos manos' },
-                { id: 'fury', name: 'Furia', desc: 'Berserker que empuña dos armas' },
-                { id: 'protection', name: 'Protección', desc: 'Guerrero con escudo' },
+                { id: 'arms', name: 'Armas', desc: 'Al derrotar un enemigo, el próximo golpe hace ×3~×5 daño' },
+                { id: 'fury', name: 'Furia', desc: 'Cada golpe consecutivo acumula +2~+4% ATK (máx 10)' },
+                { id: 'protection', name: 'Protección', desc: '+15~+40% DEF y convierte parte de tu DEF en ATK' },
             ],
             warlock: [
-                { id: 'affliction', name: 'Aflicción', desc: 'Maestro de maldiciones y DoTs' },
-                { id: 'demonology', name: 'Demonología', desc: 'Invocador de demonios' },
-                { id: 'destruction', name: 'Destrucción', desc: 'Caos y fuego puro' },
+                { id: 'affliction', name: 'Aflicción', desc: 'Debuffs duran ×2~×3 más y DoTs hacen +20~+40% daño' },
+                { id: 'demonology', name: 'Demonología', desc: '30~40% de invocar un demonio que golpea 3~4 veces al matar' },
+                { id: 'destruction', name: 'Destrucción', desc: '+10~+14% crit base y críticos hacen ×3.5~×4.1 daño' },
             ],
             rogue: [
-                { id: 'assassination', name: 'Asesinato', desc: 'Venenos y dagas letales' },
-                { id: 'outlaw', name: 'Forajido', desc: 'Estilo pirata y oportunismo' },
-                { id: 'subtlety', name: 'Sutileza', desc: 'Ataques desde las sombras' },
+                { id: 'assassination', name: 'Asesinato', desc: '30~40% de aplicar veneno: 5~6% HP cada 3 ticks' },
+                { id: 'outlaw', name: 'Forajido', desc: '20~30% de atacar dos veces en un mismo golpe' },
+                { id: 'subtlety', name: 'Sutileza', desc: 'Al esquivar, el próximo golpe hace ×3~×4 daño' },
             ],
             monk: [
-                { id: 'brewmaster', name: 'Maestro Cervecero', desc: 'Tanque que distribuye daño' },
-                { id: 'mistweaver', name: 'Tejedor de Bruma', desc: 'Canaliza energía curativa' },
-                { id: 'windwalker', name: 'Vagabundo del Viento', desc: 'Golpes rápidos y precisos' },
+                { id: 'brewmaster', name: 'Maestro Cervecero', desc: 'Difiere 15~25% del daño recibido 2s y reduce daño plano' },
+                { id: 'mistweaver', name: 'Tejedor de Bruma', desc: 'Cada 5 ataques curás 8~12% de tu HP máximo' },
+                { id: 'windwalker', name: 'Vagabundo del Viento', desc: 'Cada 3 golpes conectados, el 4° hace +30~+50% daño' },
             ],
         };
 
@@ -1872,9 +1950,6 @@
             let equipCritMult = 0, equipDodgeRating = 0;
             let equipPen = 0, equipCritDmg = 0, equipBossDmg = 0;
             let equipHpRegen = 0;
-
-            // Meta upgrade: Penetración (+1% flat por nivel)
-            if (u.pen) equipPen += u.pen.percent * u.pen.level * 100; // 0.01 * level → 1, 2, 3...
 
             for (const slot of ['weapon', 'armor', 'ring']) {
                 const item = metaState.equipment[slot];
@@ -2244,16 +2319,50 @@
         // ============================================
         // 5. GENERACIÓN DE EQUIPO
         // ============================================
-        function generateItem(floor, isBoss) {
-            const rarities = BALANCE.equipment.rarities.map(r => r.name);
-            const weights = isBoss
-                ? [0, 65, 30, 5]
-                : [70, 25, 5, 0];
-            let rand = Math.random() * 100;
-            let rarity = 'Poco común';
-            for (let i = 0; i < rarities.length; i++) {
-                rand -= weights[i];
-                if (rand <= 0) { rarity = rarities[i]; break; }
+
+        function selectDungeonDrop(dungeonLevel, isBoss, isMiniboss) {
+            if (isBoss) {
+                // Boss (floor 10): always drop, cascade from high to low
+                const ancestralPct = Math.min(2 + (dungeonLevel - 1) * 1, BALANCE.dungeon.dropRates.ancestralCap);
+                const mythicPct = Math.min(1 + (dungeonLevel - 1) * 0.5, BALANCE.dungeon.dropRates.mythicCap);
+                const legendarioPct = 100 - ancestralPct - mythicPct;
+                const roll = Math.random() * 100;
+                if (roll < mythicPct) return 'Mítico';
+                if (roll < mythicPct + ancestralPct) return 'Ancestral';
+                return 'Legendario';
+            } else if (isMiniboss) {
+                // Miniboss (floor 5): rates at half of boss (60% chance already checked by caller)
+                const ancestralPct = Math.min(1 + (dungeonLevel - 1) * 0.5, BALANCE.dungeon.dropRates.ancestralCap / 2);
+                const mythicPct = Math.min(0.5 + (dungeonLevel - 1) * 0.25, BALANCE.dungeon.dropRates.mythicCap / 2);
+                const legendarioPct = 100 - ancestralPct - mythicPct;
+                const roll = Math.random() * 100;
+                if (roll < mythicPct) return 'Mítico';
+                if (roll < mythicPct + ancestralPct) return 'Ancestral';
+                return 'Legendario';
+            } else {
+                // Normal enemies: always Legendario, fixed 5% chance (checked by caller)
+                return 'Legendario';
+            }
+        }
+
+        function generateItem(floor, isBoss, opts = {}) {
+            const { isDungeon, isMiniboss, dungeonLevel } = opts;
+            let rarity;
+            if (isDungeon) {
+                // Dungeon: use selectDungeonDrop to determine rarity
+                rarity = selectDungeonDrop(dungeonLevel || 1, isBoss, isMiniboss);
+            } else {
+                // Normal mode: use standard weights
+                const rarities = BALANCE.equipment.rarities.map(r => r.name);
+                const weights = isBoss
+                    ? [0, 65, 30, 5, 0, 0]
+                    : [70, 25, 5, 0, 0, 0];
+                let rand = Math.random() * 100;
+                rarity = 'Poco común';
+                for (let i = 0; i < rarities.length; i++) {
+                    rand -= weights[i];
+                    if (rand <= 0) { rarity = rarities[i]; break; }
+                }
             }
 
             const slots = BALANCE.equipment.slots;
@@ -2266,26 +2375,39 @@
             const budgetMult = BALANCE.equipment.budgetMult;
             const pool = statPools[slot];
 
-            // Stats según rareza
-            const numSecondary = rarity === 'Poco común' ? 0 : rarity === 'Raro' ? 1 : rarity === 'Épico' ? 2 : 3;
-            const hasMastery = ['Raro', 'Épico', 'Legendario'].includes(rarity);
-            const masteryLevel = rarity === 'Raro' ? 1 : rarity === 'Épico' ? 2 : rarity === 'Legendario' ? 3 : 0;
+            // Ancestral/Mythic overrides
+            const isAncestral = rarity === 'Ancestral';
+            const isMythic = rarity === 'Mítico';
+            const maxStats = isAncestral || isMythic;
+            const statCount = isMythic ? 5 : isAncestral ? 4 : (rarity === 'Poco común' ? 0 : rarity === 'Raro' ? 1 : rarity === 'Épico' ? 2 : 3);
+            const hasMastery = ['Raro', 'Épico', 'Legendario', 'Ancestral', 'Mítico'].includes(rarity);
+            const masteryLevel = isMythic ? 4 : isAncestral ? 3 : rarity === 'Raro' ? 1 : rarity === 'Épico' ? 2 : rarity === 'Legendario' ? 3 : 0;
+            const masteryLocked = isMythic;
 
             const stats = {};
             const usedStats = new Set();
 
             // 1. Elegir primario
             const primaryStat = pool.primary[Math.floor(Math.random() * pool.primary.length)];
-            stats[primaryStat] = Math.floor(budget * budgetMult.primary * (0.8 + Math.random() * 0.4));
+            const primaryMult = budgetMult.primary;
+            if (maxStats) {
+                stats[primaryStat] = Math.floor(budget * primaryMult);
+            } else {
+                stats[primaryStat] = Math.floor(budget * primaryMult * (0.9 + Math.random() * 0.2));
+            }
             usedStats.add(primaryStat);
 
             // 2. Elegir secundarios (sin repetir) — cada stat tiene su propio multiplicador
             const availableSecondary = pool.secondary.filter(s => !usedStats.has(s));
-            for (let i = 0; i < numSecondary && availableSecondary.length > 0; i++) {
+            for (let i = 0; i < statCount && availableSecondary.length > 0; i++) {
                 const idx = Math.floor(Math.random() * availableSecondary.length);
                 const secStat = availableSecondary.splice(idx, 1)[0];
                 const mult = budgetMult[secStat] ?? budgetMult.flat;
-                stats[secStat] = Math.floor(budget * mult * (0.7 + Math.random() * 0.6));
+                if (maxStats) {
+                    stats[secStat] = Math.floor(budget * mult);
+                } else {
+                    stats[secStat] = Math.floor(budget * mult * (0.8 + Math.random() * 0.4));
+                }
                 usedStats.add(secStat);
             }
 
@@ -2294,7 +2416,7 @@
             let mastery = null;
             if (hasMastery && masteryPool.length > 0) {
                 const picked = masteryPool[Math.floor(Math.random() * masteryPool.length)];
-                mastery = { id: picked.id, level: masteryLevel, label: picked.label };
+                mastery = { id: picked.id, level: masteryLevel, label: picked.label, locked: masteryLocked };
             }
 
             const item = {
@@ -2405,51 +2527,59 @@
                 }
             }
 
-            // Training mode: always normal enemies, no bosses
-            const isBossFloor = !runState.trainingMode && runState.floor % 10 === 0;
-            const isFirstBossAttempt = isBossFloor
-                && !metaState.bossAttempted.includes(runState.floor);
-            if (isFirstBossAttempt) {
-                metaState.bossAttempted.push(runState.floor);
-                saveGame();
-            }
-
-            // Stats del jefe: guardamos las del PRIMER intento y las reusamos siempre.
-            // Así el jefe no se vuelve más fácil tras la primera vez.
+            // ─── DUNGEON MODE: enemy stats ─────────────────
             let eStats;
-            if (isBossFloor && metaState.bossStats[runState.floor]) {
-                // Stats ya guardadas del primer intento → reusar
-                eStats = metaState.bossStats[runState.floor];
-            } else if (isBossFloor && runState.floor === 10 && isFirstBossAttempt) {
-                // Piso 10: primer jefe, stats fijos (sin equipo)
-                const fb = BALANCE.enemy.firstBoss;
-                eStats = {
-                    hp: fb.hp, atk: fb.atk, def: fb.def,
-                    agi: Math.floor(7 * Math.pow(BALANCE.enemy.agiScale, 9)),
-                    isBoss: true,
-                };
-                metaState.bossStats[10] = eStats;
-                saveGame();
-            } else if (isBossFloor && isFirstBossAttempt) {
-                // P20+: primer intento con escalado dinámico → guardar stats
-                eStats = calcEnemyStats(runState.floor, runState.player, true);
-                metaState.bossStats[runState.floor] = eStats;
-                saveGame();
+            if (runState.dungeonMode) {
+                const floorEquivalent = 100 + (runState.dungeonDifficulty - 1) * 10 + (runState.floor - 1);
+                const isBossDungeon = runState.floor === 10;
+                const isMinibossDungeon = runState.floor === 5;
+                const isBossEnemy = isBossDungeon || isMinibossDungeon;
+                eStats = calcEnemyStats(floorEquivalent, runState.player, false);
+                eStats.isBoss = isBossEnemy;
+                if (isBossDungeon) eStats.isBoss = true;
             } else {
-                // Enemigos normales o fallback
-                eStats = calcEnemyStats(runState.floor, runState.player, false);
-                // Migración: si es jefe ya intentado pero sin stats guardadas (save viejo),
-                // capturamos las stats actuales para mantener consistencia
-                if (isBossFloor && !metaState.bossStats[runState.floor]) {
-                    metaState.bossStats[runState.floor] = eStats;
+                // ─── NORMAL MODE: boss tracking ────────────────
+                const isBossFloor = !runState.trainingMode && runState.floor % 10 === 0;
+                const isFirstBossAttempt = isBossFloor
+                    && !metaState.bossAttempted.includes(runState.floor);
+                if (isFirstBossAttempt) {
+                    metaState.bossAttempted.push(runState.floor);
                     saveGame();
                 }
+
+                // Stats del jefe: guardamos las del PRIMER intento y las reusamos siempre.
+                if (isBossFloor && metaState.bossStats[runState.floor]) {
+                    eStats = metaState.bossStats[runState.floor];
+                } else if (isBossFloor && runState.floor === 10 && isFirstBossAttempt) {
+                    const fb = BALANCE.enemy.firstBoss;
+                    eStats = {
+                        hp: fb.hp, atk: fb.atk, def: fb.def,
+                        agi: Math.floor(7 * Math.pow(BALANCE.enemy.agiScale, 9)),
+                        isBoss: true,
+                    };
+                    metaState.bossStats[10] = eStats;
+                    saveGame();
+                } else if (isBossFloor && isFirstBossAttempt) {
+                    eStats = calcEnemyStats(runState.floor, runState.player, true);
+                    metaState.bossStats[runState.floor] = eStats;
+                    saveGame();
+                } else {
+                    eStats = calcEnemyStats(runState.floor, runState.player, false);
+                    if (isBossFloor && !metaState.bossStats[runState.floor]) {
+                        metaState.bossStats[runState.floor] = eStats;
+                        saveGame();
+                    }
+                }
             }
+
+            const enemyIsBoss = eStats.isBoss || false;
             runState.enemy = {
                 ...eStats,
                 maxHp: eStats.hp,
                 attackTimer: speedToInterval(eStats.agi),
-                name: eStats.isBoss ? BOSS_NAMES[Math.floor((runState.floor / 10 - 1) % BOSS_NAMES.length)] : ENEMY_NAMES[Math.floor((runState.floor - 1) % ENEMY_NAMES.length)],
+                name: enemyIsBoss
+                    ? BOSS_NAMES[Math.floor((runState.floor / 10 - 1) % BOSS_NAMES.length)]
+                    : ENEMY_NAMES[Math.floor((runState.floor - 1) % ENEMY_NAMES.length)],
             };
 
             // Escudo Vital: persistente entre combates, capped al 35% del HP base
@@ -2612,7 +2742,8 @@
             const totalBlock = Math.floor(diminishingReturns(derived.block, BALANCE.combat.blockCap, BALANCE.combat.blockK)) + (runState.masteryFlatBlock || 0) + trinityFlat;
 
             // Diminishing returns for percentage stats
-            const effPen = diminishingReturns(p.pen || 0, BALANCE.combat.penCap, BALANCE.combat.penK) + (runState.masteryFlatPen || 0);
+            const penMetaBonus = metaState.upgrades.pen.level * metaState.upgrades.pen.percent * 100;
+            const effPen = diminishingReturns(p.pen || 0, BALANCE.combat.penCap, BALANCE.combat.penK) + (runState.masteryFlatPen || 0) + penMetaBonus;
             const effCritDmg = diminishingReturns(p.critDamage || 0, BALANCE.combat.critDmgCap, BALANCE.combat.critDmgK);
             const effBossDmg = diminishingReturns(p.bossDamage || 0, BALANCE.combat.bossDmgCap, BALANCE.combat.bossDmgK)
                 + (metaState.upgrades.bossDmg.level * metaState.upgrades.bossDmg.percent * 100);
@@ -3617,6 +3748,75 @@
                 runState.bossesKilledThisRun = (runState.bossesKilledThisRun || 0) + 1;
             }
 
+            // ─── DUNGEON MODE ──────────────────────────────
+            if (runState.dungeonMode) {
+                // XP
+                const xpGain = runState.floor;
+                runState.xp += xpGain;
+                addLog(`+${formatNum(xpGain)} XP`, 'system');
+
+                // Souls display (nothing awarded in dungeon)
+                addLog(`+${formatNum(runState.floor * BALANCE.souls.baseMult)} 💀 (display)`, 'system');
+
+                // Drop
+                const isMiniboss = runState.floor === 5;
+                const isBossFloor = runState.floor === 10;
+                let dropItem = null;
+                if (isBossFloor) {
+                    // Boss always drops
+                    const floorEquivalent = 100 + (runState.dungeonDifficulty - 1) * 10;
+                    dropItem = generateItem(floorEquivalent, true, { isDungeon: true, isMiniboss: false, dungeonLevel: runState.dungeonDifficulty });
+                    addLog(`🎁 Drop: ${dropItem.name} (${dropItem.rarity})`, 'loot');
+                } else if (isMiniboss) {
+                    // Miniboss: 60% chance
+                    if (Math.random() * 100 < BALANCE.dungeon.dropRates.minibossChance) {
+                        const floorEquivalent = 100 + (runState.dungeonDifficulty - 1) * 10;
+                        dropItem = generateItem(floorEquivalent, false, { isDungeon: true, isMiniboss: true, dungeonLevel: runState.dungeonDifficulty });
+                        addLog(`🎁 Drop: ${dropItem.name} (${dropItem.rarity})`, 'loot');
+                    }
+                } else {
+                    // Normal enemy: 5% drop, always Legendario
+                    if (Math.random() * 100 < BALANCE.dungeon.dropRates.normalChance) {
+                        const floorEquivalent = 100 + (runState.dungeonDifficulty - 1) * 10;
+                        dropItem = generateItem(floorEquivalent, false, { isDungeon: true, isMiniboss: false, dungeonLevel: runState.dungeonDifficulty });
+                        addLog(`🎁 Drop: ${dropItem.name} (${dropItem.rarity})`, 'loot');
+                    }
+                }
+                if (dropItem) {
+                    const result = tryEquip(dropItem);
+                    if (result === null) {
+                        // Equip comparison modal will handle continuation
+                        return;
+                    } else if (result) {
+                        saveGame();
+                    }
+                }
+
+                // Floor 10: dungeon complete!
+                if (runState.floor >= 10) {
+                    addLog('🎉 ¡Mazmorra completada!', 'victory');
+                    runState.active = false;
+                    // Unlock next level
+                    const diff = runState.dungeonDifficulty;
+                    if (!metaState.dungeon.unlockedLevels.includes(diff)) {
+                        metaState.dungeon.unlockedLevels.push(diff);
+                    }
+                    metaState.dungeon.completedToday = true;
+                    saveGame();
+                    render();
+                    showDungeonComplete();
+                    return;
+                }
+
+                // Next floor
+                runState.floor++;
+                runState.furiaStacks = 0;
+                checkLevelUp();
+                return;
+            }
+
+            // ─── NORMAL MODE ───────────────────────────────
+
             // XP
             const xpGain = runState.floor;
             runState.xp += xpGain;
@@ -3744,6 +3944,17 @@
                 render();
                 saveGame();
                 updateButtons();
+                return;
+            }
+
+            // Dungeon mode: return to dungeon selection (no souls/leaderboard/essence)
+            if (runState.dungeonMode) {
+                addLog(`💀 Caíste en la mazmorra (piso ${runState.floor}).`, 'death');
+                runState.dungeonMode = false;
+                runState.dungeonDifficulty = 0;
+                render();
+                updateButtons();
+                showDungeonSelection();
                 return;
             }
 
@@ -4397,15 +4608,15 @@
                 </div>
                 <div style="background:#1a1a2e;border-radius:12px;padding:12px;border:1px solid #2a2a4a;margin-bottom:12px;">
                     <h3 style="color:#a78bfa;font-size:0.95rem;margin-bottom:8px;">📊 Stats Derivadas</h3>
-                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:0.8rem;">
-                        <span>🎯 CRIT <b style="color:#f59e0b;">${document.getElementById('player-crit')?.textContent || '0%'}</b></span>
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;font-size:0.7rem;">
+                        <span>🎯 CRIT <b style="color:#ef4444;">${document.getElementById('player-crit')?.textContent || '0%'}</b></span>
                         <span>🛡️ BLOQ <b style="color:#3b82f6;">${document.getElementById('player-block')?.textContent || '0%'}</b></span>
                         <span>💨 EVA <b style="color:#10b981;">${document.getElementById('player-dodge')?.textContent || '0%'}</b></span>
                         <span>💥 PEN <b style="color:#a78bfa;">${document.getElementById('player-pen')?.textContent || '0%'}</b></span>
                         <span>💢 CRIT DMG <b style="color:#ef4444;">${document.getElementById('player-crit-dmg')?.textContent || '+50%'}</b></span>
                         <span>👑 VS BOSS <b style="color:#f59e0b;">${document.getElementById('player-boss-dmg')?.textContent || '+0%'}</b></span>
                         <span>💚 REGEN <b style="color:#22c55e;">${document.getElementById('player-hp-regen')?.textContent || '0%'}</b></span>
-                        <span>🧛 LIFESTEAL <b style="color:#ef4444;">${document.getElementById('player-lifesteal')?.textContent || '0%'}</b></span>
+                        <span>🧛 LIFESTEAL <b style="color:#22c55e;">${document.getElementById('player-lifesteal')?.textContent || '0%'}</b></span>
                     </div>
                 </div>
                 ${!metaState.unlockedEquipment ? `
@@ -4575,6 +4786,29 @@
             // Training mode: no floor up, no talents, just increment counter
             if (runState.trainingMode) {
                 runState.enemiesDefeated++;
+                runState.furiaStacks = 0;
+                checkLevelUp();
+                return;
+            }
+
+            // Dungeon mode: continue the dungeon flow
+            if (runState.dungeonMode) {
+                if (runState.floor >= 10) {
+                    // Boss was defeated and item comparison done - complete dungeon
+                    addLog('🎉 ¡Mazmorra completada!', 'victory');
+                    runState.active = false;
+                    const diff = runState.dungeonDifficulty;
+                    if (!metaState.dungeon.unlockedLevels.includes(diff)) {
+                        metaState.dungeon.unlockedLevels.push(diff);
+                    }
+                    metaState.dungeon.completedToday = true;
+                    saveGame();
+                    render();
+                    showDungeonComplete();
+                    return;
+                }
+                // Next floor
+                runState.floor++;
                 runState.furiaStacks = 0;
                 checkLevelUp();
                 return;
@@ -4798,6 +5032,8 @@ runState.furiaStacks = 0;
             arenaIdle();
             runState.active = true; runState.floor = 1;
             runState.trainingMode = false;
+            runState.dungeonMode = false;
+            runState.dungeonDifficulty = 0;
             runState.trainingFloor = 30;
             runState.enemiesDefeated = 0;
             runState.level = metaState.heroLevel;
@@ -4859,6 +5095,8 @@ runState.furiaStacks = 0;
             if (combatLoop) clearInterval(combatLoop);
             runState.active = false; runState.floor = 1; runState.enemy = null;
             runState.trainingMode = false;
+            runState.dungeonMode = false;
+            runState.dungeonDifficulty = 0;
             runState.trainingFloor = 30;
             runState.enemiesDefeated = 0;
             runState.furyCounter = 0;
@@ -4897,6 +5135,180 @@ runState.furiaStacks = 0;
             render(); updateButtons();
         }
 
+        // ============================================
+        // DUNGEON FUNCTIONS
+        // ============================================
+
+        function checkDungeonDailyReset() {
+            const today = new Date().toISOString().split('T')[0];
+            if (metaState.dungeon.lastAttemptDate !== today) {
+                metaState.dungeon.attemptsToday = 0;
+                metaState.dungeon.lastAttemptDate = today;
+                metaState.dungeon.completedToday = false;
+                saveGame();
+            }
+        }
+
+        function showDungeonSelection() {
+            checkDungeonDailyReset();
+            const content = document.getElementById('dungeon-content');
+            const unlocked = metaState.dungeon.unlockedLevels;
+            const maxUnlocked = unlocked.length > 0 ? Math.max(...unlocked) : 0;
+            const nextLevel = maxUnlocked + 1;
+            const attemptsLeft = Math.max(0, BALANCE.dungeon.dailyAttempts - metaState.dungeon.attemptsToday);
+            const paidAttemptCost = BALANCE.dungeon.soulCostBase * Math.pow(BALANCE.dungeon.soulCostMult, Math.max(0, metaState.dungeon.attemptsToday - BALANCE.dungeon.dailyAttempts));
+
+            let paidInfo = '';
+            if (attemptsLeft <= 0) {
+                paidInfo = `<div class="dungeon-attempts">🪙 Próximo intento: <span>${paidAttemptCost} 💀</span></div>`;
+            }
+
+            // Build level list: all cleared levels (replayable) + next level (push)
+            let levelButtons = '';
+            for (let i = 1; i <= maxUnlocked; i++) {
+                const floorEq = 100 + (i - 1) * 10;
+                const statusClass = attemptsLeft > 0 ? '' : 'paid';
+                levelButtons += `
+                    <div class="dungeon-level-row" onclick="startDungeonRun(${i})">
+                        <span class="level-label">🔄 N${i}</span>
+                        <span class="level-desc">Repetir — piso ${floorEq}</span>
+                        <span class="level-status ${statusClass}">${attemptsLeft > 0 ? '✅ Gratis' : `💀 ${paidAttemptCost}`}</span>
+                    </div>`;
+            }
+            // Next level
+            const nextFloorEq = 100 + (nextLevel - 1) * 10;
+            levelButtons += `
+                <div class="dungeon-level-row next" onclick="startDungeonRun(${nextLevel})">
+                    <span class="level-label">➡️ N${nextLevel}</span>
+                    <span class="level-desc">Avanzar — piso ${nextFloorEq}</span>
+                    <span class="level-status">${attemptsLeft > 0 ? '✅ Gratis' : `💀 ${paidAttemptCost}`}</span>
+                </div>`;
+
+            content.innerHTML = `
+                <div class="dungeon-attempts">Intentos gratis hoy: <span>${attemptsLeft}</span> / ${BALANCE.dungeon.dailyAttempts}</div>
+                ${paidInfo}
+                <div style="margin-bottom:10px;color:#9ca3af;font-size:0.8rem;">⚔️ Torre de los Ancestros — elegí nivel:</div>
+                <div class="dungeon-level-list">
+                    ${levelButtons}
+                </div>
+                <hr style="border-color:#2a2a4a;margin:12px 0;">
+                <div class="dungeon-slot-grid">
+                    <div class="dungeon-slot locked">
+                        <span class="slot-title">🔒 Abismo del Legado</span>
+                        <span class="slot-desc">Próximamente</span>
+                    </div>
+                    <div class="dungeon-slot locked">
+                        <span class="slot-title">🔒 Cámara de las Runas</span>
+                        <span class="slot-desc">Próximamente</span>
+                    </div>
+                </div>
+            `;
+            document.getElementById('dungeon-overlay').classList.add('visible');
+        }
+
+        function closeDungeonSelection() {
+            document.getElementById('dungeon-overlay').classList.remove('visible');
+        }
+
+        function startDungeonRun(difficulty) {
+            if (runState.active) return;
+            checkDungeonDailyReset();
+
+            // Check attempts
+            if (metaState.dungeon.attemptsToday >= BALANCE.dungeon.dailyAttempts) {
+                // Paid attempt
+                const paidCost = BALANCE.dungeon.soulCostBase * Math.pow(BALANCE.dungeon.soulCostMult, metaState.dungeon.attemptsToday - BALANCE.dungeon.dailyAttempts);
+                if (metaState.souls < paidCost) {
+                    addLog(`❌ No tenés suficientes almas para la mazmorra (${paidCost} 💀)`, 'system');
+                    return;
+                }
+                metaState.souls -= paidCost;
+                addLog(`🪙 Pagaste ${paidCost} 💀 por un intento extra.`, 'system');
+            }
+
+            metaState.dungeon.attemptsToday++;
+            metaState.dungeon.currentDifficulty = difficulty;
+            metaState.dungeon.currentFloor = 0;
+            saveGame();
+            closeDungeonSelection();
+
+            // Setup run state
+            arenaIdle();
+            runState.active = true;
+            runState.floor = 1;
+            runState.dungeonMode = true;
+            runState.dungeonDifficulty = difficulty;
+            runState.trainingMode = false;
+            runState.enemiesDefeated = 0;
+            runState.level = metaState.heroLevel;
+            runState.xp = metaState.heroXp;
+            runState.xpToNext = BALANCE.levelUp.xpScale * (runState.level || 1);
+            runState.runBonuses = { ...metaState.heroBonuses };
+            if (metaState.playerClass) {
+                const cb = calcularClassBonuses(runState.level, metaState.playerClass);
+                runState.runBonuses.hp += cb.hp;
+                runState.runBonuses.atk += cb.atk;
+                runState.runBonuses.def += cb.def;
+                runState.runBonuses.agi += cb.agi;
+            }
+            runState.characterScreenActive = false;
+            runState.classHits = 0;
+            runState.firstHitDone = false;
+            runState.nextHitMult = 1;
+            runState.dodgeStreak = 0;
+            runState.attackCounter = 0;
+            runState.demonHits = 0;
+            runState.demonActive = false;
+            runState.demonHitsLeft = 0;
+            runState.classComboStacks = 0;
+            runState.abilities = [];
+            runState.talentLevels = {};
+            runState.hasRevived = false;
+            runState.furiaStacks = 0;
+            runState.critMasteryCounter = 0;
+            runState.runeTapCounter = 0;
+            runState.reflejoBonus = 0;
+            runState.spellShieldCounter = 0;
+            runState.segundoAlientoUsed = false;
+            runState.bossesKilledThisRun = 0;
+            runState.enemyDebuffs = [];
+            runState.vitalShield = 0;
+            runState.shieldMax = 0;
+            runState.piedraShield = { amount: 0, ticksLeft: 0 };
+            runState.runStartTime = Date.now();
+            runState.recap = initRecap();
+            document.getElementById('combat-log').innerHTML = '';
+            addLog(`🏰 Mazmorra N${difficulty} iniciada.`, 'system');
+            startCombat();
+            updateButtons();
+        }
+
+        function showDungeonComplete() {
+            const diff = runState.dungeonDifficulty;
+            const content = document.getElementById('dungeon-complete-content');
+            const nextUnlocked = diff + 1;
+            content.innerHTML = `
+                <p style="text-align:center;color:#4ade80;font-size:1.1rem;font-weight:600;">
+                    🎉 ¡Completaste la Mazmorra N${diff}!
+                </p>
+                <p style="text-align:center;color:#9ca3af;margin-top:8px;">
+                    ${metaState.dungeon.unlockedLevels.includes(diff)
+                        ? '✔️ Mazmorra completada nuevamente.'
+                        : `🔓 Mazmorra N${nextUnlocked} desbloqueada.`}
+                </p>
+            `;
+            document.getElementById('dungeon-complete-overlay').classList.add('visible');
+        }
+
+        function closeDungeonComplete() {
+            document.getElementById('dungeon-complete-overlay').classList.remove('visible');
+            runState.dungeonMode = false;
+            runState.dungeonDifficulty = 0;
+            render();
+            updateButtons();
+            showDungeonSelection();
+        }
+
         function buyUpgrade(key) {
             const u = metaState.upgrades[key];
             if (u.maxLevel && u.level >= u.maxLevel) return;
@@ -4914,9 +5326,23 @@ runState.furiaStacks = 0;
             if (runState.trainingMode) {
                 document.getElementById('floor-number').textContent = `🏋️ Entrenamiento — Piso ${runState.floor}`;
                 document.getElementById('boss-indicator').style.display = 'none';
+            } else if (runState.dungeonMode) {
+                const diff = runState.dungeonDifficulty;
+                document.getElementById('floor-number').textContent = `🏰 Mazmorra N${diff} — Piso ${runState.floor}`;
+                const bossEl = document.getElementById('boss-indicator');
+                if (runState.floor === 10) {
+                    bossEl.textContent = '☠️ BOSS';
+                    bossEl.style.display = 'block';
+                } else if (runState.floor === 5) {
+                    bossEl.textContent = '⚠️ MINIBOSS';
+                    bossEl.style.display = 'block';
+                } else {
+                    bossEl.style.display = 'none';
+                }
             } else {
                 document.getElementById('floor-number').textContent = `Piso ${runState.floor}`;
                 document.getElementById('boss-indicator').style.display = runState.floor % 10 === 0 ? 'block' : 'none';
+                document.getElementById('boss-indicator').textContent = '⚔️ JEFE';
             }
             
             // Player — class colors and emoji
@@ -4995,7 +5421,8 @@ runState.furiaStacks = 0;
             if (t('golpe_penetrante') > 0) {
                 penFlat += TALENT_POOL.ofensivo.find(x => x.id === 'golpe_penetrante').levels[t('golpe_penetrante') - 1].penPct;
             }
-            const effPen = diminishingReturns((p.pen || 0), BALANCE.combat.penCap, BALANCE.combat.penK) + penFlat;
+            const penMetaBonus = metaState.upgrades.pen.level * metaState.upgrades.pen.percent * 100;
+            const effPen = diminishingReturns((p.pen || 0), BALANCE.combat.penCap, BALANCE.combat.penK) + penFlat + penMetaBonus;
             const effCritDmg = diminishingReturns((p.critDamage || 0), BALANCE.combat.critDmgCap, BALANCE.combat.critDmgK);
             const critDmgBonus = metaState.upgrades.critDmg.level * metaState.upgrades.critDmg.percent * 100;
             const effBossDmg = diminishingReturns((p.bossDamage || 0), BALANCE.combat.bossDmgCap, BALANCE.combat.bossDmgK)
@@ -5155,6 +5582,7 @@ runState.furiaStacks = 0;
             const restart = document.getElementById('btn-restart');
             const training = document.getElementById('btn-training');
             const forge = document.getElementById('btn-forge');
+            const dungeon = document.getElementById('btn-dungeon');
             const character = document.getElementById('btn-character');
 
             if (runState.trainingMode) {
@@ -5168,6 +5596,7 @@ runState.furiaStacks = 0;
                 training.disabled = false;
                 forge.style.display = 'flex';
                 forge.disabled = true;
+                dungeon.style.display = 'none';
                 character.disabled = true;
             } else if (runState.active) {
                 // ── Run active ─────────────────────────────────
@@ -5181,6 +5610,7 @@ runState.furiaStacks = 0;
                 training.disabled = true;
                 forge.style.display = 'flex';
                 forge.disabled = true;
+                dungeon.style.display = 'none';
                 character.disabled = true;
             } else {
                 // ── Idle — no run ──────────────────────────────
@@ -5194,6 +5624,8 @@ runState.furiaStacks = 0;
                 training.disabled = !metaState.unlockedTraining;
                 forge.style.display = 'flex';
                 forge.disabled = !metaState.unlockedReforge;
+                dungeon.style.display = metaState.unlockedReforge ? 'flex' : 'none';
+                dungeon.disabled = !metaState.unlockedReforge;
                 character.disabled = false;
             }
         }
@@ -5320,6 +5752,19 @@ runState.furiaStacks = 0;
                 addLog('❌ Solo objetos Raro+ pueden ser reforjados', 'system');
                 return;
             }
+            // Mythic: mastery is fixed
+            if (item.rarity === 'Mítico') {
+                const content = document.getElementById('reforge-content');
+                content.innerHTML = `
+                    <div style="text-align:center;padding:16px;">
+                        <div style="font-size:2rem;margin-bottom:8px;">❌</div>
+                        <p style="color:#ef4444;font-weight:600;">Maestría fija</p>
+                        <p style="color:#9ca3af;font-size:0.85rem;">Los objetos Míticos tienen una maestría imposible de cambiar.</p>
+                    </div>
+                    <button class="modal-close" onclick="showReforgeModal()" style="background:#4a4a6a;font-size:0.8rem;padding:6px 16px;">← Volver a slots</button>
+                `;
+                return;
+            }
             _reforgeSelectedSlot = slot;
             _reforgeStep = 'mode';
             const content = document.getElementById('reforge-content');
@@ -5345,6 +5790,10 @@ runState.furiaStacks = 0;
             const slot = _reforgeSelectedSlot;
             const item = metaState.equipment[slot];
             if (!item || !item.mastery) return;
+            if (item.rarity === 'Mítico') {
+                addLog('❌ No se puede reforejar la maestría de un objeto Mítico', 'system');
+                return;
+            }
             if (!spendEssence(3)) {
                 addLog('❌ No tenés suficientes esencias (3🩸)', 'system');
                 return;
@@ -5437,13 +5886,19 @@ runState.furiaStacks = 0;
             overlay.classList.add('visible');
         }
 
+        function getEnhanceCap(rarity) {
+            if (rarity === 'Ancestral' || rarity === 'Mítico') return 15;
+            return 10;
+        }
+
         function selectMaximizeSlot(slot) {
             const item = metaState.equipment[slot];
             if (!item) return;
             _enhanceSelectedSlot = slot;
             const content = document.getElementById('enhance-content');
             const enhance = item.enhance || 0;
-            const isMax = enhance >= 10;
+            const maxEnhance = getEnhanceCap(item.rarity);
+            const isMax = enhance >= maxEnhance;
             const cost = isMax ? 0 : getMaximizeCost(enhance);
             const stars = item.mastery ? '⭐'.repeat(item.mastery.level) : '';
 
@@ -5469,7 +5924,7 @@ runState.furiaStacks = 0;
                 <div class="enhance-detail">
                     <div style="font-weight:600;">${item.name}</div>
                     <div style="font-size:0.8rem;color:#9ca3af;">${item.rarity} ${stars}</div>
-                    <div class="enhance-level">+${enhance} ${isMax ? '<span class="enhance-max">✅ MAX</span>' : ''}</div>
+                    <div class="enhance-level">+${enhance} / +${maxEnhance} ${isMax ? '<span class="enhance-max">✅ MAX</span>' : ''}</div>
                     <div style="font-size:0.8rem;color:#e0e0e0;margin-top:6px;">${statsHtml}</div>
                 </div>
                 ${!isMax ? `<div class="enhance-detail"><div class="enhance-cost">Costo: ${cost}🩸</div></div>` : ''}
@@ -5492,8 +5947,9 @@ runState.furiaStacks = 0;
             const item = metaState.equipment[slot];
             if (!item) return;
             const enhance = item.enhance || 0;
-            if (enhance >= 10) {
-                addLog('✅ El objeto ya está al máximo (+10)', 'system');
+            const maxEnhance = getEnhanceCap(item.rarity);
+            if (enhance >= maxEnhance) {
+                addLog(`✅ El objeto ya está al máximo (+${maxEnhance})`, 'system');
                 return;
             }
             const cost = getMaximizeCost(enhance);
@@ -5503,7 +5959,7 @@ runState.furiaStacks = 0;
             }
             item.enhance = enhance + 1;
 
-            // Bonus stat at +5 and +10
+            // Bonus stat at +5, +10, and +15 (for Ancestral/Mythic)
             if (item.enhance === 5) {
                 const bonus = getRandomBonusStat(item);
                 if (bonus) {
@@ -5518,6 +5974,15 @@ runState.furiaStacks = 0;
                     const enhMult = 1 + (item.enhance || 0) * 0.1;
                     item.bonusStat.bonus = Math.floor(baseVal * enhMult * 0.5);
                     addLog(`✨ ${item.name} alcanzó +10! Stat bonus mejorado: ${item.bonusStat.stat.toUpperCase()} +${formatNum(item.bonusStat.bonus)}`, 'loot');
+                }
+            } else if (item.enhance === 15 && (item.rarity === 'Ancestral' || item.rarity === 'Mítico')) {
+                // Triple bonus at +15: another +25% on top
+                if (item.bonusStat) {
+                    const stat = item.bonusStat.stat;
+                    const baseVal = item.stats[stat] || 0;
+                    const enhMult = 1 + (item.enhance || 0) * 0.1;
+                    item.bonusStat.bonus = Math.floor(baseVal * enhMult * 0.75);
+                    addLog(`✨ ${item.name} alcanzó +15! Stat bonus mejorado: ${item.bonusStat.stat.toUpperCase()} +${formatNum(item.bonusStat.bonus)}`, 'loot');
                 }
             }
 
@@ -5665,13 +6130,9 @@ runState.furiaStacks = 0;
 
         function buildCodexHTML() {
             const blocks = [
-                { icon: '🏛️', name: 'Clases', classes: null, isClasses: true },
-                { icon: '⚔️', name: 'Ofensivo', talents: TALENT_POOL.ofensivo },
-                { icon: '🛡️', name: 'Defensivo', talents: TALENT_POOL.defensivo },
-                { icon: '💀', name: 'Estado', talents: TALENT_POOL.estado },
-                { icon: '💚', name: 'Sustain', talents: TALENT_POOL.sustain },
-                { icon: '👑', name: 'Heroico', talents: TALENT_POOL.heroico },
-                { icon: '⭐', name: 'Maestrías', talents: null, isMasteries: true },
+                { icon: '🏛️', name: 'Clases', isClasses: true },
+                { icon: '⚡', name: 'Talentos', isTalents: true },
+                { icon: '⭐', name: 'Maestrías', isMasteries: true },
             ];
 
             const keyLabels = {
@@ -5790,23 +6251,41 @@ runState.furiaStacks = 0;
                         }
                         html += `</div>`;
                     }
-                } else {
-                    for (const t of block.talents) {
-                        html += `<div class="codex-talent">`;
-                        html += `<div class="codex-talent-name">${t.label}</div>`;
-                        html += `<div class="codex-talent-desc">${t.desc}</div>`;
-                        html += `<div class="codex-talent-levels">`;
-                        for (let i = 0; i < t.levels.length; i++) {
-                            const lvl = t.levels[i];
-                            const parts = Object.entries(lvl).map(([k, v]) => {
-                                const label = keyLabels[k] || k;
-                                return `${v}${label}`;
-                            }).join(' · ');
-                            html += `<span><b>Nv.${i + 1}:</b> ${parts}</span>`;
+                } else if (block.isTalents) {
+                    const talentCategories = [
+                        { icon: '⚔️', name: 'Ofensivo', pool: TALENT_POOL.ofensivo },
+                        { icon: '🛡️', name: 'Defensivo', pool: TALENT_POOL.defensivo },
+                        { icon: '💀', name: 'Estado', pool: TALENT_POOL.estado },
+                        { icon: '💚', name: 'Sustain', pool: TALENT_POOL.sustain },
+                        { icon: '👑', name: 'Heroico', pool: TALENT_POOL.heroico },
+                    ];
+                    for (let ci = 0; ci < talentCategories.length; ci++) {
+                        const cat = talentCategories[ci];
+                        const catId = `codex-tcat-${bi}-${ci}`;
+                        html += `<div class="codex-block" style="border: none; margin-bottom: 4px;">`;
+                        html += `<div class="codex-block-title" onclick="toggleCodexTalentCat('${catId}')" style="font-size:0.85rem;padding:6px 10px;border-left:3px solid #3a3a5a;">`;
+                        html += `<span>${cat.icon} ${cat.name}</span>`;
+                        html += `<span class="arrow">▶</span>`;
+                        html += `</div>`;
+                        html += `<div class="codex-block-body" id="${catId}">`;
+                        for (const t of cat.pool) {
+                            html += `<div class="codex-talent" style="margin-top:6px;">`;
+                            html += `<div class="codex-talent-name">${t.label}</div>`;
+                            html += `<div class="codex-talent-desc">${t.desc}</div>`;
+                            html += `<div class="codex-talent-levels">`;
+                            for (let i = 0; i < t.levels.length; i++) {
+                                const lvl = t.levels[i];
+                                const parts = Object.entries(lvl).map(([k, v]) => {
+                                    const label = keyLabels[k] || k;
+                                    return `${v}${label}`;
+                                }).join(' · ');
+                                html += `<span><b>Nv.${i + 1}:</b> ${parts}</span>`;
+                            }
+                            html += `</div>`;
+                            if (t.note) html += `<div class="codex-talent-note">${t.note}</div>`;
+                            html += `</div>`;
                         }
-                        html += `</div>`;
-                        if (t.note) html += `<div class="codex-talent-note">${t.note}</div>`;
-                        html += `</div>`;
+                        html += `</div></div>`;
                     }
                 }
                 html += `</div></div>`;
@@ -5819,6 +6298,13 @@ runState.furiaStacks = 0;
             const body = document.getElementById(`codex-body-${idx}`);
             title.classList.toggle('open');
             body.classList.toggle('open');
+        }
+
+        function toggleCodexTalentCat(id) {
+            const title = document.querySelector(`.codex-block-title[onclick*="'${id}'"]`);
+            const body = document.getElementById(id);
+            if (title) title.classList.toggle('open');
+            if (body) body.classList.toggle('open');
         }
 
         // ─── Arena ────────────────────────────────────────

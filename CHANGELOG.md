@@ -2,6 +2,22 @@
 
 Todos los cambios notables en este proyecto.
 
+## [0.6.0] - 2026-06-02
+
+### Añadido
+- **Sistema de Mazmorras**: Torre de los Ancestros — 3 intentos gratis/día, niveles escalables (N1=piso100, +10 por nivel), drops exclusivos de Ancestral y Mítico.
+- **Rareza Ancestral** (×3.0): 4 stats maxeadas, maestría Nv3 aleatoria reforjeable, enhance +15.
+- **Rareza Mítica** (×4.0): 5 stats, maestría Nv4 fija no reforjeable, enhance +15.
+- **Maestrías Nv4**: cada maestría ahora tiene 4 niveles (Nv4 es exclusivo de Mítico).
+- **Bonus Stat**: al llegar a enhance +5 y +10, el item obtiene un stat bonus (+25%) reroleable por 5🩸.
+- **Rejugar niveles de mazmorra**: todos los niveles desbloqueados son seleccionables para farmear.
+- **Colores de rareza**: Ancestral (#c2410c ámbar rojizo), Mítico (#818cf8 azul violáceo).
+- **SDD completo**: 4 specs, design, 21 tasks, verify, archive documentados en `openspec/`.
+
+### Cambiado
+- **Enhance máximo**: de +10 a +15 (costo escala `floor(1.5^enhance)`).
+- **Esencias**: drop 50% en normales, 100% en jefes de mazmorra.
+
 ## [0.5.1] - 2026-06-01
 
 ### Añadido
