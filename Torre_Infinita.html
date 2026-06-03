@@ -711,6 +711,166 @@
             font-weight: 600; cursor: pointer;
         }
 
+        /* === REBIRTH === */
+        .action-btn.rebirth {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #1a1a2e;
+            font-weight: 700;
+        }
+        .action-btn.rebirth:hover {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+        }
+        .rebirth-preview {
+            margin: 12px 0;
+        }
+        .rebirth-preview .gain {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #fbbf24;
+            text-align: center;
+            padding: 12px;
+            background: #1a1a2e;
+            border-radius: 8px;
+            border: 1px solid #4a2a6a;
+        }
+        .rebirth-preview .losses {
+            margin-top: 12px;
+            padding: 12px;
+            background: #111118;
+            border-radius: 8px;
+            border: 1px solid #2a2a4a;
+        }
+        .rebirth-preview .losses .loss-title {
+            color: #ef4444;
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+        }
+        .rebirth-preview .losses .loss-item {
+            color: #9ca3af;
+            font-size: 0.8rem;
+            padding: 2px 0;
+        }
+        .rebirth-preview .preserved {
+            margin-top: 6px;
+            padding: 12px;
+            background: #111118;
+            border-radius: 8px;
+            border: 1px solid #2a2a4a;
+        }
+        .rebirth-preview .preserved .preserved-title {
+            color: #4ade80;
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+        }
+        .rebirth-preview .preserved .preserved-item {
+            color: #9ca3af;
+            font-size: 0.8rem;
+            padding: 2px 0;
+        }
+        .rebirth-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+        }
+        .rebirth-buttons .confirm-btn {
+            flex: 1;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #1a1a2e;
+            border: none;
+            border-radius: 8px;
+            padding: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .rebirth-buttons .confirm-btn:hover {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+        }
+        .rebirth-buttons .cancel-btn {
+            flex: 1;
+            background: transparent;
+            color: #9ca3af;
+            border: 1px solid #4a4a6a;
+            border-radius: 8px;
+            padding: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .rebirth-buttons .cancel-btn:hover {
+            background: #2a2a4a;
+        }
+
+        /* === ARTIFACT TREE === */
+        .artifact-tree-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin: 12px 0;
+        }
+        .artifact-node {
+            background: #1a1a2e;
+            border: 1px solid #3a3a5a;
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+            transition: all 0.15s ease;
+        }
+        .artifact-node:hover {
+            border-color: #a78bfa;
+        }
+        .artifact-node .node-icon {
+            font-size: 1.3rem;
+            display: block;
+        }
+        .artifact-node .node-name {
+            font-size: 0.8rem;
+            color: #e0e0e0;
+            font-weight: 600;
+            display: block;
+            margin: 4px 0 2px 0;
+        }
+        .artifact-node .node-level {
+            font-size: 0.7rem;
+            color: #9ca3af;
+            display: block;
+        }
+        .artifact-node .node-cost {
+            font-size: 0.75rem;
+            color: #fbbf24;
+            display: block;
+            margin-top: 4px;
+        }
+        .artifact-node .node-max {
+            font-size: 0.75rem;
+            color: #4ade80;
+            font-weight: 700;
+            display: block;
+            margin-top: 4px;
+        }
+        .artifact-btn {
+            margin-top: 6px;
+            background: #2a2a4a;
+            border: 1px solid #a78bfa;
+            border-radius: 6px;
+            padding: 6px 12px;
+            color: #e0e0e0;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            width: 100%;
+        }
+        .artifact-btn:hover:not(:disabled) {
+            background: #3a3a5a;
+            border-color: #c084fc;
+        }
+        .artifact-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            border-color: #3a3a5a;
+        }
+
         /* === DUNGEON MODAL === */
         .dungeon-slot-grid { display: grid; gap: 8px; margin: 12px 0; }
         .dungeon-slot {
@@ -958,6 +1118,7 @@
         <div class="souls-display">
             <span class="essence-item">🩸 Esencias <span class="essence-count" id="essence-count">0</span></span>
             <span class="souls-item">💀 Almas <span class="value" id="souls-count">0</span></span>
+            <span class="souls-item" id="legacy-essence-display" style="display:none;">🪶 Legado <span class="value" id="legacy-essence-count">0</span></span>
         </div>
 
         <!-- Meta Upgrades -->
@@ -973,6 +1134,7 @@
             <button class="action-btn training" id="btn-training" onclick="showTrainingModal()" disabled>🏋️ Training</button>
             <button class="action-btn forge" id="btn-forge" onclick="showForjaModal()" disabled>🔨 Forja</button>
             <button class="action-btn" id="btn-dungeon" onclick="showDungeonSelection()" style="display:none">🏰 Mazmorra</button>
+            <button class="action-btn rebirth" id="btn-rebirth" onclick="showRebirthModal()" style="display:none">🪶 Renacer</button>
             <button class="action-btn character" id="btn-character" onclick="showCharacterScreen()" disabled>👤</button>
         </div>
         <div style="text-align: center; margin-top: 4px;">
@@ -1111,6 +1273,7 @@
             <div style="display:flex;flex-direction:column;gap:12px;margin:16px 0;">
                 <button class="action-btn training" onclick="showReforgeModal();closeForjaModal()" style="padding:12px;">🔨 Reforjar Maestría (3-8🩸)</button>
                 <button class="action-btn start" onclick="showMaximizeModal();closeForjaModal()" style="padding:12px;">⬆️ Maximizar Equipo (1-38🩸)</button>
+                <button class="action-btn rebirth" onclick="showArtifactTree();closeForjaModal()" style="padding:12px;">🌟 Árbol de Artefacto</button>
             </div>
             <button class="modal-close" onclick="closeForjaModal()">Cerrar</button>
         </div>
@@ -1274,6 +1437,22 @@
                 },
             },
             // --- DoT COMBAT ---
+            // --- PRESTIGE / RENACIMIENTO ---
+            heroArtifact: {
+                nodes: [
+                    { id: 'fuerza_ancestral',  label: '⚔️ Fuerza Ancestral',  bonus: 0.03 },
+                    { id: 'coraza_ancestral',  label: '🛡️ Coraza Ancestral',   bonus: 0.03 },
+                    { id: 'vitalidad_ancestral', label: '❤️ Vitalidad Ancestral', bonus: 0.03 },
+                    { id: 'pasos_ancestrales',  label: '🏃 Pasos Ancestrales',  bonus: 0.03 },
+                    { id: 'talento_innato',    label: '💥 Talento Innato',     bonus: 0.05 },
+                    { id: 'herencia_equipo',   label: '💍 Herencia del Equipo', bonus: 0.05 },
+                    { id: 'sabiduria_eterna',  label: '📖 Sabiduría Eterna',   bonus: 0.05 },
+                    { id: 'fortuna_heroe',     label: '🍀 Fortuna del Héroe',  bonus: 0.05 },
+                    { id: 'ciclo_legado',      label: '🪶 Ciclo del Legado',    bonus: 0.05 },
+                    { id: 'voluntad_heroe',    label: '💀 Voluntad del Héroe',  bonus: 0.05 },
+                ],
+                costBase: 5,
+            },
         };
 
         const SAVE_KEY = 'torre_infinita_save_v1';
@@ -1300,9 +1479,16 @@
             playerClass: null,   // 'warrior' | 'warlock' | 'rogue' | 'monk' | null
             playerSpec: null,    // id de especialización o null
             leaderboard: [],      // Top 10 mejores runs [{name, class, heroLevel, maxFloor, runTime, date}]
+            heroArtifact: {
+                nodes: {},
+                legacyEssence: 0,
+                rebirthCount: 0,
+            },
+            hasRebirthed: false,
             dungeon: {
                 unlockedLevels: [],
                 attemptsToday: 0,
+                attemptsTodayLegacy: 0,
                 lastAttemptDate: '',
                 currentDifficulty: 0,
                 currentFloor: 0,
@@ -1313,6 +1499,11 @@
         // Inicializar upgrades desde BALANCE
         for (const [key, u] of Object.entries(BALANCE.metaUpgrades)) {
             metaState.upgrades[key] = { level: 0, ...u };
+        }
+
+        // Inicializar nodos del árbol de artefacto
+        for (const n of BALANCE.heroArtifact.nodes) {
+            metaState.heroArtifact.nodes[n.id] = 0;
         }
 
         // ============================================
@@ -1337,6 +1528,8 @@
                 playerName: metaState.playerName,
                 playerClass: metaState.playerClass,
                 playerSpec: metaState.playerSpec,
+                heroArtifact: metaState.heroArtifact,
+                hasRebirthed: metaState.hasRebirthed,
                 leaderboard: metaState.leaderboard,
                 dungeon: { ...metaState.dungeon },
             };
@@ -1377,6 +1570,16 @@
                 metaState.leaderboard = data.leaderboard ?? [];
                 metaState.dataVersion = data.dataVersion ?? 0;
                 metaState.dungeon = data.dungeon ?? { unlockedLevels: [], attemptsToday: 0, lastAttemptDate: '', currentDifficulty: 0, currentFloor: 0, completedToday: false };
+                metaState.heroArtifact = data.heroArtifact ?? { nodes: {}, legacyEssence: 0, rebirthCount: 0 };
+                metaState.hasRebirthed = data.hasRebirthed ?? false;
+                // Asegurar que todos los nodos del árbol existen (saves parciales)
+                if (BALANCE.heroArtifact) {
+                    for (const n of BALANCE.heroArtifact.nodes) {
+                        if (metaState.heroArtifact.nodes[n.id] === undefined) {
+                            metaState.heroArtifact.nodes[n.id] = 0;
+                        }
+                    }
+                }
                 // Migración v0→v1: recalcular heroBonuses con sistema escalonado
                 let needsMigration = false;
                 if (metaState.dataVersion < 1) {
@@ -1409,6 +1612,23 @@
                     metaState.playerClass = null;
                     metaState.playerSpec = null;
                     metaState.dataVersion = 4;
+                    needsMigration = true;
+                }
+                // Migración v4→v5: prestigio / renacimiento
+                if (metaState.dataVersion < 5) {
+                    metaState.heroArtifact = {
+                        nodes: {},
+                        legacyEssence: 0,
+                        rebirthCount: 0,
+                    };
+                    for (const n of BALANCE.heroArtifact.nodes) {
+                        metaState.heroArtifact.nodes[n.id] = 0;
+                    }
+                    metaState.hasRebirthed = false;
+                    if (!metaState.dungeon.attemptsTodayLegacy) {
+                        metaState.dungeon.attemptsTodayLegacy = 0;
+                    }
+                    metaState.dataVersion = 5;
                     needsMigration = true;
                 }
                 if (data.upgrades) {
@@ -1456,7 +1676,7 @@
             metaState.equipment = { weapon: null, armor: null, ring: null };
             metaState.bossAttempted = [];
             metaState.bossStats = {};
-            metaState.dataVersion = 4;
+            metaState.dataVersion = 5;
             metaState.heroLevel = 0;
             metaState.heroXp = 0;
             metaState.heroBonuses = { hp: 0, atk: 0, def: 0, agi: 0 };
@@ -1464,7 +1684,12 @@
             metaState.playerClass = null;
             metaState.playerSpec = null;
             metaState.leaderboard = [];
-            metaState.dungeon = { unlockedLevels: [], attemptsToday: 0, lastAttemptDate: '', currentDifficulty: 0, currentFloor: 0, completedToday: false };
+            metaState.heroArtifact = { nodes: {}, legacyEssence: 0, rebirthCount: 0 };
+            for (const n of BALANCE.heroArtifact.nodes) {
+                metaState.heroArtifact.nodes[n.id] = 0;
+            }
+            metaState.hasRebirthed = false;
+            metaState.dungeon = { unlockedLevels: [], attemptsToday: 0, attemptsTodayLegacy: 0, lastAttemptDate: '', currentDifficulty: 0, currentFloor: 0, completedToday: false };
             for (const key of Object.keys(metaState.upgrades)) {
                 metaState.upgrades[key].level = 0;
             }
@@ -1532,6 +1757,8 @@
             // Dungeon mode
             dungeonMode: false,
             dungeonDifficulty: 0,
+            legacyAbyssMode: false,
+            artifactMult: { xp: 1, drop: 1, souls: 1, talentDmg: 1 },
         };
 
         function initRecap() {
@@ -2037,6 +2264,46 @@
                 agi *= (1 + legacyBonus / 100);
             }
 
+            // 4. Artefacto: capa multiplicativa post-metaUpgrades
+            const artifact = metaState.heroArtifact;
+            const a = (id) => (artifact.nodes[id] || 0) * (BALANCE.heroArtifact.nodes.find(n => n.id === id)?.bonus || 0);
+            const fuerzaLvl = artifact.nodes.fuerza_ancestral || 0;
+            const corazaLvl = artifact.nodes.coraza_ancestral || 0;
+            const vitalidadLvl = artifact.nodes.vitalidad_ancestral || 0;
+            const pasosLvl = artifact.nodes.pasos_ancestrales || 0;
+            if (fuerzaLvl > 0) atk *= (1 + fuerzaLvl * 0.03);
+            if (corazaLvl > 0) def *= (1 + corazaLvl * 0.03);
+            if (vitalidadLvl > 0) hp *= (1 + vitalidadLvl * 0.03);
+            if (pasosLvl > 0) agi *= (1 + pasosLvl * 0.03);
+
+            // Herencia del Equipo: multiplica stats del equipo (ya incluidas en hp/atk/def/agi)
+            const herenciaLvl = artifact.nodes.herencia_equipo || 0;
+            if (herenciaLvl > 0) {
+                const herenciaMult = 1 + herenciaLvl * 0.05;
+                // He already applied to hp/atk/def/agi which include equipment
+                // Re-apply as global multiplier on top
+                hp *= herenciaMult;
+                atk *= herenciaMult;
+                def *= herenciaMult;
+                agi *= herenciaMult;
+            }
+
+            // Talento Innato: talentDmgMult para DoTs y efectos
+            const talentoInnatoLvl = artifact.nodes.talento_innato || 0;
+            const talentDmgMult = 1 + talentoInnatoLvl * 0.05;
+
+            // Sabiduría Eterna: XP multiplier
+            const sabiduriaLvl = artifact.nodes.sabiduria_eterna || 0;
+            const xpMult = 1 + sabiduriaLvl * 0.05;
+
+            // Fortuna del Héroe: drop rate multiplier
+            const fortunaLvl = artifact.nodes.fortuna_heroe || 0;
+            const dropMult = 1 + fortunaLvl * 0.05;
+
+            // Voluntad del Héroe: souls multiplier
+            const voluntadLvl = artifact.nodes.voluntad_heroe || 0;
+            const soulsMult = 1 + voluntadLvl * 0.05;
+
             return {
                 maxHp: Math.floor(hp),
                 atk: Math.floor(atk),
@@ -2051,6 +2318,11 @@
                 hpRegen: equipHpRegen,
                 // Talent-derived stats (used by combatTick and render)
                 speedPenaltyPct: speedPenaltyPct,
+                // Artefacto: multipliers
+                xpMult: xpMult || 1,
+                dropMult: dropMult || 1,
+                soulsMult: soulsMult || 1,
+                talentDmgMult: talentDmgMult || 1,
             };
         }
 
@@ -2149,7 +2421,7 @@
         }
 
         // T5 — processDebuffs()
-        function processDebuffs(lifestealPct, warlockDotBonusPct) {
+        function processDebuffs(lifestealPct, warlockDotBonusPct, talentDmgMult) {
             const tl = runState.talentLevels || {};
             // ─── AFLICCIÓN (spec): +Y% DoT damage ───
             let afflictionDotBonus = 0;
@@ -2184,6 +2456,10 @@
                             // Aflicción spec: +Y% DoT damage
                             if (afflictionDotBonus > 0) {
                                 dotDmg = Math.floor(dotDmg * (1 + afflictionDotBonus / 100));
+                            }
+                            // Talento Innato (artefacto): multiplicador global de daño de talentos
+                            if (talentDmgMult && talentDmgMult > 1) {
+                                dotDmg = Math.floor(dotDmg * talentDmgMult);
                             }
                             e.hp -= dotDmg;
                             const rc = runState.recap;
@@ -2491,6 +2767,14 @@
             p.hpRegen = stats.hpRegen;
             p.attackTimer = speedToInterval(p.agi);
 
+            // Artefacto multipliers (used in combat/defeat logic)
+            runState.artifactMult = {
+                xp: stats.xpMult || 1,
+                drop: stats.dropMult || 1,
+                souls: stats.soulsMult || 1,
+                talentDmg: stats.talentDmgMult || 1,
+            };
+
             // Masteries: flat bonuses sobre stats base
             runState.masteryFlatCrit = 0;
             runState.masteryFlatLifesteal = 0;
@@ -2667,8 +2951,9 @@
                 }
             }
 
-            // T5 — Process debuffs at TOP of combatTick (pass warlockDotDmgPct for DoT boost)
-            processDebuffs(currentLifesteal, warlockDotDmgPct);
+            // T5 — Process debuffs at TOP of combatTick (pass warlockDotDmgPct for DoT boost, talentDmgMult)
+            const talentDmgMult = runState.artifactMult?.talentDmg || 1;
+            processDebuffs(currentLifesteal, warlockDotDmgPct, talentDmgMult);
 
             // ─── Stagger damage over time (Maestro Cervecero spec) ───
             if (runState._staggerDmg && runState._staggerDmg > 0) {
@@ -3750,61 +4035,87 @@
 
             // ─── DUNGEON MODE ──────────────────────────────
             if (runState.dungeonMode) {
-                // XP
-                const xpGain = runState.floor;
+                // XP (con multiplicador de artefacto)
+                const baseXpGain = runState.floor;
+                const dXpMult = runState.artifactMult?.xp || 1;
+                const xpGain = Math.floor(baseXpGain * dXpMult);
                 runState.xp += xpGain;
-                addLog(`+${formatNum(xpGain)} XP`, 'system');
+                const xpLog = dXpMult > 1 ? `+${formatNum(xpGain)} XP (×${dXpMult.toFixed(2)})` : `+${formatNum(xpGain)} XP`;
+                addLog(xpLog, 'system');
+
+                // Legacy Abyss: award Legacy Essence on floor completion (NO multiplied by Ciclo del Legado)
+                if (runState.legacyAbyssMode) {
+                    const hl = metaState.heroLevel;
+                    const baseEssence = Math.floor(Math.sqrt(hl) * runState.floor / 50);
+                    const isBossFloor = runState.floor === 10;
+                    const amount = isBossFloor ? baseEssence * 2 : baseEssence;
+                    if (amount > 0) {
+                        metaState.heroArtifact.legacyEssence += amount;
+                        addLog(`+${amount} 🪶 Esencias de Legado`, 'loot');
+                    }
+                }
 
                 // Souls display (nothing awarded in dungeon)
                 addLog(`+${formatNum(runState.floor * BALANCE.souls.baseMult)} 💀 (display)`, 'system');
 
-                // Drop
-                const isMiniboss = runState.floor === 5;
-                const isBossFloor = runState.floor === 10;
-                let dropItem = null;
-                if (isBossFloor) {
-                    // Boss always drops
-                    const floorEquivalent = 100 + (runState.dungeonDifficulty - 1) * 10;
-                    dropItem = generateItem(floorEquivalent, true, { isDungeon: true, isMiniboss: false, dungeonLevel: runState.dungeonDifficulty });
-                    addLog(`🎁 Drop: ${dropItem.name} (${dropItem.rarity})`, 'loot');
-                } else if (isMiniboss) {
-                    // Miniboss: 60% chance
-                    if (Math.random() * 100 < BALANCE.dungeon.dropRates.minibossChance) {
+                // Drop (equipment drops only in Torre de los Ancestros, not in Legacy Abyss)
+                if (!runState.legacyAbyssMode) {
+                    const isMiniboss = runState.floor === 5;
+                    const isBossFloor = runState.floor === 10;
+                    let dropItem = null;
+                    if (isBossFloor) {
+                        // Boss always drops
                         const floorEquivalent = 100 + (runState.dungeonDifficulty - 1) * 10;
-                        dropItem = generateItem(floorEquivalent, false, { isDungeon: true, isMiniboss: true, dungeonLevel: runState.dungeonDifficulty });
+                        dropItem = generateItem(floorEquivalent, true, { isDungeon: true, isMiniboss: false, dungeonLevel: runState.dungeonDifficulty });
                         addLog(`🎁 Drop: ${dropItem.name} (${dropItem.rarity})`, 'loot');
+                    } else if (isMiniboss) {
+                        // Miniboss: 60% chance
+                        if (Math.random() * 100 < BALANCE.dungeon.dropRates.minibossChance) {
+                            const floorEquivalent = 100 + (runState.dungeonDifficulty - 1) * 10;
+                            dropItem = generateItem(floorEquivalent, false, { isDungeon: true, isMiniboss: true, dungeonLevel: runState.dungeonDifficulty });
+                            addLog(`🎁 Drop: ${dropItem.name} (${dropItem.rarity})`, 'loot');
+                        }
+                    } else {
+                        // Normal enemy: 5% drop, always Legendario
+                        if (Math.random() * 100 < BALANCE.dungeon.dropRates.normalChance) {
+                            const floorEquivalent = 100 + (runState.dungeonDifficulty - 1) * 10;
+                            dropItem = generateItem(floorEquivalent, false, { isDungeon: true, isMiniboss: false, dungeonLevel: runState.dungeonDifficulty });
+                            addLog(`🎁 Drop: ${dropItem.name} (${dropItem.rarity})`, 'loot');
+                        }
                     }
-                } else {
-                    // Normal enemy: 5% drop, always Legendario
-                    if (Math.random() * 100 < BALANCE.dungeon.dropRates.normalChance) {
-                        const floorEquivalent = 100 + (runState.dungeonDifficulty - 1) * 10;
-                        dropItem = generateItem(floorEquivalent, false, { isDungeon: true, isMiniboss: false, dungeonLevel: runState.dungeonDifficulty });
-                        addLog(`🎁 Drop: ${dropItem.name} (${dropItem.rarity})`, 'loot');
-                    }
-                }
-                if (dropItem) {
-                    const result = tryEquip(dropItem);
-                    if (result === null) {
-                        // Equip comparison modal will handle continuation
-                        return;
-                    } else if (result) {
-                        saveGame();
+                    if (dropItem) {
+                        const result = tryEquip(dropItem);
+                        if (result === null) {
+                            // Equip comparison modal will handle continuation
+                            return;
+                        } else if (result) {
+                            saveGame();
+                        }
                     }
                 }
 
                 // Floor 10: dungeon complete!
                 if (runState.floor >= 10) {
-                    addLog('🎉 ¡Mazmorra completada!', 'victory');
-                    runState.active = false;
-                    // Unlock next level
-                    const diff = runState.dungeonDifficulty;
-                    if (!metaState.dungeon.unlockedLevels.includes(diff)) {
-                        metaState.dungeon.unlockedLevels.push(diff);
+                    if (runState.legacyAbyssMode) {
+                        addLog('🌌 ¡Abismo del Legado completado!', 'victory');
+                        runState.active = false;
+                        runState.legacyAbyssMode = false;
+                        saveGame();
+                        render();
+                        showDungeonSelection();
+                    } else {
+                        addLog('🎉 ¡Mazmorra completada!', 'victory');
+                        runState.active = false;
+                        // Unlock next level
+                        const diff = runState.dungeonDifficulty;
+                        if (!metaState.dungeon.unlockedLevels.includes(diff)) {
+                            metaState.dungeon.unlockedLevels.push(diff);
+                        }
+                        metaState.dungeon.completedToday = true;
+                        saveGame();
+                        render();
+                        showDungeonComplete();
                     }
-                    metaState.dungeon.completedToday = true;
-                    saveGame();
-                    render();
-                    showDungeonComplete();
                     return;
                 }
 
@@ -3817,10 +4128,13 @@
 
             // ─── NORMAL MODE ───────────────────────────────
 
-            // XP
-            const xpGain = runState.floor;
+            // XP (con multiplicador de artefacto)
+            const baseXpGain = runState.floor;
+            const xpMult = runState.artifactMult?.xp || 1;
+            const xpGain = Math.floor(baseXpGain * xpMult);
             runState.xp += xpGain;
-            addLog(`+${formatNum(xpGain)} XP`, 'system');
+            const xpLog = xpMult > 1 ? `+${formatNum(xpGain)} XP (×${xpMult.toFixed(2)})` : `+${formatNum(xpGain)} XP`;
+            addLog(xpLog, 'system');
 
             // Souls per floor (display only — awarded at death, not accumulated)
             const floor = runState.trainingMode ? runState.trainingFloor : runState.floor;
@@ -3865,7 +4179,8 @@
             // Drop de equipo
             let equipPending = false;
             if (metaState.unlockedEquipment) {
-                const dropChance = BALANCE.equipment.dropBaseChance;
+                const dropMult = runState.artifactMult?.drop || 1;
+                const dropChance = Math.min(100, BALANCE.equipment.dropBaseChance * dropMult);
                 if (Math.random() * 100 < dropChance || runState.enemy.isBoss) {
                     const item = generateItem(runState.floor, runState.enemy.isBoss);
                     addLog(`🎁 Drop: ${item.name}`, 'loot');
@@ -3951,6 +4266,7 @@
             if (runState.dungeonMode) {
                 addLog(`💀 Caíste en la mazmorra (piso ${runState.floor}).`, 'death');
                 runState.dungeonMode = false;
+                runState.legacyAbyssMode = false;
                 runState.dungeonDifficulty = 0;
                 render();
                 updateButtons();
@@ -3959,7 +4275,8 @@
             }
 
             // Tower mode: original formula — souls based on floor reached, one-time payment at death
-            let totalSouls = Math.floor(runState.floor * BALANCE.souls.baseMult + (runState.floor * metaState.upgrades.souls.level * metaState.upgrades.souls.flat));
+            const soulsMult = runState.artifactMult?.souls || 1;
+            let totalSouls = Math.floor((runState.floor * BALANCE.souls.baseMult + (runState.floor * metaState.upgrades.souls.level * metaState.upgrades.souls.flat)) * soulsMult);
             // Maestría Afortunada: chance de duplicar almas
             if (runState.masteryFortuneChance > 0 && Math.random() * 100 < runState.masteryFortuneChance) {
                 totalSouls = Math.floor(totalSouls * 2);
@@ -4795,6 +5112,15 @@
             if (runState.dungeonMode) {
                 if (runState.floor >= 10) {
                     // Boss was defeated and item comparison done - complete dungeon
+                    if (runState.legacyAbyssMode) {
+                        addLog('🌌 ¡Abismo del Legado completado!', 'victory');
+                        runState.active = false;
+                        runState.legacyAbyssMode = false;
+                        saveGame();
+                        render();
+                        showDungeonSelection();
+                        return;
+                    }
                     addLog('🎉 ¡Mazmorra completada!', 'victory');
                     runState.active = false;
                     const diff = runState.dungeonDifficulty;
@@ -4864,6 +5190,7 @@
 
             runState.active = true;
             runState.trainingMode = true;
+            runState.legacyAbyssMode = false;
             runState.trainingFloor = floor;
             runState.floor = floor;
             runState.enemiesDefeated = 0;
@@ -5033,6 +5360,7 @@ runState.furiaStacks = 0;
             runState.active = true; runState.floor = 1;
             runState.trainingMode = false;
             runState.dungeonMode = false;
+            runState.legacyAbyssMode = false;
             runState.dungeonDifficulty = 0;
             runState.trainingFloor = 30;
             runState.enemiesDefeated = 0;
@@ -5072,6 +5400,7 @@ runState.furiaStacks = 0;
             runState.vitalShield = 0;
             runState.shieldMax = 0;
             runState.piedraShield = { amount: 0, ticksLeft: 0 };
+            metaState.hasRebirthed = false;
             runState.runStartTime = Date.now();
             runState.recap = initRecap();
             document.getElementById('combat-log').innerHTML = '';
@@ -5096,6 +5425,7 @@ runState.furiaStacks = 0;
             runState.active = false; runState.floor = 1; runState.enemy = null;
             runState.trainingMode = false;
             runState.dungeonMode = false;
+            runState.legacyAbyssMode = false;
             runState.dungeonDifficulty = 0;
             runState.trainingFloor = 30;
             runState.enemiesDefeated = 0;
@@ -5143,6 +5473,7 @@ runState.furiaStacks = 0;
             const today = new Date().toISOString().split('T')[0];
             if (metaState.dungeon.lastAttemptDate !== today) {
                 metaState.dungeon.attemptsToday = 0;
+                metaState.dungeon.attemptsTodayLegacy = 0;
                 metaState.dungeon.lastAttemptDate = today;
                 metaState.dungeon.completedToday = false;
                 saveGame();
@@ -5151,6 +5482,7 @@ runState.furiaStacks = 0;
 
         function showDungeonSelection() {
             checkDungeonDailyReset();
+            checkDungeonLegacyDailyReset();
             const content = document.getElementById('dungeon-content');
             const unlocked = metaState.dungeon.unlockedLevels;
             const maxUnlocked = unlocked.length > 0 ? Math.max(...unlocked) : 0;
@@ -5193,10 +5525,18 @@ runState.furiaStacks = 0;
                 </div>
                 <hr style="border-color:#2a2a4a;margin:12px 0;">
                 <div class="dungeon-slot-grid">
+                    ${metaState.unlockedReforge ? `
+                    <div class="dungeon-slot" onclick="startLegacyAbyssRun()">
+                        <span class="slot-title">🌌 Abismo del Legado</span>
+                        <span class="slot-desc">10 pisos — Recompensa: 🪶 Esencias de Legado</span>
+                        <span class="slot-status">${Math.max(0, BALANCE.dungeon.dailyAttempts - metaState.dungeon.attemptsTodayLegacy)}/${BALANCE.dungeon.dailyAttempts} intentos hoy</span>
+                    </div>
+                    ` : `
                     <div class="dungeon-slot locked">
                         <span class="slot-title">🔒 Abismo del Legado</span>
-                        <span class="slot-desc">Próximamente</span>
+                        <span class="slot-desc">Alcanzá el piso 100 para desbloquear</span>
                     </div>
+                    `}
                     <div class="dungeon-slot locked">
                         <span class="slot-title">🔒 Cámara de las Runas</span>
                         <span class="slot-desc">Próximamente</span>
@@ -5275,6 +5615,7 @@ runState.furiaStacks = 0;
             runState.vitalShield = 0;
             runState.shieldMax = 0;
             runState.piedraShield = { amount: 0, ticksLeft: 0 };
+            metaState.hasRebirthed = false;
             runState.runStartTime = Date.now();
             runState.recap = initRecap();
             document.getElementById('combat-log').innerHTML = '';
@@ -5328,9 +5669,23 @@ runState.furiaStacks = 0;
                 document.getElementById('boss-indicator').style.display = 'none';
             } else if (runState.dungeonMode) {
                 const diff = runState.dungeonDifficulty;
-                document.getElementById('floor-number').textContent = `🏰 Mazmorra N${diff} — Piso ${runState.floor}`;
+                if (runState.legacyAbyssMode) {
+                    document.getElementById('floor-number').textContent = `🌌 Abismo del Legado — Piso ${runState.floor}`;
+                } else {
+                    document.getElementById('floor-number').textContent = `🏰 Mazmorra N${diff} — Piso ${runState.floor}`;
+                }
                 const bossEl = document.getElementById('boss-indicator');
-                if (runState.floor === 10) {
+                if (runState.legacyAbyssMode) {
+                    if (runState.floor === 10) {
+                        bossEl.textContent = '☠️ BOSS FINAL';
+                        bossEl.style.display = 'block';
+                    } else if (runState.floor === 5) {
+                        bossEl.textContent = '⚠️ MINIBOSS';
+                        bossEl.style.display = 'block';
+                    } else {
+                        bossEl.style.display = 'none';
+                    }
+                } else if (runState.floor === 10) {
                     bossEl.textContent = '☠️ BOSS';
                     bossEl.style.display = 'block';
                 } else if (runState.floor === 5) {
@@ -5538,6 +5893,13 @@ runState.furiaStacks = 0;
 
             document.getElementById('souls-count').textContent = formatNum(metaState.souls);
             document.getElementById('essence-count').textContent = formatNum(metaState.essence);
+            const legacyDisplay = document.getElementById('legacy-essence-display');
+            const legacyCount = document.getElementById('legacy-essence-count');
+            if (legacyDisplay && legacyCount) {
+                const hasLegacy = metaState.heroArtifact?.legacyEssence > 0 || metaState.unlockedReforge;
+                legacyDisplay.style.display = hasLegacy ? 'inline' : 'none';
+                legacyCount.textContent = formatNum(metaState.heroArtifact?.legacyEssence || 0);
+            }
 
             // Accumulated stats from leveling
             const r = runState.runBonuses;
@@ -5584,6 +5946,7 @@ runState.furiaStacks = 0;
             const forge = document.getElementById('btn-forge');
             const dungeon = document.getElementById('btn-dungeon');
             const character = document.getElementById('btn-character');
+            const rebirth = document.getElementById('btn-rebirth');
 
             if (runState.trainingMode) {
                 // ── Training mode ──────────────────────────────
@@ -5598,6 +5961,7 @@ runState.furiaStacks = 0;
                 forge.disabled = true;
                 dungeon.style.display = 'none';
                 character.disabled = true;
+                rebirth.style.display = 'none';
             } else if (runState.active) {
                 // ── Run active ─────────────────────────────────
                 start.style.display = 'none';
@@ -5612,6 +5976,7 @@ runState.furiaStacks = 0;
                 forge.disabled = true;
                 dungeon.style.display = 'none';
                 character.disabled = true;
+                rebirth.style.display = 'none';
             } else {
                 // ── Idle — no run ──────────────────────────────
                 start.style.display = 'flex';
@@ -5627,11 +5992,277 @@ runState.furiaStacks = 0;
                 dungeon.style.display = metaState.unlockedReforge ? 'flex' : 'none';
                 dungeon.disabled = !metaState.unlockedReforge;
                 character.disabled = false;
+                rebirth.style.display = (metaState.unlockedReforge && !metaState.hasRebirthed) ? 'flex' : 'none';
             }
         }
 
         // ============================================
-        // 7b. LEADERBOARD
+        // 7b. PRESTIGIO / RENACIMIENTO
+        // ============================================
+
+        function showRebirthModal() {
+            if (runState.active || !metaState.unlockedReforge || metaState.hasRebirthed) return;
+            const hl = metaState.heroLevel;
+            const mf = metaState.maxFloor;
+            const nodeLevel = metaState.heroArtifact.nodes.ciclo_legado || 0;
+            const cicloMult = 1 + 0.05 * nodeLevel;
+            const baseAmount = Math.floor(Math.sqrt(hl) * Math.max(mf, 100) / 100);
+            const totalAmount = Math.floor(baseAmount * cicloMult);
+
+            // Build preview HTML
+            let losses = '';
+            const lossItems = [
+                '💀 Almas: se perderán todas',
+                '🩸 Esencias: se perderán todas',
+                '⬆️ Mejoras permanentes: todas a nivel 0',
+                `👤 Nivel de héroe: ${hl} → 0`,
+                '📖 Especialización: se reiniciará',
+                '🏛️ Bonificaciones de clase: se reiniciarán',
+            ];
+            for (const item of lossItems) {
+                losses += `<div class="loss-item">❌ ${item}</div>`;
+            }
+
+            let preserved = '';
+            const preservedItems = [
+                '🗡️ Equipo intacto',
+                '🏛️ Clase preservada',
+                '🏆 Piso máximo preservado',
+                `🪶 Esencias de legado acumuladas: ${formatNum(metaState.heroArtifact.legacyEssence)}`,
+                '🌟 Árbol de artefacto intacto',
+                '🏅 Leaderboard preservado',
+            ];
+            for (const item of preservedItems) {
+                preserved += `<div class="preserved-item">✅ ${item}</div>`;
+            }
+
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay visible';
+            overlay.id = 'rebirth-overlay';
+            overlay.onclick = (e) => { if (e.target === overlay) closeRebirthModal(); };
+            overlay.innerHTML = `
+                <div class="modal" onclick="event.stopPropagation()">
+                    <h2>🪶 Renacer</h2>
+                    <p style="text-align:center;color:#9ca3af;">¿Estás seguro de que querés renacer?<br>Esta acción no se puede deshacer.</p>
+                    <div class="rebirth-preview">
+                        <div class="gain">
+                            🪶 +${formatNum(totalAmount)} Esencias de Legado
+                            ${nodeLevel > 0 ? `<br><span style="font-size:0.7rem;color:#d97706;">(Ciclo del Legado ×${(1 + 0.05 * nodeLevel).toFixed(2)})</span>` : ''}
+                        </div>
+                        <div class="losses">
+                            <div class="loss-title">📉 Se perderá:</div>
+                            ${losses}
+                        </div>
+                        <div class="preserved">
+                            <div class="preserved-title">💪 Se preserva:</div>
+                            ${preserved}
+                        </div>
+                    </div>
+                    <div class="rebirth-buttons">
+                        <button class="cancel-btn" onclick="closeRebirthModal()">❌ Cancelar</button>
+                        <button class="confirm-btn" onclick="performRebirth()">🪶 Renacer</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+
+        function closeRebirthModal() {
+            const el = document.getElementById('rebirth-overlay');
+            if (el) el.remove();
+        }
+
+        function performRebirth() {
+            const hl = metaState.heroLevel;
+            const mf = metaState.maxFloor;
+            const nodeLevel = metaState.heroArtifact.nodes.ciclo_legado || 0;
+            const cicloMult = 1 + 0.05 * nodeLevel;
+            const baseAmount = Math.floor(Math.sqrt(hl) * Math.max(mf, 100) / 100);
+            const totalAmount = Math.floor(baseAmount * cicloMult);
+
+            // Sumar esencias de legado
+            metaState.heroArtifact.legacyEssence += totalAmount;
+            metaState.heroArtifact.rebirthCount++;
+
+            // Resetear progreso parcial
+            metaState.souls = 0;
+            metaState.essence = 0;
+            for (const key of Object.keys(metaState.upgrades)) {
+                metaState.upgrades[key].level = 0;
+            }
+            metaState.heroLevel = 0;
+            metaState.heroXp = 0;
+            metaState.heroBonuses = { hp: 0, atk: 0, def: 0, agi: 0 };
+            metaState.playerSpec = null;
+
+            // Preservar: equipment, class, maxFloor, heroArtifact, leaderboard
+            // (already preserved — these are never reset here)
+
+            metaState.hasRebirthed = true;
+            saveGame();
+            closeRebirthModal();
+            addLog(`🪶 ¡Renaciste! Obtuviste ${formatNum(totalAmount)} Esencias de Legado.`, 'victory');
+            render();
+            updateButtons();
+        }
+
+        // ============================================
+        // 7c. ÁRBOL DE ARTEFACTO
+        // ============================================
+
+        function showArtifactTree() {
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay visible';
+            overlay.id = 'artifact-overlay';
+            overlay.onclick = (e) => { if (e.target === overlay) closeArtifactTree(); };
+
+            let nodesHTML = '';
+            for (const n of BALANCE.heroArtifact.nodes) {
+                const currentLevel = metaState.heroArtifact.nodes[n.id] || 0;
+                const maxed = currentLevel >= 5;
+                const nextLevel = currentLevel + 1;
+                const cost = maxed ? 0 : Math.floor(5 * Math.sqrt(nextLevel));
+                const canAfford = !maxed && metaState.heroArtifact.legacyEssence >= cost;
+                const pct = (n.bonus * currentLevel * 100).toFixed(0);
+
+                nodesHTML += `
+                    <div class="artifact-node">
+                        <span class="node-icon">${n.label.split(' ')[0]}</span>
+                        <span class="node-name">${n.label.split(' ').slice(1).join(' ')}</span>
+                        <span class="node-level">Nv.${currentLevel}/5 ${currentLevel > 0 ? `(+${pct}%)` : ''}</span>
+                        ${maxed
+                            ? `<span class="node-max">✅ MAX</span>`
+                            : `<span class="node-cost">🪶 ${cost}</span>
+                               <button class="artifact-btn" ${canAfford ? '' : 'disabled'} onclick="buyArtifactNode('${n.id}')">
+                                    ${canAfford ? '⬆️ Mejorar' : metaState.heroArtifact.legacyEssence < cost ? '❌ Insuficiente' : '✅ MAX'}
+                               </button>`
+                        }
+                    </div>
+                `;
+            }
+
+            overlay.innerHTML = `
+                <div class="modal" onclick="event.stopPropagation()" style="max-width:440px;">
+                    <h2>🌟 Árbol de Artefacto</h2>
+                    <p style="text-align:center;color:#9ca3af;font-size:0.85rem;">
+                        🪶 Esencias de Legado: <span style="color:#fbbf24;font-weight:600;">${formatNum(metaState.heroArtifact.legacyEssence)}</span>
+                    </p>
+                    <div class="artifact-tree-grid">
+                        ${nodesHTML}
+                    </div>
+                    <button class="modal-close" onclick="closeArtifactTree()">Cerrar</button>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+
+        function closeArtifactTree() {
+            const el = document.getElementById('artifact-overlay');
+            if (el) el.remove();
+        }
+
+        function buyArtifactNode(id) {
+            const currentLevel = metaState.heroArtifact.nodes[id] || 0;
+            if (currentLevel >= 5) return;
+            const nextLevel = currentLevel + 1;
+            const cost = Math.floor(5 * Math.sqrt(nextLevel));
+            if (metaState.heroArtifact.legacyEssence < cost) {
+                addLog('❌ Esencias de Legado insuficientes', 'system');
+                closeArtifactTree();
+                return;
+            }
+            metaState.heroArtifact.legacyEssence -= cost;
+            metaState.heroArtifact.nodes[id] = nextLevel;
+            saveGame();
+            const nodeDef = BALANCE.heroArtifact.nodes.find(n => n.id === id);
+            addLog(`🌟 ${nodeDef ? nodeDef.label : id} mejorado a nivel ${nextLevel}!`, 'loot');
+            closeArtifactTree();
+            showArtifactTree();
+        }
+
+        // ============================================
+        // 7d. ABISMO DEL LEGADO
+        // ============================================
+
+        function checkDungeonLegacyDailyReset() {
+            const today = new Date().toISOString().split('T')[0];
+            if (metaState.dungeon.lastAttemptDate !== today) {
+                metaState.dungeon.attemptsTodayLegacy = 0;
+                metaState.dungeon.lastAttemptDate = today;
+                saveGame();
+            }
+        }
+
+        function startLegacyAbyssRun() {
+            if (runState.active) return;
+            checkDungeonLegacyDailyReset();
+
+            // Hardcap: 3 attempts per day, no paid extras
+            if (metaState.dungeon.attemptsTodayLegacy >= BALANCE.dungeon.dailyAttempts) {
+                addLog('❌ Ya usaste todos los intentos del Abismo del Legado hoy. ¡Volvé mañana!', 'system');
+                return;
+            }
+
+            metaState.dungeon.attemptsTodayLegacy++;
+            metaState.dungeon.currentDifficulty = 0;
+            metaState.dungeon.currentFloor = 0;
+            saveGame();
+            closeDungeonSelection();
+
+            // Setup run state for Legacy Abyss
+            arenaIdle();
+            runState.active = true;
+            runState.floor = 1;
+            runState.dungeonMode = true;
+            runState.legacyAbyssMode = true;
+            runState.dungeonDifficulty = 0;
+            runState.trainingMode = false;
+            runState.enemiesDefeated = 0;
+            runState.level = metaState.heroLevel;
+            runState.xp = metaState.heroXp;
+            runState.xpToNext = BALANCE.levelUp.xpScale * (runState.level || 1);
+            runState.runBonuses = { ...metaState.heroBonuses };
+            if (metaState.playerClass) {
+                const cb = calcularClassBonuses(runState.level, metaState.playerClass);
+                runState.runBonuses.hp += cb.hp;
+                runState.runBonuses.atk += cb.atk;
+                runState.runBonuses.def += cb.def;
+                runState.runBonuses.agi += cb.agi;
+            }
+            runState.characterScreenActive = false;
+            runState.classHits = 0;
+            runState.firstHitDone = false;
+            runState.nextHitMult = 1;
+            runState.dodgeStreak = 0;
+            runState.attackCounter = 0;
+            runState.demonHits = 0;
+            runState.demonActive = false;
+            runState.demonHitsLeft = 0;
+            runState.classComboStacks = 0;
+            runState.abilities = [];
+            runState.talentLevels = {};
+            runState.hasRevived = false;
+            runState.furiaStacks = 0;
+            runState.critMasteryCounter = 0;
+            runState.runeTapCounter = 0;
+            runState.reflejoBonus = 0;
+            runState.spellShieldCounter = 0;
+            runState.segundoAlientoUsed = false;
+            runState.bossesKilledThisRun = 0;
+            runState.enemyDebuffs = [];
+            runState.vitalShield = 0;
+            runState.shieldMax = 0;
+            runState.piedraShield = { amount: 0, ticksLeft: 0 };
+            runState.runStartTime = Date.now();
+            runState.recap = initRecap();
+            document.getElementById('combat-log').innerHTML = '';
+            addLog(`🌌 Abismo del Legado iniciado.`, 'system');
+            startCombat();
+            updateButtons();
+        }
+
+        // ============================================
+        // 7e. LEADERBOARD
         // ============================================
         function formatRunTime(ms) {
             const totalSec = Math.floor(ms / 1000);
@@ -6133,6 +6764,7 @@ runState.furiaStacks = 0;
                 { icon: '🏛️', name: 'Clases', isClasses: true },
                 { icon: '⚡', name: 'Talentos', isTalents: true },
                 { icon: '⭐', name: 'Maestrías', isMasteries: true },
+                { icon: '🪶', name: 'Prestigio', isPrestige: true },
             ];
 
             const keyLabels = {
@@ -6287,6 +6919,76 @@ runState.furiaStacks = 0;
                         }
                         html += `</div></div>`;
                     }
+                } else if (block.isPrestige) {
+                    // Render prestige artifact tree
+                    const artifactNodes = BALANCE.heroArtifact.nodes;
+                    const artifact = metaState.heroArtifact || { nodes: {}, legacyEssence: 0, rebirthCount: 0 };
+                    const nodeLevels = artifact.nodes || {};
+                    const legacyEssence = artifact.legacyEssence || 0;
+                    const rebirthCount = artifact.rebirthCount || 0;
+
+                    // Header with current essence
+                    html += `<div class="codex-talent" style="border-left: 3px solid #fbbf24; padding-left: 10px; margin-bottom: 12px;">
+                        <div class="codex-talent-name" style="color:#fbbf24; font-size:0.95rem;">🪶 Esencias de Legado: ${formatNum(legacyEssence)}</div>
+                        <div class="codex-talent-desc" style="font-size:0.75rem;">Renacimientos realizados: ${rebirthCount}</div>
+                        <div class="codex-talent-desc" style="font-size:0.7rem; color:#9ca3af; margin-top:4px;">
+                            Fórmula al renacer: floor(sqrt(nivelHéreo) × max(pisoMax, 100) / 100)
+                        </div>
+                    </div>`;
+
+                    // Stat nodes (ancestrales)
+                    const statNodes = artifactNodes.filter(n => ['fuerza_ancestral','coraza_ancestral','vitalidad_ancestral','pasos_ancestrales'].includes(n.id));
+                    const multNodes = artifactNodes.filter(n => !['fuerza_ancestral','coraza_ancestral','vitalidad_ancestral','pasos_ancestrales'].includes(n.id));
+
+                    html += `<div class="codex-block" style="border: none; margin-bottom: 4px;">`;
+                    html += `<div class="codex-block-title" onclick="toggleCodexTalentCat('codex-prestige-stats')" style="font-size:0.85rem;padding:6px 10px;border-left:3px solid #fbbf24;">`;
+                    html += `<span>⚔️ Estadísticas Ancestrales</span>`;
+                    html += `<span class="arrow">▶</span>`;
+                    html += `</div>`;
+                    html += `<div class="codex-block-body" id="codex-prestige-stats">`;
+                    for (const n of statNodes) {
+                        const lvl = nodeLevels[n.id] || 0;
+                        const bonusPct = lvl * n.bonus * 100;
+                        const costNext = Math.floor(5 * Math.sqrt(lvl + 1));
+                        html += `<div class="codex-talent" style="margin-top:6px;">
+                            <div class="codex-talent-name">${n.label}</div>
+                            <div class="codex-talent-desc">+${(n.bonus * 100).toFixed(0)}% por nivel — Bonificación actual: +${bonusPct.toFixed(0)}%</div>
+                            <div class="codex-talent-levels">
+                                <span><b>Nivel actual:</b> ${lvl}</span>
+                                <span><b>Siguiente costo:</b> 🪶${costNext}</span>
+                            </div>
+                        </div>`;
+                    }
+                    html += `</div></div>`;
+
+                    // Multiplier nodes
+                    html += `<div class="codex-block" style="border: none; margin-bottom: 4px;">`;
+                    html += `<div class="codex-block-title" onclick="toggleCodexTalentCat('codex-prestige-mult')" style="font-size:0.85rem;padding:6px 10px;border-left:3px solid #a78bfa;">`;
+                    html += `<span>📈 Multiplicadores Globales</span>`;
+                    html += `<span class="arrow">▶</span>`;
+                    html += `</div>`;
+                    html += `<div class="codex-block-body" id="codex-prestige-mult">`;
+                    for (const n of multNodes) {
+                        const lvl = nodeLevels[n.id] || 0;
+                        const bonusPct = lvl * n.bonus * 100;
+                        const costNext = Math.floor(5 * Math.sqrt(lvl + 1));
+                        let effect = '';
+                        if (n.id === 'herencia_equipo') effect = '+5% a TODAS las stats (HP/ATK/DEF/AGI)';
+                        else if (n.id === 'talento_innato') effect = '+5% daño de DoTs y efectos de talentos';
+                        else if (n.id === 'sabiduria_eterna') effect = '+5% XP ganada';
+                        else if (n.id === 'fortuna_heroe') effect = '+5% chance de drop de equipo';
+                        else if (n.id === 'ciclo_legado') effect = '+5% 🪶 esencias al Renacer';
+                        else if (n.id === 'voluntad_heroe') effect = '+5% almas obtenidas';
+                        html += `<div class="codex-talent" style="margin-top:6px;">
+                            <div class="codex-talent-name">${n.label}</div>
+                            <div class="codex-talent-desc">${effect} — Bonificación actual: +${bonusPct.toFixed(0)}%</div>
+                            <div class="codex-talent-levels">
+                                <span><b>Nivel actual:</b> ${lvl}</span>
+                                <span><b>Siguiente costo:</b> 🪶${costNext}</span>
+                            </div>
+                        </div>`;
+                    }
+                    html += `</div></div>`;
                 }
                 html += `</div></div>`;
             }
