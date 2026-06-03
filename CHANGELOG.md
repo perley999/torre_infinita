@@ -2,6 +2,24 @@
 
 Todos los cambios notables en este proyecto.
 
+## [0.7.0] - 2026-06-03
+
+### Añadido
+- **Sistema de Renacer / Prestigio**: al alcanzar el piso 100, el jugador puede renacer para reiniciar su progreso a cambio de 🪶 Esencias de Legado.
+- **Árbol de Artefacto (10 nodos)**: estadísticas ancestrales (⚔️🛡️❤️🏃 +3%/nv) y multiplicadores globales (💍 Herencia, 💥 Talento Innato, 📖 Sabiduría, 🍀 Fortuna, 🪶 Ciclo del Legado, 💀 Voluntad +5%/nv).
+- **Abismo del Legado**: dungeon de 10 pisos que otorga 🪶 Esencias de Legado. 3 intentos/día. Desbloqueable al piso 100.
+- **Prestigio.md**: documentación completa del sistema de Prestigio.
+- **Codex actualizado**: nuevo bloque 🪶 Prestigio en el codex del juego con niveles actuales y costos dinámicos.
+- **Slot 3 de mazmorra**: "Abismo del Legado" ahora visible y seleccionable en la pantalla de selección de mazmorras post-piso 100.
+
+### Cambiado
+- **Dungeon spec**: especificación actualizada para incluir Slot 3 (Abismo del Legado) en la pantalla de selección.
+- **Migración de saves**: v4→v5 con nuevos campos `heroArtifact`, `hasRebirthed`, `dungeon.attemptsTodayLegacy`.
+
+### Corregido
+- `loadGame()` ahora restaura `metaState.heroArtifact` correctamente al cargar partida.
+- Abismo del Legado: ajustada fórmula de esencias, removidos drops de equipo, hardcap de 3 intentos/día sin extras pagos.
+
 ## [0.6.0] - 2026-06-02
 
 ### Añadido

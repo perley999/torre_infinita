@@ -1,57 +1,65 @@
 # Torre Infinita — Resumen del Proyecto
 
 ## Estado actual
-✅ MVP funcional en un solo archivo `index.html`
+✅ Juego completo en un solo archivo `Torre_Infinita.html` — ~7.000 líneas  
+✅ Versión: **0.7.0** — Prestigio/Renacimiento
 
 ## Decisiones de diseño
 
 ### Stack: Vanilla JS + HTML + CSS
 - **Por qué**: El juego es 90% estado → render. No necesita routing, componentes anidados, ni gestión de formularios.
 - **Patrón clave**: Estado central único + función `render()` que actualiza todo el DOM. Nunca tocar el DOM directamente fuera de render.
-- **Cuándo cambiar**: Si agregamos inventario con drag&drop, múltiples pantallas, o animaciones complejas, vale la pena migrar a un framework.
+- **Excepciones**: `spawnFloat()`, `flashElement()`, y el sistema de debuffs (actualizan DOM directamente por rendimiento).
 
 ### Balance centralizado (objeto BALANCE)
 - **Decisión**: Todos los números del juego viven en un solo objeto `BALANCE` al inicio del script.
-- **Por qué**: Permite re-balancear cambiando un solo lugar sin buscar valores hardcodeados. Inspirado en las prácticas de *Idle Idol* y GDC talks sobre idle games.
-- **Estructura**:
-  - `player` → stats base
-  - `levelUp` → flat bonuses por nivel de run (se siente cada subida)
-  - `metaUpgrades` → flat mínimo + percentual (escala con el juego)
-  - `enemy` → stats base y escalas exponenciales
-  - `equipment` → drop chances, rarezas, presupuesto
-  - `combat` → fórmula de velocidad, tick rate, daño mínimo
-  - `souls` → fórmula de recompensa
+- **Por qué**: Permite re-balancear cambiando un solo lugar sin buscar valores hardcodeados.
+- **Estructura actual**:
+  - `player` → stats base del héroe
+  - `levelUp` → tiered stat gain cada 50 niveles
+  - `metaUpgrades` → mejoras permanentes con almas (HP, ATK, DEF, AGI, almas/piso, crítico, bossDmg)
+  - `enemy` → stats base, tier scaling, jefes dinámicos P20+
+  - `equipment` → drop chances, rarezas, presupuesto logarítmico, maestrías
+  - `combat` → fórmula de velocidad, DR, caps, debuffs
+  - `souls` → fórmula de recompensa al morir
+  - `essence` → esencias (reforja, maximize, reroll)
+  - `enhance` → mejora de equipo (+10% por nivel, +1 a +10)
+  - `heroArtifact` → árbol de artefacto del Prestigio (10 nodos)
 
 ### Equipamiento con budget logarítmico
 - **Decisión**: El budget de stats por pieza usa `budgetBase × log2(floor + 1) × statMult(rareza)` en vez de lineal por piso.
-- **Por qué**: El modelo lineal (`floor × budgetPerFloor`) hacía que el equipo eclipsara TODA otra fuente de progresión. Un "Poco común" en piso 20 daba +140 ATK vs 10 ATK base. Con logaritmo, crece rápido al inicio pero se aplana naturalmente.
-- **Bug corregido**: El multiplicador anterior usaba `rarity.length` (longitud del string), haciendo que "Poco común" (12 letras) y "Legendario" (12 letras) tuvieran el mismo budget. Ahora usa `statMult` explícito: `[1.0, 1.5, 2.0, 3.0]`.
-- **Budget base**: 5 (ajustable desde `BALANCE.equipment.budgetBase`).
-- **Curva resultante**: Piso 1→5, Piso 10→17, Piso 50→28, Piso 100→33, Piso 200→38 (Poco común). El equipo aporta ~20-40% sobre stats totales, no 1000%.
+- **Budget base**: 5.
+- **Rarezas actuales**: Poco común (×1.0, 1 stat), Raro (×1.5, 2 stats + maestría Nv1), Épico (×2.0, 3 stats + maestría Nv2), Legendario (×3.0, 4 stats + maestría Nv3), Ancestral (×3.0, 4 stats + maestría Nv3 + enhance +15), Mítico (×4.0, 5 stats + maestría Nv4 fija + enhance +15).
+- **Maestrías**: 3 por slot, cada una con 4 niveles (Nv4 exclusivo de Mítico).
+- **Enhance**: +10% por nivel a TODAS las stats, máximo +10. Bonus stat en +5 y +10.
+- **Reforja**: 3🩸 aleatorio, 8🩸 elegido. Reroll de bonus stat: 5🩸.
 
-### Separación de responsabilidades de stats
-- **Niveles de run** = flat (impacto inmediato, siempre se nota)
-- **Meta progreso (almas)** = flat mínimo + percentual (early game se siente, late game escala)
-- **Equipamiento** = budget logarítmico × multiplicador de rareza (boost significativo pero no dominante)
+### Sistema de Esencias (🩸)
+- Drop 50% en enemigos normales, 100% en jefes.
+- Se usan para Reforjar maestrías, Maximizar equipo (enhance), y Rerolear bonus stat.
+- Persisten entre runs.
+
+### Sistema de Prestigio (🪶 — v0.7.0)
+- Renacer al piso 100: `🪶 = floor(sqrt(heroLevel) × max(maxFloor, 100) / 100)`.
+- Árbol de Artefacto con 10 nodos: 4 de stats (+3%/nv) y 6 multiplicadores (+5%/nv).
+- Abismo del Legado: dungeon de 10 pisos que da 🪶 adicionales.
+- Esencias de Legado persisten entre renacimientos.
 
 ### Combate por velocidad (no turnos alternos)
 - **Decisión**: Cada fighter tiene un timer que baja según su velocidad. Cuando llega a 0, ataca y se resetea.
-- **Fórmula**: `attackInterval = max(200, 2000 - (speed * 100))` (definida en `BALANCE.combat`)
+- **Fórmula**: `attackInterval = max(750, 3000 - (agi × 100))`.
+- **DR en stats**: crit (70/100), dodge (40/80), block (50/100), lifesteal (25/80), pen (50/100), critDmg (600/200), bossDmg (100/150).
 
-### Escalado exponencial de enemigos
-- **Decisión**: Enemigos normales ×1.10^piso (HP), ×1.08^piso (ATK)
-- **Jefes**: Cada 10 pisos, stats base más altos (HP×2) y escaladores ligeramente diferentes
-- **Por qué**: Los idle games necesitan números que crecen. Escalado lineal estanca el juego.
+### Escalado de enemigos (tier-based)
+- **Decisión**: Enemigos escalan por tier (cada 10 pisos) + sub-escala dentro del tier.
+- **Jefes**: Piso 10 con stats fijas. P20+ con escalado dinámico basado en stats del jugador.
 
-### Una sola moneda (almas)
-- **Decisión**: Solo almas para meta-progresión. Sin fragmentos, sin lab parts, sin contracts.
-- **Por qué**: Mantener foco en el MVP. Se pueden agregar más monedas después si el loop base es divertido.
+### Dos monedas + una premium
+- **💀 Almas**: moneda principal para mejoras permanentes.
+- **🩸 Esencias**: moneda secundaria para mejora de equipo (reforja, enhance).
+- **🪶 Esencias de Legado**: moneda premium del sistema de Prestigio.
 
-### Modal tutorial
-- **Decisión**: Overlay que aparece la primera vez (detectado con `localStorage`). Botón "?" siempre accesible.
-- **Por qué**: No ocupa espacio permanente, no rompe el layout, siempre disponible.
-
-## Estado del juego
+## Estado del juego actual
 
 ### Stats base del jugador
 | Stat | Valor |
@@ -59,59 +67,60 @@
 | HP | 100 |
 | ATK | 10 |
 | DEF | 5 |
-| SPD | 10 |
+| AGI | 10 |
 
-### Niveles de run (flat por level up)
-| Stat | Bonus por nivel |
-|------|-----------------|
-| HP | +8 |
-| ATK | +2 |
-| DEF | +2 |
-| AGI | +2 |
+### Sistema de Clases (v0.5.0)
+4 clases con stats por nivel de héroe, pasivas que escalan, y 3 especializaciones c/u (12 total):
+- ⚔️ Guerrero (Fuerza) — tanque, daño por escudo, daño cada 5 golpes
+- 🔮 Brujo (Sombras) — DoTs, alma, daño por debuff
+- 🗡️ Pícaro (Agilidad) — crítico, combo, evasión
+- 🧘 Monje (Equilibrio) — velocidad, curación, daño por velocidad
 
-### Mejoras permanentes (meta)
-| Mejora | Efecto | Costo base | Escala | Cap |
-|--------|--------|------------|--------|-----|
-| HP | +3 flat + 5% HP | 10 almas | ×1.5 | ∞ |
-| ATK | +2 flat + 5% ATK | 10 almas | ×1.5 | ∞ |
-| DEF | +1 flat + 5% DEF | 15 almas | ×1.5 | ∞ |
-| AGI | +2% AGI | 20 almas | ×1.6 | ∞ |
-| Almas/piso | +1 alma/piso | 25 almas | ×1.7 | ∞ |
-| Crítico | +2% Crítico | 30 almas | ×1.8 | 15 |
-| Drop | +5% Drop | 40 almas | ×2.0 | 10 |
+### Sistema de Talentos (37 talentos)
+5 bloques: Ofensivo (10), Defensivo (10), Estado (7), Sustain (5), Heroico (5).  
+3 niveles cada uno. Se eligen cada 5 pisos.
 
-### Equipamiento (budget logarítmico)
-| Rareza | statMult | Stats por pieza | Pasiva |
-|--------|----------|-----------------|--------|
-| Poco común | 1.0 | 1 stat | No |
-| Raro | 1.5 | 2 stats | No |
-| Épico | 2.0 | 2 stats | Sí |
-| Legendario | 3.0 | 3 stats | Sí |
+### Mazmorras (v0.6.0)
+- **Torre de los Ancestros**: N1 = piso 100, +10 por nivel. Drops de Ancestral y Mítico. 3 intentos/día.
+- **Abismo del Legado** (v0.7.0): 10 pisos, recompensa 🪶. 3 intentos/día.
+- **Cámara de las Runas**: 🔒 Próximamente.
 
-**Fórmula**: `budget = budgetBase(5) × log2(floor + 1) × statMult`
+### Persistencia
+- **localStorage** key: `torre_infinita_save_v1`
+- dataVersion v5 con migraciones automáticas.
 
 ### Enemigos
-- 8 nombres rotativos para enemigos normales
-- 6 nombres rotativos para jefes
-- Stats escalan exponencialmente por piso (ver `BALANCE.enemy`)
-- Jefe piso 10: HP 100, ATK 15, DEF 5 (requiere ~4 intentos con mejoras)
+- 8 nombres rotativos para enemigos normales.
+- 6 nombres rotativos para jefes.
+- Jefe P10 con stats fijas: HP 150, ATK 15, DEF 5.
+- Jefes P20+ con escalado dinámico basado en stats del jugador (primer intento).
 
 ## Pendientes / Ideas futuras
-- [ ] Persistencia con localStorage (almas y mejoras se pierden al recargar)
-- [x] Sistema de equipo con rarezas y budget logarítmico
+- [ ] 🔒 Cámara de las Runas — tercer dungeon
+- [ ] Recompensas AFK / offline
+- [ ] Segunda capa de Prestige (Transcender)
+- [ ] Habilidades activas / Barra de Rage
+- [ ] Mascotas / Compañeros
+- [ ] Eventos temporales / Temporadas
+- [ ] Torre del Caos (segundo modo)
+- [ ] Reroll de stats (Psiónico)
 - [ ] Daño flotante animado
-- [ ] Idle real (auto-advance cuando no estás)
-- [ ] Múltiples dungeons/torres con efectos diferentes
 - [ ] Logros que desbloquean buffs
-- [ ] Eventos simples entre pisos (cofre, trampa, descanso)
-- [ ] Guardar mejor piso alcanzado (high score)
+- [ ] Eventos entre pisos (cofre, trampa, descanso)
 - [ ] Animaciones de entrada/salida de pisos
 - [ ] Sonidos básicos
-- [ ] Spreadsheet/calculadora de balance para iterar rápido
+- [ ] Spreadsheet/calculadora de balance
 
 ## Archivos generados
 | Archivo | Propósito |
 |---------|-----------|
-| `index.html` | Juego completo funcional |
+| `Torre_Infinita.html` | Juego completo funcional |
+| `Talentos.md` | Referencia de los 37 talentos |
+| `Clases.md` | Referencia de clases y especializaciones |
+| `Maestrias.md` | Referencia de maestrías de equipo |
+| `Prestigio.md` | Documentación del sistema de Prestigio |
 | `PROMPT.md` | Prompt para replicar el MVP con otros modelos |
 | `PROYECTO.md` | Este resumen |
+| `README.md` | Documentación general |
+| `CHANGELOG.md` | Historial de versiones |
+| `AGENTS.md` | Contexto para IA |
