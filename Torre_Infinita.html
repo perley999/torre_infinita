@@ -247,6 +247,36 @@
         .codex-content::-webkit-scrollbar-track { background: #1a1a2e; border-radius: 3px; }
         .codex-content::-webkit-scrollbar-thumb { background: #3a3a5a; border-radius: 3px; }
 
+        /* ============================================
+           TUTORIAL MODAL
+           ============================================ */
+        .tutorial-modal { max-width: 520px; max-height: 85vh; display: flex; flex-direction: column; }
+        .tutorial-content {
+            flex: 1; overflow-y: auto; padding-right: 6px; text-align: left;
+            margin-bottom: 12px;
+        }
+        .tutorial-content::-webkit-scrollbar { width: 6px; }
+        .tutorial-content::-webkit-scrollbar-track { background: #1a1a2e; border-radius: 3px; }
+        .tutorial-content::-webkit-scrollbar-thumb { background: #3a3a5a; border-radius: 3px; }
+        .tutorial-section {
+            margin-bottom: 12px; padding: 10px 12px;
+            background: #1e1e3a; border-radius: 8px; border: 1px solid #2a2a4a;
+        }
+        .tutorial-section h3 {
+            margin: 0 0 5px 0; font-size: 0.88rem; color: #c084fc;
+        }
+        .tutorial-section p {
+            margin: 0 0 5px 0; font-size: 0.78rem; color: #d1d5db; line-height: 1.45;
+        }
+        .tutorial-section ul { margin: 0; padding-left: 16px; }
+        .tutorial-section li {
+            font-size: 0.75rem; color: #9ca3af; line-height: 1.55;
+        }
+        .tutorial-section code {
+            font-size: 0.72rem; color: #fbbf24; background: #11112a;
+            padding: 1px 5px; border-radius: 3px;
+        }
+
         .codex-block {
             margin-bottom: 16px;
         }
@@ -499,6 +529,8 @@
         .souls-display .value { font-size: 1.3rem; font-weight: 700; color: #c084fc; }
         .essence-item { display: flex; align-items: center; gap: 6px; color: #fca5a5; }
         .essence-item .essence-count { font-size: 1.3rem; font-weight: 700; color: #ef4444; }
+        .rune-powder .value { color: #d946ef; } /* rojo + lila = fucsia */
+        .legacy-essence .value { color: #d97706; } /* dorado + lila */
 
         /* ============================================
            EQUIPMENT
@@ -674,6 +706,71 @@
         .enhance-detail { text-align: center; margin: 8px 0; }
         .enhance-detail .enhance-level { font-size: 1.2rem; font-weight: 700; color: #3b82f6; }
         .enhance-detail .enhance-cost { font-size: 0.9rem; color: #c084fc; margin-top: 4px; }
+
+        /* ─── Rune modal styles ─────────────────────── */
+        .rune-section { margin-bottom: 16px; padding: 12px; background: #111118; border-radius: 10px; border: 1px solid #2a2a4a; }
+        .rune-section h3 { color: #a78bfa; font-size: 0.9rem; margin-bottom: 8px; }
+        .rune-section .desc { font-size: 0.75rem; color: #6b7280; margin-bottom: 8px; }
+        .rune-section .rune-slot-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 8px; margin-bottom: 4px; background: #1a1a2e; border-radius: 8px;
+            border: 1px solid #2a2a4a; font-size: 0.8rem;
+        }
+        .rune-section .rune-slot-row .rune-info { flex: 1; }
+        .rune-section .rune-slot-row .rune-info .rune-name { font-weight: 600; color: #e0e0e0; }
+        .rune-section .rune-slot-row .rune-info .rune-detail { font-size: 0.7rem; color: #9ca3af; }
+        .rune-section .rune-slot-row .rune-info .rune-detail .rarity-S { color: #a0a0a0; }
+        .rune-section .rune-slot-row .rune-info .rune-detail .rarity-SS { color: #fbbf24; }
+        .rune-section .rune-slot-row .rune-info .rune-detail .rarity-SSS { color: #ef4444; }
+        .rune-section .rune-slot-row .rune-actions { display: flex; gap: 4px; flex-shrink: 0; }
+        .rune-section .rune-action-btn {
+            background: #2a2a4a; border: 1px solid #3a3a5a; border-radius: 6px;
+            padding: 4px 10px; cursor: pointer; color: #e0e0e0; font-size: 0.7rem;
+            transition: all 0.15s ease; white-space: nowrap;
+        }
+        .rune-section .rune-action-btn:hover:not(:disabled) { background: #3a3a5a; border-color: #a78bfa; }
+        .rune-section .rune-action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .rune-section .rune-action-btn.primary { background: #1e3a5f; border-color: #3b82f6; }
+        .rune-section .rune-action-btn.primary:hover:not(:disabled) { background: #2a4a7a; }
+        .rune-section .rune-action-btn.danger { background: #3a1a1a; border-color: #ef4444; }
+        .rune-section .rune-action-btn.danger:hover:not(:disabled) { background: #5a2a2a; }
+        .rune-section .rune-action-btn .cost { font-size: 0.65rem; color: #c084fc; }
+        .rune-section .rune-action-btn .cost.souls { color: #9ca3af; }
+        .rune-fabricate-row { display: flex; gap: 8px; margin: 8px 0; }
+        .rune-fabricate-row .rune-fab-btn {
+            flex: 1; padding: 10px; border: 1px solid #3a3a5a; border-radius: 8px;
+            background: #2a2a4a; color: #e0e0e0; cursor: pointer; font-size: 0.8rem;
+            text-align: center; transition: all 0.15s ease;
+        }
+        .rune-fabricate-row .rune-fab-btn:hover { background: #3a3a5a; border-color: #a78bfa; }
+        .rune-fabricate-row .rune-fab-btn .fab-icon { font-size: 1.2rem; display: block; }
+        .rune-fabricate-row .rune-fab-btn .fab-label { font-weight: 600; display: block; }
+        .rune-fabricate-row .rune-fab-btn .fab-cost { font-size: 0.7rem; color: #c084fc; }
+        .rune-confirm-box {
+            text-align: center; padding: 12px; margin: 8px 0;
+            background: #1a1a2e; border-radius: 8px; border: 1px solid #3b82f6;
+        }
+        .rune-confirm-box .confirm-question { font-size: 0.85rem; color: #e0e0e0; margin-bottom: 8px; }
+        .rune-confirm-box .confirm-cost { font-size: 0.75rem; color: #c084fc; margin-bottom: 12px; }
+        .rune-confirm-box .confirm-btns { display: flex; gap: 8px; justify-content: center; }
+        .rune-confirm-box .confirm-btns button {
+            padding: 6px 20px; border-radius: 6px; border: 1px solid #3a3a5a;
+            cursor: pointer; font-size: 0.8rem; font-weight: 600; transition: all 0.15s ease;
+        }
+        .rune-confirm-box .confirm-btns .btn-confirm { background: #1e3a5f; color: #60a5fa; border-color: #3b82f6; }
+        .rune-confirm-box .confirm-btns .btn-confirm:hover { background: #2a4a7a; }
+        .rune-confirm-box .confirm-btns .btn-cancel { background: #3a1a1a; color: #ef4444; border-color: #ef4444; }
+        .rune-confirm-box .confirm-btns .btn-cancel:hover { background: #5a2a2a; }
+        .rune-empty { text-align: center; color: #6b7280; font-size: 0.8rem; padding: 8px; }
+        .rune-inv-item {
+            display: inline-block; padding: 6px 10px; margin: 2px;
+            background: #2a2a4a; border: 1px solid #3a3a5a; border-radius: 6px;
+            font-size: 0.75rem; color: #e0e0e0;
+        }
+        .rune-inv-item.block {
+            display: block; width: 100%; margin: 0 0 4px 0; text-align: left; cursor: pointer;
+        }
+        .rune-inv-item.block:hover { border-color: #a78bfa; background: #3a3a5a; }
 
         /* ============================================
            MODALS
@@ -1114,11 +1211,12 @@
             </div>
         </div>
 
-        <!-- Currency: Essence + Souls -->
+        <!-- Currency: Essence + Runes + Souls + Legacy -->
         <div class="souls-display">
             <span class="essence-item">🩸 Esencias <span class="essence-count" id="essence-count">0</span></span>
+            <span class="souls-item rune-powder" id="rune-powder-display" style="display:none;">🔮 Runas <span class="value" id="rune-powder-count">0</span></span>
             <span class="souls-item">💀 Almas <span class="value" id="souls-count">0</span></span>
-            <span class="souls-item" id="legacy-essence-display" style="display:none;">🪶 Legado <span class="value" id="legacy-essence-count">0</span></span>
+            <span class="souls-item legacy-essence" id="legacy-essence-display" style="display:none;">🪶 Legado <span class="value" id="legacy-essence-count">0</span></span>
         </div>
 
         <!-- Meta Upgrades -->
@@ -1145,14 +1243,130 @@
 
     <!-- Tutorial Modal -->
     <div class="modal-overlay" id="tutorial-overlay">
-        <div class="modal">
-            <h2>🗼 Bienvenido a la Torre Infinita</h2>
-            <p>Tu héroe sube una torre infinita. Combate automático, jefes cada 10 pisos y mejoras permanentes.</p>
-            <p><strong>Novedades en esta versión:</strong><br>
-            • Sistema de niveles (1-20) con mejoras automáticas por nivel.<br>
-            • Habilidades especiales en niveles 5, 10, 15, 20.<br>
-            • Equipo desbloqueado tras derrotar al primer jefe.<br>
-            • Estadísticas derivadas: Crítico, Bloqueo, Evasión.</p>
+        <div class="modal tutorial-modal">
+            <h2>🗼 Torre Infinita — Guía Completa</h2>
+            <div class="tutorial-content">
+                <div class="tutorial-section">
+                    <h3>⚔️ Combate</h3>
+                    <p>Combate automático por velocidad. Cada fighter ataca cuando su timer llega a 0. La DEF usa <b>diminishing returns</b>: nunca anula el daño por completo, pero cuanto más tenés, más eficiente es.</p>
+                    <ul>
+                        <li><b>ATK</b> — daño de ataque</li>
+                        <li><b>DEF</b> — reduce % del daño entrante</li>
+                        <li><b>AGI</b> — velocidad de ataque (mín 750ms)</li>
+                        <li><b>HP</b> — puntos de vida</li>
+                        <li><b>⚡ Crítico</b> — chance de golpe crítico (×1.5+), cap 70%</li>
+                        <li><b>💨 Evasión</b> — chance de esquivar ataques, cap 40%</li>
+                        <li><b>🛡️ Bloqueo</b> — reduce daño recibido, cap 50%</li>
+                        <li><b>🩸 Lifesteal</b> — curás al atacar, cap 25%</li>
+                        <li><b>🗡️ Penetración</b> — ignorás % de la DEF enemiga, cap 50%</li>
+                        <li><b>🔥 Daño de Jefe</b> — % extra contra jefes, cap 100%</li>
+                    </ul>
+                </div>
+
+                <div class="tutorial-section">
+                    <h3>💀 Progresión</h3>
+                    <p>Al morir, ganás <b>💀 Almas</b> según el piso alcanzado. Usalas para mejoras permanentes en la tienda (⬆️).</p>
+                    <ul>
+                        <li><b>HP/ATK/DEF/AGI</b> — +X% global a la stat</li>
+                        <li><b>❤️ Vitalidad</b> — +% HP adicional</li>
+                        <li><b>💀 Almas por piso</b> — más almas al morir</li>
+                        <li><b>⚡ Crítico</b> — +% crit chance flat (post-DR)</li>
+                        <li><b>🎒 Botín</b> — +% chance de drop de equipo</li>
+                    </ul>
+                    <p><b>🏅 Niveles de Héroe</b> (1-200): ganás XP automática por pisos superados. Cada nivel sube stats base. Al <b>Piso 50</b> desbloqueás la clase, al <b>100</b> la especialización.</p>
+                </div>
+
+                <div class="tutorial-section">
+                    <h3>📦 Equipo</h3>
+                    <p>Se desbloquea al derrotar al <b>Piso 10</b> (primer jefe). 3 slots con stats primarias y secundarias.</p>
+                    <ul>
+                        <li><b>🗡️ Arma</b> — ATK + secundarias (Crit, Lifesteal, PEN, CritDmg, BossDmg)</li>
+                        <li><b>🛡️ Armadura</b> — DEF + secundarias (HP, Dodge, HP Regen)</li>
+                        <li><b>💍 Anillo</b> — cualquier stat primaria + secundarias varias</li>
+                        <li><b>6 Rarezas</b>: Poco común → Raro → Épico → Legendario → Ancestral → Mítico</li>
+                        <li><b>⭐ Maestrías</b>: pasivas de equipo (Crítica, Vampírica, Furiosa, Bloqueo, Regenerativa, Resistente, Evasiva, Perforante, Afortunada)</li>
+                        <li><b>🔨 Mejora (Enhance)</b>: +10% a TODAS las stats del item (máx +10/+15). Bonus stat aleatorio en +5 y +10.</li>
+                        <li><b>🩸 Reforja</b>: cambiá la maestría gastando Esencias (3🩸 random, 8🩸 elegido)</li>
+                        <li><b>💎 Esencias</b>: dropean 50% en enemigos normales, 100% en jefes. Se usan en la Forja.</li>
+                    </ul>
+                </div>
+
+                <div class="tutorial-section">
+                    <h3>⚡ Talentos</h3>
+                    <p>Cada <b>5 pisos</b> elegís entre 3 opciones (Ofensivo, Defensivo, Estado/Sustain). Cada <b>20 pisos</b> también una opción Heroica adicional.</p>
+                    <ul>
+                        <li><b>37 talentos</b> en 5 bloques, 3 niveles cada uno</li>
+                        <li>Podés subir un talento hasta Nv.3 si lo volvés a elegir</li>
+                        <li>Se resetean al morir — ¡elegí según tu build!</li>
+                        <li>Consultá el 📖 <b>Codex</b> para la referencia completa</li>
+                    </ul>
+                </div>
+
+                <div class="tutorial-section">
+                    <h3>🏛️ Clases</h3>
+                    <p>Al llegar al <b>Piso 50</b> elegís una clase. Al <b>Piso 100</b> elegís una especialización.</p>
+                    <ul>
+                        <li><b>⚔️ Guerrero</b> (Fuerza): tanque, escudo, daño cada 5 golpes</li>
+                        <li><b>🔮 Brujo</b> (Sombras): DoTs, debuffs, daño por alma</li>
+                        <li><b>🗡️ Pícaro</b> (Agilidad): crítico, combo, evasión</li>
+                        <li><b>🧘 Monje</b> (Equilibrio): velocidad, curación, daño por velocidad</li>
+                        <li>Cada clase tiene <b>3 especializaciones</b> con pasivas únicas escalables</li>
+                    </ul>
+                </div>
+
+                <div class="tutorial-section">
+                    <h3>🏋️ Training</h3>
+                    <p>Desbloqueable al <b>Piso 30</b>. Modo de práctica sin riesgo: no hay talentos, no hay jefes, y al morir no perdés nada. Ideal para testear equipo y builds.</p>
+                </div>
+
+                <div class="tutorial-section">
+                    <h3>🏰 Mazmorras</h3>
+                    <p>Desbloqueables al <b>Piso 100</b>. 3 intentos gratis por día cada una. Se acceden desde el botón 🏰 Mazmorra.</p>
+                    <ul>
+                        <li><b>🏛️ Torre de los Ancestros</b>: farmeá equipo Ancestral y Mítico. Niveles escalables (N1=piso 100, +10 por nivel).</li>
+                        <li><b>🪶 Abismo del Legado</b>: obtené Esencias de Legado para el árbol de Prestigio. 10 pisos de combate.</li>
+                        <li><b>🔮 Cámara de las Runas</b>: combatí oleadas de enemigos para conseguir 🔮 Polvo de Runas. Usalo en la Forja para crear Runas.</li>
+                    </ul>
+                </div>
+
+                <div class="tutorial-section">
+                    <h3>🪶 Renacer (Prestigio)</h3>
+                    <p>Al <b>Piso 100</b> podés renacer desde el botón 🪶 Renacer. Reiniciás tu progreso (pisos, almas, equipo, talentos) a cambio de <b>🪶 Esencias de Legado</b>.</p>
+                    <ul>
+                        <li>🪶 = <code>√(nivelHéroe) × max(pisoMax, 100) / 100</code></li>
+                        <li><b>🌳 Árbol de Artefacto</b>: 10 nodos que otorgan stats y multiplicadores globales (+3% a +5% por nivel)</li>
+                        <li>Las esencias de legado <b>persisten</b> entre renacimientos</li>
+                    </ul>
+                </div>
+
+                <div class="tutorial-section">
+                    <h3>🔮 Runas</h3>
+                    <p>Sistema endgame en la Forja. Cada runa combina una <b>Condición</b> (cuándo se activa) con un <b>Efecto</b> (qué hace).</p>
+                    <ul>
+                        <li>Se fabrican en la Forja con 🔮 Polvo de Runas + 💀 Almas</li>
+                        <li>Se equipan en un slot del equipo (personaje)</li>
+                        <li>Condición y efecto se mejoran por separado (hasta SSS)</li>
+                        <li>Rarezas: <b>S</b> → <b>SS</b> → <b>SSS</b></li>
+                    </ul>
+                </div>
+
+                <div class="tutorial-section">
+                    <h3>🏆 Leaderboard</h3>
+                    <p>Cuando morís en modo torre, se guarda tu mejor piso histórico en el ranking local. Top 10 ordenado por piso. Accedé desde el botón 🏆 en el header.</p>
+                </div>
+
+                <div class="tutorial-section" style="border-color: #fbbf24;">
+                    <h3>💡 Tips para arrancar</h3>
+                    <ul>
+                        <li>Priorizá <b>AGI</b> al principio — atacar más rápido = más daño total</li>
+                        <li>No te obsesiones con el equipo hasta el Piso 30+</li>
+                        <li>Usá el <b>Training</b> para probar builds sin riesgo</li>
+                        <li>Los talentos se resetean al morir — experimentá sin miedo</li>
+                        <li>Guardá 💎 Esencias para mejorar equipo bueno, no cualquier drop</li>
+                        <li>El 📖 <b>Codex</b> tiene toda la data de talentos, clases y maestrías</li>
+                    </ul>
+                </div>
+            </div>
             <button class="modal-close" onclick="closeTutorial()">¡Entendido!</button>
         </div>
     </div>
@@ -1273,9 +1487,21 @@
             <div style="display:flex;flex-direction:column;gap:12px;margin:16px 0;">
                 <button class="action-btn training" onclick="showReforgeModal();closeForjaModal()" style="padding:12px;">🔨 Reforjar Maestría (3-8🩸)</button>
                 <button class="action-btn start" onclick="showMaximizeModal();closeForjaModal()" style="padding:12px;">⬆️ Maximizar Equipo (1-38🩸)</button>
+                <button class="action-btn start" onclick="showRuneModal();closeForjaModal()" style="padding:12px;">🔮 Runas</button>
                 <button class="action-btn rebirth" onclick="showArtifactTree();closeForjaModal()" style="padding:12px;">🌟 Árbol de Artefacto</button>
             </div>
             <button class="modal-close" onclick="closeForjaModal()">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- Rune Modal -->
+    <div class="modal-overlay" id="rune-overlay">
+        <div class="modal">
+            <h2>🔮 Runas</h2>
+            <div id="rune-content" style="margin:12px 0;max-height:65vh;overflow-y:auto;overflow-x:hidden;">
+                <p style="text-align:center;color:#9ca3af;">Cargando...</p>
+            </div>
+            <button class="modal-close" onclick="closeRuneModal()">Cerrar</button>
         </div>
     </div>
 
@@ -1453,6 +1679,19 @@
                 ],
                 costBase: 5,
             },
+
+            // --- RUNAS ---
+            runas: {
+                fabricateCost: { powder: 10, souls: 100 },
+                enhanceCostScale: 1.5,
+                enhanceMultPerLevel: 0.08,
+                rerollCosts: { random: { powder: 3, souls: 30 }, choose: { powder: 8, souls: 80 } },
+                rarityConfig: {
+                    S: { maxEnhance: 5, effectMult: 1.0, upgradeCost: null },
+                    SS: { maxEnhance: 10, effectMult: 1.5, upgradeCost: { powder: 25, souls: 250 } },
+                    SSS: { maxEnhance: 0, effectMult: 2.5, upgradeCost: { powder: 100, souls: 1000 } },
+                },
+            },
         };
 
         const SAVE_KEY = 'torre_infinita_save_v1';
@@ -1468,6 +1707,8 @@
             unlockedTraining: false,
             unlockedReforge: false,
             equipment: { weapon: null, armor: null, ring: null },
+            runePowder: 0,
+            runeInventory: {},
             upgrades: {},
             bossAttempted: [], // pisos de jefe YA intentados (persistente entre runs)
             bossStats: {},    // stats guardadas del PRIMER intento de cada jefe
@@ -1532,6 +1773,8 @@
                 hasRebirthed: metaState.hasRebirthed,
                 leaderboard: metaState.leaderboard,
                 dungeon: { ...metaState.dungeon },
+                runePowder: metaState.runePowder,
+                runeInventory: metaState.runeInventory,
             };
             for (const [key, u] of Object.entries(metaState.upgrades)) {
                 data.upgrades[key] = { level: u.level };
@@ -1572,6 +1815,8 @@
                 metaState.dungeon = data.dungeon ?? { unlockedLevels: [], attemptsToday: 0, lastAttemptDate: '', currentDifficulty: 0, currentFloor: 0, completedToday: false };
                 metaState.heroArtifact = data.heroArtifact ?? { nodes: {}, legacyEssence: 0, rebirthCount: 0 };
                 metaState.hasRebirthed = data.hasRebirthed ?? false;
+                metaState.runePowder = data.runePowder ?? 0;
+                metaState.runeInventory = data.runeInventory ?? {};
                 // Asegurar que todos los nodos del árbol existen (saves parciales)
                 if (BALANCE.heroArtifact) {
                     for (const n of BALANCE.heroArtifact.nodes) {
@@ -1631,6 +1876,19 @@
                     metaState.dataVersion = 5;
                     needsMigration = true;
                 }
+                // Migración v5→v6: runas en equipo
+                if (metaState.dataVersion < 6) {
+                    for (const slot of ['weapon', 'armor', 'ring']) {
+                        const item = metaState.equipment[slot];
+                        if (item && item.runas === undefined) {
+                            item.runas = null;
+                        }
+                    }
+                    metaState.runePowder = metaState.runePowder ?? 0;
+                    metaState.runeInventory = metaState.runeInventory ?? {};
+                    metaState.dataVersion = 6;
+                    needsMigration = true;
+                }
                 if (data.upgrades) {
                     for (const [key, saved] of Object.entries(data.upgrades)) {
                         if (metaState.upgrades[key]) {
@@ -1674,9 +1932,11 @@
             metaState.unlockedTraining = false;
             metaState.unlockedReforge = false;
             metaState.equipment = { weapon: null, armor: null, ring: null };
+            metaState.runePowder = 0;
+            metaState.runeInventory = {};
             metaState.bossAttempted = [];
             metaState.bossStats = {};
-            metaState.dataVersion = 5;
+            metaState.dataVersion = 6;
             metaState.heroLevel = 0;
             metaState.heroXp = 0;
             metaState.heroBonuses = { hp: 0, atk: 0, def: 0, agi: 0 };
@@ -1702,6 +1962,13 @@
             runState.runBonuses = { hp: 0, atk: 0, def: 0, agi: 0 };
             runState.enemy = null;
             runState.recap = initRecap();
+            runState.runeBuffs = [];
+            runState.runeCooldowns = {};
+            runState.runeConditionsTick = 0;
+            if (runState.enemy && runState.enemy._runeQuebrantarOrigDef !== undefined) {
+                runState.enemy.def = runState.enemy._runeQuebrantarOrigDef;
+                delete runState.enemy._runeQuebrantarOrigDef;
+            }
             document.getElementById('combat-log').innerHTML = '';
             addLog('🗼 Progreso borrado. Nueva run iniciada.', 'system');
             render();
@@ -1753,11 +2020,26 @@
             bossesKilledThisRun: 0,
             _staggerDmg: 0,
             _staggerTick: 0,
+            // Rune system
+            runeBuffs: [],
+            runeCooldowns: {},
+            runeConditionsTick: 0,
+            runeComboHits: 0,
+            runeJustDodged: false,
+            runeJustCritHit: false,
+            runeLastTickProc: 0,
+            runeDebuffsSinceProc: 0,
+            tickCount: 0,
             recap: null,
             // Dungeon mode
             dungeonMode: false,
             dungeonDifficulty: 0,
             legacyAbyssMode: false,
+            // Rune Chamber mode
+            runeChamberMode: false,
+            runeWave: 0,
+            runeAccumulatedPowder: 0,
+            runeChamberBosses: 0,
             artifactMult: { xp: 1, drop: 1, souls: 1, talentDmg: 1 },
         };
 
@@ -1959,6 +2241,62 @@
             ],
         };
 
+        // ─── RUNAS: condiciones y efectos ─────────────────
+        // Cada runa tiene una condición (trigger) y un efecto (acción).
+        // values: [S, SS, SSS] — valor base según rareza, luego escalado por enhance (× (1 + enhance * 0.08))
+
+        const RUNE_CONDITIONS = [
+            { id: 'golpe_seco', label: 'Golpe Seco', desc: 'Golpes consecutivos mismo enemigo',
+              values: [3, 2, 1], solve: 'checkGolpeSeco' },
+            { id: 'al_limite', label: 'Al Límite', desc: 'HP del jugador bajo el umbral',
+              values: [50, 60, 70], solve: 'checkAlLimite' },
+            { id: 'reflejos', label: 'Reflejos', desc: 'Esquivás o bloqueás un ataque',
+              values: [1, 1, 1], solve: 'checkReflejos' },
+            { id: 'cosecha', label: 'Cosecha', desc: 'Matás un enemigo (CD: ticks)',
+              values: [20, 15, 10], solve: 'checkCosecha' },
+            { id: 'castigo', label: 'Castigo', desc: 'Recibís golpe crítico (SSS: también >15% HP)',
+              values: [1, 1, 1], solve: 'checkCastigo' },
+            { id: 'ritmo', label: 'Ritmo', desc: 'Ticks de combate transcurridos',
+              values: [6, 5, 4], solve: 'checkRitmo' },
+            { id: 'tormenta', label: 'Tormenta', desc: 'Debuffs aplicados al enemigo',
+              values: [3, 2, 1], solve: 'checkTormenta' },
+            { id: 'presion', label: 'Presión', desc: 'Enemigo está bajo de HP',
+              values: [30, 40, 50], solve: 'checkPresion' },
+        ];
+
+        const RUNE_EFFECTS = [
+            { id: 'cortar', label: 'Cortar', desc: 'Sangrado %HP/tick ×3s',
+              values: [2, 3, 5], solve: 'applyCortar' },
+            { id: 'avalancha', label: 'Avalancha', desc: 'Multiplicador ATK 3s',
+              values: [1.3, 1.5, 1.8], solve: 'applyAvalancha' },
+            { id: 'muro', label: 'Muro', desc: 'Escudo %HP máx',
+              values: [12, 18, 25], solve: 'applyMuro' },
+            { id: 'pulso', label: 'Pulso', desc: 'Curación %HP',
+              values: [8, 12, 18], solve: 'applyPulso' },
+            { id: 'marca', label: 'Marca', desc: 'Vulnerabilidad +% daño 3s',
+              values: [15, 20, 30], solve: 'applyMarca' },
+            { id: 'cuchilla', label: 'Cuchilla', desc: 'Daño bonus %ATK',
+              values: [12, 18, 25], solve: 'applyCuchilla' },
+            { id: 'ventisca', label: 'Ventisca', desc: '-% velocidad enemigo 2s',
+              values: [20, 30, 40], solve: 'applyVentisca' },
+            { id: 'osmosis', label: 'Ósmosis', desc: 'Robás %HP del enemigo',
+              values: [5, 8, 12], solve: 'applyOsmosis' },
+            { id: 'coraza', label: 'Coraza', desc: '+%DEF 4s',
+              values: [25, 40, 60], solve: 'applyCoraza' },
+            { id: 'impetu', label: 'Ímpetu', desc: '+% velocidad ataque 3s',
+              values: [15, 22, 30], solve: 'applyImpetu' },
+        ];
+
+        // Helper: encontrar una condición por ID
+        function findRuneCondition(id) {
+            return RUNE_CONDITIONS.find(c => c.id === id) || null;
+        }
+
+        // Helper: encontrar un efecto por ID
+        function findRuneEffect(id) {
+            return RUNE_EFFECTS.find(e => e.id === id) || null;
+        }
+
         // ============================================
         // 3b. CLASES Y ESPECIALIZACIONES
         // ============================================
@@ -2126,6 +2464,686 @@
             if (!spec) return null;
             const vals = spec.eval(heroLevel);
             return key ? (vals[key] !== undefined ? vals[key] : vals) : vals;
+        }
+
+        // ════════════════════════════════════════════════
+        // SISTEMA DE RUNAS — Condiciones, Efectos y Helpers
+        // ════════════════════════════════════════════════
+
+        // ─── Helpers de valor ───────────────────────────────────
+
+        function getRuneEffectValue(effectId, rarity, enhance) {
+            const effect = findRuneEffect(effectId);
+            if (!effect) return 0;
+            const rarityIdx = { S: 0, SS: 1, SSS: 2 }[rarity] || 0;
+            const base = effect.values[rarityIdx] || 0;
+            return base * (1 + (enhance || 0) * BALANCE.runas.enhanceMultPerLevel);
+        }
+
+        function getRuneConditionValue(conditionId, rarity) {
+            const cond = findRuneCondition(conditionId);
+            if (!cond) return 0;
+            const rarityIdx = { S: 0, SS: 1, SSS: 2 }[rarity] || 0;
+            return cond.values[rarityIdx] || 0;
+        }
+
+        function getRuneMaxEnhance(rarity) {
+            const cfg = BALANCE.runas.rarityConfig[rarity];
+            return cfg ? cfg.maxEnhance : 5;
+        }
+
+        // ─── Condition trigger checks ───────────────────────────
+        // Cada condición recibe (player, enemy, tickCount, threshold) y retorna booleano.
+        // threshold = valor de la condición según rareza S/SS/SSS
+
+        function checkGolpeSeco(p, e, tickCount, threshold) {
+            // threshold: golpes consecutivos mismo enemigo (3/2/1)
+            // Usa runState.runeComboHits, se resetea si cambia enemigo o pasan 3s sin golpe
+            const hits = runState.runeComboHits || 0;
+            return hits > 0 && hits >= threshold;
+        }
+
+        function checkAlLimite(p, e, tickCount, threshold) {
+            // threshold: % HP del jugador (50/60/70)
+            if (!p || !p.maxHp) return false;
+            return (p.hp / p.maxHp) <= (threshold / 100);
+        }
+
+        function checkReflejos(p, e, tickCount, threshold) {
+            // Se activa cuando el jugador acaba de esquivar o bloquear
+            // runState.runeJustDodged se setea en combatTick al esquivar/bloquear
+            if (runState.runeJustDodged) {
+                runState.runeJustDodged = false;
+                return true;
+            }
+            return false;
+        }
+
+        function checkCosecha(p, e, tickCount, threshold) {
+            // threshold: CD en ticks (20/15/10)
+            // Se llama desde enemyDefeated con el cooldown apropiado
+            return true;
+        }
+
+        function checkCastigo(p, e, tickCount, threshold) {
+            // Se activa cuando recibís un golpe crítico
+            // SSS: también cuando el golpe supera 15% del HP máximo
+            if (runState.runeJustCritHit) {
+                runState.runeJustCritHit = false;
+                return true;
+            }
+            return false;
+        }
+
+        function checkRitmo(p, e, tickCount, threshold) {
+            // threshold: ticks transcurridos (6/5/4)
+            if (tickCount <= 0) return false;
+            const lastProc = runState.runeLastTickProc || 0;
+            if (tickCount - lastProc >= threshold) {
+                runState.runeLastTickProc = tickCount;
+                return true;
+            }
+            return false;
+        }
+
+        function checkTormenta(p, e, tickCount, threshold) {
+            // threshold: debuffs aplicados (3/2/1)
+            const applied = runState.runeDebuffsSinceProc || 0;
+            if (applied >= threshold) {
+                runState.runeDebuffsSinceProc = 0;
+                return true;
+            }
+            return false;
+        }
+
+        function checkPresion(p, e, tickCount, threshold) {
+            // threshold: % HP del enemigo (30/40/50)
+            if (!e || !e.maxHp) return false;
+            return (e.hp / e.maxHp) <= (threshold / 100);
+        }
+
+        // ─── Effect application functions ───────────────────────
+        // Cada efecto recibe (player, enemy, effectValue, runState, tickCount)
+        // effectValue = getRuneEffectValue(id, rarity, enhance)
+
+        function applyCortar(p, e, effectValue, rarity, enhance, tickCount) {
+            if (!e) return;
+            // effectValue: % maxHP per tick for 3s (S=2%, SS=3%, SSS=5% base × enhance)
+            applyDebuff({
+                id: 'rune_cortar',
+                type: 'dot',
+                dmgPctPerTick: effectValue,
+                ticks: 3,
+                maxStack: 1,
+                duration: 30,
+                ticksLeft: 3,
+            });
+            addLog(`🩸 Cortar: sangrado ${effectValue.toFixed(1)}%/tick ×3s`, 'rune');
+        }
+
+        function applyAvalancha(p, e, effectValue, rarity, enhance, tickCount) {
+            // effectValue: ATK multiplier 3s (×1.3/×1.5/×1.8 base × enhance)
+            runState.runeBuffs = runState.runeBuffs.filter(b => b.effectId !== 'avalancha');
+            runState.runeBuffs.push({
+                effectId: 'avalancha',
+                expireTick: tickCount + 30, // 3 seconds
+                value: effectValue,
+                type: 'atkMult',
+            });
+            addLog(`🗻 Avalancha: ATK ×${effectValue.toFixed(2)} por 3s`, 'rune');
+        }
+
+        function applyMuro(p, e, effectValue, rarity, enhance, tickCount) {
+            // effectValue: % de HP máximo como escudo (12/18/25% base × enhance)
+            const shieldAmount = Math.floor(p.maxHp * effectValue / 100);
+            runState.vitalShield += shieldAmount;
+            runState.shieldMax = (runState.shieldMax || 0) + shieldAmount;
+            addLog(`🧱 Muro: +${formatNum(shieldAmount)} escudo (${effectValue.toFixed(1)}% HP)`, 'rune');
+        }
+
+        function applyPulso(p, e, effectValue, rarity, enhance, tickCount) {
+            // effectValue: % de HP curado (8/12/18% base × enhance)
+            const heal = Math.floor(p.maxHp * effectValue / 100);
+            p.hp = Math.min(p.maxHp, p.hp + heal);
+            addLog(`💚 Pulso: +${formatNum(heal)} vida (${effectValue.toFixed(1)}%)`, 'rune');
+        }
+
+        function applyMarca(p, e, effectValue, rarity, enhance, tickCount) {
+            if (!e) return;
+            // effectValue: % daño extra recibido 3s (+15%/+20%/+30% base × enhance)
+            applyDebuff({
+                id: 'rune_marca',
+                type: 'vulnerability',
+                vulnPct: effectValue,
+                duration: 30,
+                ticksLeft: 30,
+            });
+            addLog(`🏷️ Marca: enemigo +${effectValue.toFixed(1)}% daño 3s`, 'rune');
+        }
+
+        function applyCuchilla(p, e, effectValue, rarity, enhance, tickCount) {
+            if (!e) return;
+            // effectValue: % de ATK como daño bonus (12/18/25% base × enhance)
+            const dmg = Math.max(1, Math.floor(p.atk * effectValue / 100));
+            e.hp = Math.max(0, e.hp - dmg);
+            addLog(`🗡️ Cuchilla: +${formatNum(dmg)} daño extra (${effectValue.toFixed(1)}% ATK)`, 'rune');
+        }
+
+        function applyVentisca(p, e, effectValue, rarity, enhance, tickCount) {
+            if (!e) return;
+            // effectValue: -% velocidad enemigo 2s (-20%/-30%/-40% base × enhance)
+            const slowPct = Math.min(80, effectValue);
+            if (!e._runeSlow) e._runeSlow = 0;
+            e._runeSlow = Math.max(e._runeSlow, slowPct);
+            // Store expiry tick to clear slow after 2s (20 ticks)
+            e._runeSlowExpire = tickCount + 20;
+            addLog(`❄️ Ventisca: enemigo ralentizado ${Math.floor(slowPct)}% por 2s`, 'rune');
+        }
+
+        function applyOsmosis(p, e, effectValue, rarity, enhance, tickCount) {
+            if (!e) return;
+            // effectValue: % del HP actual del enemigo robado (5/8/12% base × enhance)
+            const steal = Math.floor(e.hp * effectValue / 100);
+            if (steal > 0) {
+                e.hp = Math.max(0, e.hp - steal);
+                p.hp = Math.min(p.maxHp, p.hp + steal);
+                addLog(`💧 Ósmosis: robás ${formatNum(steal)} HP (${effectValue.toFixed(1)}%)`, 'rune');
+            }
+        }
+
+        function applyCoraza(p, e, effectValue, rarity, enhance, tickCount) {
+            // effectValue: +%DEF buff 4s (+25%/+40%/+60% base × enhance)
+            runState.runeBuffs = runState.runeBuffs.filter(b => b.effectId !== 'coraza');
+            runState.runeBuffs.push({
+                effectId: 'coraza',
+                expireTick: tickCount + 40, // 4 seconds
+                value: effectValue / 100,   // 0.25 / 0.40 / 0.60
+                type: 'defMult',
+            });
+            addLog(`🛡️ Coraza: DEF +${Math.floor(effectValue)}% por 4s`, 'rune');
+        }
+
+        function applyImpetu(p, e, effectValue, rarity, enhance, tickCount) {
+            // effectValue: +% velocidad ataque 3s (+15%/+22%/+30% base × enhance)
+            runState.runeBuffs = runState.runeBuffs.filter(b => b.effectId !== 'impetu');
+            runState.runeBuffs.push({
+                effectId: 'impetu',
+                expireTick: tickCount + 30, // 3 seconds
+                value: effectValue / 100,   // 0.15 / 0.22 / 0.30
+                type: 'atkSpd',
+            });
+            addLog(`💨 Ímpetu: velocidad ataque +${Math.floor(effectValue)}% por 3s`, 'rune');
+        }
+
+        // ─── Dispatcher de runas ───────────────────────────────
+        // Evalúa TODAS las runas equipadas y dispara efectos si las condiciones se cumplen
+
+        function processRuneConditions(p, e, tickCount) {
+            if (!p || !e) return;
+            const slots = ['weapon', 'armor', 'ring'];
+            for (const slot of slots) {
+                const item = metaState.equipment[slot];
+                if (!item || !item.runas || !item.runas.conditionId || !item.runas.effectId) continue;
+                const rn = item.runas;
+                const condDef = findRuneCondition(rn.conditionId);
+                const effDef = findRuneEffect(rn.effectId);
+                if (!condDef || !effDef) continue;
+
+                // Cosecha is handled entirely in enemyDefeated with its own cooldown
+                if (condDef.solve === 'checkCosecha') continue;
+
+                // Cooldown check
+                const cdKey = `${slot}_${rn.effectId}`;
+                if (runState.runeCooldowns[cdKey] && runState.runeCooldowns[cdKey] > tickCount) continue;
+
+                const threshold = getRuneConditionValue(rn.conditionId, rn.condRarity || rn.rarity);
+                const checkFnName = condDef.solve;
+                let conditionMet = false;
+
+                // Dispatch condition check
+                switch (checkFnName) {
+                    case 'checkGolpeSeco': conditionMet = checkGolpeSeco(p, e, tickCount, threshold); break;
+                    case 'checkAlLimite': conditionMet = checkAlLimite(p, e, tickCount, threshold); break;
+                    case 'checkReflejos': conditionMet = checkReflejos(p, e, tickCount, threshold); break;
+                    case 'checkCastigo': conditionMet = checkCastigo(p, e, tickCount, threshold); break;
+                    case 'checkRitmo': conditionMet = checkRitmo(p, e, tickCount, threshold); break;
+                    case 'checkTormenta': conditionMet = checkTormenta(p, e, tickCount, threshold); break;
+                    case 'checkPresion': conditionMet = checkPresion(p, e, tickCount, threshold); break;
+                }
+
+                if (!conditionMet) continue;
+
+                // Condition met: apply effect
+                const effectValue = getRuneEffectValue(rn.effectId, rn.effRarity || rn.rarity, rn.effEnhance ?? rn.enhance);
+                const applyFnName = effDef.solve;
+
+                switch (applyFnName) {
+                    case 'applyCortar': applyCortar(p, e, effectValue, rn.rarity, rn.enhance, tickCount); break;
+                    case 'applyAvalancha': applyAvalancha(p, e, effectValue, rn.rarity, rn.enhance, tickCount); break;
+                    case 'applyMuro': applyMuro(p, e, effectValue, rn.rarity, rn.enhance, tickCount); break;
+                    case 'applyPulso': applyPulso(p, e, effectValue, rn.rarity, rn.enhance, tickCount); break;
+                    case 'applyMarca': applyMarca(p, e, effectValue, rn.rarity, rn.enhance, tickCount); break;
+                    case 'applyCuchilla': applyCuchilla(p, e, effectValue, rn.rarity, rn.enhance, tickCount); break;
+                    case 'applyVentisca': applyVentisca(p, e, effectValue, rn.rarity, rn.enhance, tickCount); break;
+                    case 'applyOsmosis': applyOsmosis(p, e, effectValue, rn.rarity, rn.enhance, tickCount); break;
+                    case 'applyCoraza': applyCoraza(p, e, effectValue, rn.rarity, rn.enhance, tickCount); break;
+                    case 'applyImpetu': applyImpetu(p, e, effectValue, rn.rarity, rn.enhance, tickCount); break;
+                }
+
+                // Set cooldown: 2 seconds (20 ticks) default
+                runState.runeCooldowns[cdKey] = tickCount + 20;
+            }
+        }
+
+        // ─── Limpiar runeBuffs expirados ────────────────────────
+        function processRuneBuffs(tickCount) {
+            runState.runeBuffs = runState.runeBuffs.filter(b => {
+                if (b.expireTick && tickCount >= b.expireTick) {
+                    return false;
+                }
+                return true;
+            });
+        }
+
+        // ─── Fabricación ──────────────────────────────────────
+        function spendPowder(amount) {
+            if (metaState.runePowder < amount) return false;
+            metaState.runePowder -= amount;
+            saveGame();
+            render();
+            return true;
+        }
+
+        function spendSouls(amount) {
+            if (metaState.souls < amount) return false;
+            metaState.souls -= amount;
+            saveGame();
+            render();
+            return true;
+        }
+
+        function spendResources(powder, souls) {
+            if (metaState.runePowder < powder || metaState.souls < souls) return false;
+            metaState.runePowder -= powder;
+            metaState.souls -= souls;
+            saveGame();
+            render();
+            return true;
+        }
+
+        function fabricateRune(poolType) {
+            // poolType: 'condition' | 'effect'
+            const cost = BALANCE.runas.fabricateCost;
+            if (metaState.runePowder < cost.powder || metaState.souls < cost.souls) {
+                addLog(`❌ No tenés suficientes recursos (${cost.powder}🔮 + ${cost.souls}💀)`, 'system');
+                return null;
+            }
+
+            // Collect IDs the user already owns (inventory + equipped)
+            const ownedIds = new Set();
+            // From inventory
+            for (const r of Object.values(metaState.runeInventory)) {
+                if (poolType === 'condition' && r.conditionId) ownedIds.add(r.conditionId);
+                if (poolType === 'effect' && r.effectId) ownedIds.add(r.effectId);
+            }
+            // From equipped items
+            for (const slot of ['weapon', 'armor', 'ring']) {
+                const item = metaState.equipment[slot];
+                if (item && item.runas && item.runas.conditionId) {
+                    if (poolType === 'condition') ownedIds.add(item.runas.conditionId);
+                    if (poolType === 'effect') ownedIds.add(item.runas.effectId);
+                }
+            }
+
+            let pool;
+            if (poolType === 'condition') {
+                pool = RUNE_CONDITIONS;
+            } else if (poolType === 'effect') {
+                pool = RUNE_EFFECTS;
+            } else {
+                return null;
+            }
+
+            // Filter to only unowned runes
+            const available = pool.filter(entry => !ownedIds.has(entry.id));
+            if (available.length === 0) {
+                const label = poolType === 'condition' ? '⚡ condiciones' : '✨ efectos';
+                addLog(`❌ Ya tenés todas las ${label} disponibles. No podés fabricar más.`, 'system');
+                return null;
+            }
+
+            const picked = available[Math.floor(Math.random() * available.length)];
+            const runa = {
+                conditionId: poolType === 'condition' ? picked.id : null,
+                effectId: poolType === 'effect' ? picked.id : null,
+                rarity: 'S',
+                enhance: 0,
+            };
+
+            // Generar key única para inventory
+            const key = `${runa.conditionId || '?'}_${runa.effectId || '?'}`;
+            metaState.runeInventory[key] = runa;
+            metaState.runePowder -= cost.powder;
+            metaState.souls -= cost.souls;
+            saveGame();
+            render();
+
+            const label = poolType === 'condition' ? 'Condición' : 'Efecto';
+            addLog(`✨ Runa fabricada: ${label} — ${picked.label} (S+0)`, 'loot');
+            return runa;
+        }
+
+        // ─── Enhance (reemplazado por enhanceEffectInSlot) ───
+
+        // ─── Mejora individual: Cálculos ──────────────────────
+        function calcCumulativeEnhanceCost(maxEnhance) {
+            let total = 0;
+            for (let i = 0; i < maxEnhance; i++) {
+                total += Math.floor(Math.pow(BALANCE.runas.enhanceCostScale, i));
+            }
+            return total;
+        }
+
+        // ─── Mejora individual: Efecto en inventario ──────────
+        function enhanceEffectInInventory(key) {
+            const runa = metaState.runeInventory[key];
+            if (!runa || !runa.effectId) return false;
+
+            const maxEnh = getRuneMaxEnhance(runa.rarity);
+            if (runa.enhance >= maxEnh) {
+                addLog(`✅ Efecto ya está al máximo (+${maxEnh}) para rareza ${runa.rarity}`, 'system');
+                return false;
+            }
+
+            const cost = Math.floor(Math.pow(BALANCE.runas.enhanceCostScale, runa.enhance));
+            if (metaState.runePowder < cost) {
+                addLog(`❌ No tenés suficiente polvo (${cost}🔮)`, 'system');
+                return false;
+            }
+
+            metaState.runePowder -= cost;
+            runa.enhance++;
+            saveGame();
+            render();
+            const def = findRuneEffect(runa.effectId);
+            addLog(`⬆️ ${def ? def.label : 'Efecto'} +${runa.enhance} (${cost}🔮)`, 'system');
+            return true;
+        }
+
+        function upgradeEffectInInventory(key) {
+            const runa = metaState.runeInventory[key];
+            if (!runa || !runa.effectId) return false;
+
+            const currentMax = getRuneMaxEnhance(runa.rarity);
+            if (runa.enhance < currentMax) {
+                const def = findRuneEffect(runa.effectId);
+                addLog(`❌ Necesitás +${currentMax} para subir rareza (actual: +${runa.enhance})`, 'system');
+                return false;
+            }
+
+            let targetRarity;
+            if (runa.rarity === 'S') {
+                targetRarity = 'SS';
+            } else if (runa.rarity === 'SS') {
+                targetRarity = 'SSS';
+            } else {
+                addLog(`✅ Efecto ya es SSS — rareza máxima`, 'system');
+                return false;
+            }
+
+            const upgradeCost = BALANCE.runas.rarityConfig[targetRarity]?.upgradeCost;
+            if (!upgradeCost) return false;
+
+            if (metaState.runePowder < upgradeCost.powder || metaState.souls < upgradeCost.souls) {
+                addLog(`❌ No tenés suficientes recursos (${upgradeCost.powder}🔮 + ${upgradeCost.souls}💀)`, 'system');
+                return false;
+            }
+
+            metaState.runePowder -= upgradeCost.powder;
+            metaState.souls -= upgradeCost.souls;
+            runa.rarity = targetRarity;
+            runa.enhance = 0;
+            saveGame();
+            render();
+            const def = findRuneEffect(runa.effectId);
+            addLog(`⬆️ ${def ? def.label : 'Efecto'} subido a ${targetRarity}`, 'loot');
+            return true;
+        }
+
+        // ─── Mejora individual: Condición en inventario ────────
+        function upgradeConditionRarity(key) {
+            const runa = metaState.runeInventory[key];
+            if (!runa || !runa.conditionId) return false;
+
+            let targetRarity;
+            if (runa.rarity === 'S') {
+                targetRarity = 'SS';
+            } else if (runa.rarity === 'SS') {
+                targetRarity = 'SSS';
+            } else {
+                addLog(`✅ Condición ya es SSS — rareza máxima`, 'system');
+                return false;
+            }
+
+            // Costo acumulado: enhance total de la rareza actual + upgrade cost
+            const currentMaxEnh = getRuneMaxEnhance(runa.rarity);
+            const enhanceTotal = calcCumulativeEnhanceCost(currentMaxEnh);
+            const upgradeCost = BALANCE.runas.rarityConfig[targetRarity]?.upgradeCost;
+            if (!upgradeCost) return false;
+
+            const totalPowder = enhanceTotal + upgradeCost.powder;
+            const totalSouls = upgradeCost.souls;
+
+            if (metaState.runePowder < totalPowder || metaState.souls < totalSouls) {
+                addLog(`❌ No tenés suficientes recursos (${totalPowder}🔮 + ${totalSouls}💀)`, 'system');
+                return false;
+            }
+
+            metaState.runePowder -= totalPowder;
+            metaState.souls -= totalSouls;
+            runa.rarity = targetRarity;
+            runa.enhance = 0;
+            saveGame();
+            render();
+            const def = findRuneCondition(runa.conditionId);
+            addLog(`⬆️ ${def ? def.label : 'Condición'} subida a ${targetRarity}`, 'loot');
+            return true;
+        }
+
+        // ─── Mejora individual: Efecto equipado ─────────────────
+        function enhanceEffectInSlot(slot) {
+            const item = metaState.equipment[slot];
+            if (!item || !item.runas || !item.runas.conditionId) return false;
+            const rn = item.runas;
+
+            const effRarity = rn.effRarity || rn.rarity;
+            const effEnh = rn.effEnhance ?? rn.enhance;
+            const maxEnh = getRuneMaxEnhance(effRarity);
+            if (effEnh >= maxEnh) {
+                addLog(`✅ Efecto ya está al máximo (+${maxEnh}) para rareza ${effRarity}`, 'system');
+                return false;
+            }
+            const cost = Math.floor(Math.pow(BALANCE.runas.enhanceCostScale, effEnh));
+            if (metaState.runePowder < cost) {
+                addLog(`❌ No tenés suficiente polvo (${cost}🔮)`, 'system');
+                return false;
+            }
+            metaState.runePowder -= cost;
+            rn.effEnhance = effEnh + 1;
+            rn.enhance = rn.effEnhance; // combined enhance = effect enhance
+            saveGame();
+            render();
+            const effDef = findRuneEffect(rn.effectId);
+            addLog(`⬆️ ${effDef ? effDef.label : 'Efecto'} +${rn.effEnhance} en ${slot} (${cost}🔮)`, 'system');
+            return true;
+        }
+
+        // ─── Mejora individual: rareza de condición equipada ────
+        function upgradeConditionInSlot(slot) {
+            const item = metaState.equipment[slot];
+            if (!item || !item.runas || !item.runas.conditionId) return false;
+            const rn = item.runas;
+
+            const condRarity = rn.condRarity || rn.rarity;
+            let targetRarity;
+            if (condRarity === 'S') {
+                targetRarity = 'SS';
+            } else if (condRarity === 'SS') {
+                targetRarity = 'SSS';
+            } else {
+                addLog(`✅ Condición ya es SSS — rareza máxima`, 'system');
+                return false;
+            }
+            // Costo acumulado: enhance total de la rareza actual + upgrade cost
+            const currentMaxEnh = getRuneMaxEnhance(condRarity);
+            const enhanceTotal = calcCumulativeEnhanceCost(currentMaxEnh);
+            const upgradeCost = BALANCE.runas.rarityConfig[targetRarity]?.upgradeCost;
+            if (!upgradeCost) return false;
+            const totalPowder = enhanceTotal + upgradeCost.powder;
+            if (metaState.runePowder < totalPowder || metaState.souls < upgradeCost.souls) {
+                addLog(`❌ No tenés suficientes recursos (${totalPowder}🔮 + ${upgradeCost.souls}💀)`, 'system');
+                return false;
+            }
+            metaState.runePowder -= totalPowder;
+            metaState.souls -= upgradeCost.souls;
+            rn.condRarity = targetRarity;
+            rn.rarity = computeRuneRarity(rn.condRarity, rn.effRarity || rn.rarity);
+            saveGame();
+            render();
+            const condDef = findRuneCondition(rn.conditionId);
+            addLog(`⬆️ ${condDef ? condDef.label : 'Condición'} subida a ${targetRarity} en ${slot}`, 'loot');
+            return true;
+        }
+
+        // ─── Mejora individual: rareza de efecto equipado ───────
+        function upgradeEffectInSlot(slot) {
+            const item = metaState.equipment[slot];
+            if (!item || !item.runas || !item.runas.conditionId) return false;
+            const rn = item.runas;
+
+            const effRarity = rn.effRarity || rn.rarity;
+            const effEnh = rn.effEnhance ?? rn.enhance;
+            let targetRarity;
+            if (effRarity === 'S') {
+                targetRarity = 'SS';
+            } else if (effRarity === 'SS') {
+                targetRarity = 'SSS';
+            } else {
+                addLog(`✅ Efecto ya es SSS — rareza máxima`, 'system');
+                return false;
+            }
+            const requireMax = getRuneMaxEnhance(effRarity);
+            if (effEnh < requireMax) {
+                addLog(`❌ Necesitás +${requireMax} para subir rareza (actual: +${effEnh})`, 'system');
+                return false;
+            }
+            const upgradeCost = BALANCE.runas.rarityConfig[targetRarity]?.upgradeCost;
+            if (!upgradeCost) return false;
+            if (metaState.runePowder < upgradeCost.powder || metaState.souls < upgradeCost.souls) {
+                addLog(`❌ No tenés suficientes recursos (${upgradeCost.powder}🔮 + ${upgradeCost.souls}💀)`, 'system');
+                return false;
+            }
+            metaState.runePowder -= upgradeCost.powder;
+            metaState.souls -= upgradeCost.souls;
+            rn.effRarity = targetRarity;
+            rn.effEnhance = 0;
+            rn.enhance = 0;
+            rn.rarity = computeRuneRarity(rn.condRarity || rn.rarity, rn.effRarity);
+            saveGame();
+            render();
+            const effDef = findRuneEffect(rn.effectId);
+            addLog(`⬆️ ${effDef ? effDef.label : 'Efecto'} subido a ${targetRarity} en ${slot}`, 'loot');
+            return true;
+        }
+
+        // ─── Helper: combina rarezas ──────────────────────────
+        function computeRuneRarity(condRarity, effRarity) {
+            const order = { 'S': 0, 'SS': 1, 'SSS': 2 };
+            return order[condRarity] >= order[effRarity] ? condRarity : effRarity;
+        }
+
+        // ─── Equipar y Desequipar ─────────────────────────────
+
+        function isRuneCombinationUnique(conditionId, effectId, excludeSlot) {
+            const slots = ['weapon', 'armor', 'ring'];
+            for (const slot of slots) {
+                if (slot === excludeSlot) continue;
+                const item = metaState.equipment[slot];
+                if (item && item.runas && item.runas.conditionId) {
+                    if (item.runas.conditionId === conditionId && item.runas.effectId === effectId) {
+                        return false; // Combination already exists in another slot
+                    }
+                }
+            }
+            return true;
+        }
+
+        function equipRune(slot, conditionId, effectId) {
+            const item = metaState.equipment[slot];
+            if (!item) {
+                addLog(`❌ No hay equipo en ${slot}`, 'system');
+                return false;
+            }
+
+            // Check unique combination
+            if (!isRuneCombinationUnique(conditionId, effectId, slot)) {
+                addLog(`❌ Esta combinación de runa ya está equipada en otra pieza`, 'system');
+                return false;
+            }
+
+            // Remove from inventory
+            const invKey = `${conditionId}_${effectId}`;
+            const invRuna = metaState.runeInventory[invKey];
+            if (!invRuna) {
+                addLog(`❌ Runa no encontrada en el inventario`, 'system');
+                return false;
+            }
+
+            delete metaState.runeInventory[invKey];
+
+            // Assign to equipment slot
+            item.runas = {
+                conditionId: invRuna.conditionId,
+                effectId: invRuna.effectId,
+                rarity: invRuna.rarity || 'S',
+                enhance: invRuna.enhance || 0,
+            };
+
+            saveGame();
+            render();
+            const condDef = findRuneCondition(conditionId);
+            const effDef = findRuneEffect(effectId);
+            addLog(`🔮 Runa equipada: ${condDef ? condDef.label : '?'} → ${effDef ? effDef.label : '?'}`, 'loot');
+            return true;
+        }
+
+        function unequipRune(slot) {
+            const item = metaState.equipment[slot];
+            if (!item || !item.runas || !item.runas.conditionId) {
+                addLog(`❌ No hay runa equipada en ${slot}`, 'system');
+                return false;
+            }
+
+            const rn = item.runas;
+            // Add back to inventory
+            const key = `${rn.conditionId}_${rn.effectId}`;
+            metaState.runeInventory[key] = {
+                conditionId: rn.conditionId,
+                effectId: rn.effectId,
+                rarity: rn.rarity,
+                enhance: rn.enhance,
+                // Preserve individual component states (fallback for old saves)
+                condRarity: rn.condRarity || rn.rarity,
+                effRarity: rn.effRarity || rn.rarity,
+                effEnhance: rn.effEnhance || rn.enhance,
+            };
+
+            // Remove from equipment
+            item.runas = null;
+            saveGame();
+            render();
+            addLog(`🔮 Runa desequipada de ${slot}`, 'system');
+            return true;
         }
 
         // ============================================
@@ -2304,6 +3322,25 @@
             const voluntadLvl = artifact.nodes.voluntad_heroe || 0;
             const soulsMult = 1 + voluntadLvl * 0.05;
 
+            // ─── RUNE SYSTEM BUFFS ───────────────────────────────
+            // Rune buffs are applied post-meta to simulate temporary combat buffs
+            // atkMult (Avalancha): multiplies ATK
+            // atkFlat (Drenaje): adds flat ATK
+            // defMult (Coraza): multiplies DEF
+            if (runState.runeBuffs && runState.runeBuffs.length > 0) {
+                for (const buff of runState.runeBuffs) {
+                    if (buff.type === 'atkMult' && buff.value > 0) {
+                        atk = Math.floor(atk * buff.value);
+                    }
+                    if (buff.type === 'atkFlat' && buff.value > 0) {
+                        atk += Math.floor(buff.value);
+                    }
+                    if (buff.type === 'defMult' && buff.value > 0) {
+                        def = Math.floor(def * (1 + buff.value));
+                    }
+                }
+            }
+
             return {
                 maxHp: Math.floor(hp),
                 atk: Math.floor(atk),
@@ -2369,6 +3406,11 @@
             if (quemadura && quemadura.originalAtk !== undefined && runState.enemy) {
                 runState.enemy.atk = quemadura.originalAtk;
             }
+            // Restore DEF if runa Quebrantar was active
+            if (runState.enemy && runState.enemy._runeQuebrantarOrigDef !== undefined) {
+                runState.enemy.def = runState.enemy._runeQuebrantarOrigDef;
+                delete runState.enemy._runeQuebrantarOrigDef;
+            }
             runState.enemyDebuffs = [];
             runState._staggerDmg = 0;
             runState._staggerTick = 0;
@@ -2413,11 +3455,20 @@
                     existing.ticksLeft = def.ticksLeft;
                     existing.duration = def.duration;
                 }
+                // Tormenta tracking on refresh (skip rune-originated debuffs)
+                if (def.id && !def.id.startsWith('rune_')) {
+                    runState.runeDebuffsSinceProc = (runState.runeDebuffsSinceProc || 0) + 1;
+                }
                 return;
             }
 
             // Nuevo debuff
             runState.enemyDebuffs.push(applyMaestroTicks({ ...def }));
+
+            // Tormenta tracking: increment debuff counter for rune conditions (skip rune-originated debuffs)
+            if (def.id && !def.id.startsWith('rune_')) {
+                runState.runeDebuffsSinceProc = (runState.runeDebuffsSinceProc || 0) + 1;
+            }
         }
 
         // T5 — processDebuffs()
@@ -2813,7 +3864,48 @@
 
             // ─── DUNGEON MODE: enemy stats ─────────────────
             let eStats;
-            if (runState.dungeonMode) {
+            if (runState.dungeonMode && runState.runeChamberMode) {
+                // Rune Chamber: scale enemies by wave number and player power
+                eStats = calcRuneChamberEnemyStats(runState.runeWave || 1, stats);
+                runState.enemy = {
+                    ...eStats,
+                    maxHp: eStats.hp,
+                    attackTimer: speedToInterval(eStats.agi),
+                    name: eStats.isBoss
+                        ? BOSS_NAMES[Math.floor(((runState.runeWave || 1) / 10 - 1) % BOSS_NAMES.length)]
+                        : ENEMY_NAMES[Math.floor(((runState.runeWave || 1) - 1) % ENEMY_NAMES.length)],
+                };
+                // Apply shields etc.
+                const tl = runState.talentLevels || {};
+                const t2 = (id) => tl[id] || 0;
+                if (t2('escudo_vital') > 0) {
+                    const shieldPct = TALENT_POOL.defensivo.find(x => x.id === 'escudo_vital').levels[t2('escudo_vital') - 1].shieldPct;
+                    const newShield = Math.floor(stats.maxHp * shieldPct / 100);
+                    const maxShield = Math.floor(stats.maxHp * 0.35);
+                    runState.vitalShield = Math.min(maxShield, (runState.vitalShield || 0) + newShield);
+                }
+                const totalShield = (runState.vitalShield || 0) + (runState.piedraShield?.amount || 0);
+                p.maxHp += totalShield;
+                p.hp += totalShield;
+                runState.shieldMax = totalShield;
+                runState.enemyDebuffs = [];
+                runState.enemyBlinded = false;
+                runState.frozenTicks = 0;
+                runState.freezeCooldown = 0;
+                runState.enemySlowTicks = 0;
+                runState.enemySlowPct = 0;
+                if (t2('desgaste') > 0) {
+                    const d = TALENT_POOL.estado.find(x => x.id === 'desgaste').levels[t2('desgaste') - 1];
+                    applyDebuff({ id: 'desgaste', type: 'stat_drain', stack: 0, maxStack: d.maxStack, perTick: d.perTick, ticksLeft: 9999, duration: 9999 });
+                }
+                isFirstAttack = true;
+                addLog(`── 🌊 Oleada ${runState.runeWave || 1} ${eStats.isBoss ? '— ⚔️ JEFE ⚔️' : ''} ──`, 'system');
+                render();
+                if (combatLoop) clearInterval(combatLoop);
+                combatLoop = setInterval(combatTick, BALANCE.combat.tickMs);
+                updateArena();
+                return;
+            } else if (runState.dungeonMode) {
                 const floorEquivalent = 100 + (runState.dungeonDifficulty - 1) * 10 + (runState.floor - 1);
                 const isBossDungeon = runState.floor === 10;
                 const isMinibossDungeon = runState.floor === 5;
@@ -2954,6 +4046,11 @@
             // T5 — Process debuffs at TOP of combatTick (pass warlockDotDmgPct for DoT boost, talentDmgMult)
             const talentDmgMult = runState.artifactMult?.talentDmg || 1;
             processDebuffs(currentLifesteal, warlockDotDmgPct, talentDmgMult);
+
+            // ─── RUNE SYSTEM: tick counter, conditions and buffs ───
+            runState.tickCount = (runState.tickCount || 0) + 1;
+            processRuneConditions(p, e, runState.tickCount);
+            processRuneBuffs(runState.tickCount);
 
             // ─── Stagger damage over time (Maestro Cervecero spec) ───
             if (runState._staggerDmg && runState._staggerDmg > 0) {
@@ -3103,6 +4200,7 @@
             // Reset classHits if enemy changed (new enemy)
             if (!runState._lastEnemyId || runState._lastEnemyId !== runState.enemy?.name + runState.floor) {
                 runState.classHits = 0;
+                runState.runeComboHits = 0;
                 runState._lastEnemyId = runState.enemy?.name + runState.floor;
             }
 
@@ -3119,6 +4217,12 @@
                 let attackInterval = speedToInterval(p.agi);
                 if (monkSpeedPct > 0) {
                     attackInterval = Math.floor(attackInterval * (1 - monkSpeedPct / 100));
+                    attackInterval = Math.max(750, attackInterval);
+                }
+                // Rune system: Ímpetu speed buff
+                const impetuBuff = runState.runeBuffs.find(b => b.effectId === 'impetu' && b.type === 'atkSpd');
+                if (impetuBuff) {
+                    attackInterval = Math.floor(attackInterval * (1 - impetuBuff.value));
                     attackInterval = Math.max(750, attackInterval);
                 }
                 p.attackTimer = attackInterval;
@@ -3397,6 +4501,9 @@
                         if (rc) rc.dmg.maestro_elemental += dmg - preDmg;
                     }
 
+                    // Rune system: track consecutive hits on same enemy (Golpe Seco)
+                    runState.runeComboHits = (runState.runeComboHits || 0) + 1;
+
                     e.hp -= dmg;
                     const dmgText = type === 'crit' ? `-${formatNum(dmg)}!` : `-${formatNum(dmg)}`;
                     spawnFloat('enemy-floats', dmgText, type);
@@ -3526,9 +4633,19 @@
             // Enemigo ataca
             e.attackTimer -= BALANCE.combat.tickMs;
             if (e.attackTimer <= 0) {
-                // Apply slow if active (Toque Helado)
+                // Apply slow if active (Toque Helado + Ventisca runa)
+                let enemySlowPct = 0;
                 if ((runState.enemySlowTicks || 0) > 0) {
-                    e.attackTimer = speedToInterval(e.agi) * (1 + (runState.enemySlowPct || 0) / 100);
+                    enemySlowPct = Math.max(enemySlowPct, (runState.enemySlowPct || 0));
+                }
+                if (e._runeSlow && e._runeSlowExpire && runState.tickCount <= e._runeSlowExpire) {
+                    enemySlowPct = Math.max(enemySlowPct, e._runeSlow);
+                } else {
+                    e._runeSlow = 0;
+                    e._runeSlowExpire = 0;
+                }
+                if (enemySlowPct > 0) {
+                    e.attackTimer = speedToInterval(e.agi) * (1 + enemySlowPct / 100);
                 } else {
                     e.attackTimer = speedToInterval(e.agi);
                 }
@@ -3550,6 +4667,7 @@
                     const dodgePotentialDmg = calcDamage(e.atk, p.def);
                     // Dodge check
                     if (Math.random() * 100 < totalDodge) {
+                        runState.runeJustDodged = true; // Reflejos trigger
                         spawnFloat('player-floats', 'MISS', 'miss');
                         if (runState.recap) {
                             runState.recap.mitigation.dodge_hits++;
@@ -3582,6 +4700,11 @@
                 // Crítico enemigo (solo bosses o variantes)
                 if (e.isBoss && Math.random() < 0.10) { dmg *= 2; type = 'crit'; }
 
+                // Castigo tracking: set flag if hit is crit OR deals >15% maxHP
+                if (type === 'crit' || (!e.isBoss && dmg > p.maxHp * 0.15)) {
+                    runState.runeJustCritHit = true;
+                }
+
                 // ─── PROTECCIÓN (spec): Muro de Escudo — DEF boost ───
                 let protectionDefBonus = 0;
                 if (metaState.playerSpec === 'protection' && metaState.heroLevel >= 100) {
@@ -3594,6 +4717,7 @@
 
                 // Block check
                 if (Math.random() * 100 < totalBlock) {
+                    runState.runeJustDodged = true; // Reflejos trigger (block also counts)
                     const preDmg = dmg;
                     dmg = Math.floor(dmg * 0.5);
                     type = 'block';
@@ -4033,10 +5157,31 @@
                 runState.bossesKilledThisRun = (runState.bossesKilledThisRun || 0) + 1;
             }
 
+            // ─── RUNE SYSTEM: Cosecha proc on kill ────────────
+            // Check all equipped runes for Cosecha condition
+            const cosechaSlots = ['weapon', 'armor', 'ring'];
+            for (const slot of cosechaSlots) {
+                const item = metaState.equipment[slot];
+                if (!item || !item.runas || !item.runas.conditionId || !item.runas.effectId) continue;
+                const rn = item.runas;
+                const condDef = findRuneCondition(rn.conditionId);
+                if (!condDef || condDef.solve !== 'checkCosecha') continue;
+                // Check cooldown
+                const cdKey = `${slot}_${rn.effectId}`;
+                if (runState.runeCooldowns[cdKey] && runState.runeCooldowns[cdKey] > (runState.tickCount || 0)) continue;
+                // Cosecha on kill: grant bonus XP based on enemy max HP
+                const effVal = getRuneEffectValue(rn.effectId, rn.effRarity || rn.rarity, rn.effEnhance ?? rn.enhance);
+                const bonusXp = Math.max(1, Math.floor((runState.enemy.maxHp || 100) * effVal / 10000));
+                addLog(`💀 Cosecha: +${formatNum(bonusXp)} XP extra`, 'rune');
+                // Set cooldown from condition values array (S=20, SS=15, SSS=10 ticks)
+                const cdTicks = getRuneConditionValue(rn.conditionId, rn.condRarity || rn.rarity);
+                runState.runeCooldowns[cdKey] = (runState.tickCount || 0) + (cdTicks || 20);
+            }
+
             // ─── DUNGEON MODE ──────────────────────────────
             if (runState.dungeonMode) {
                 // XP (con multiplicador de artefacto)
-                const baseXpGain = runState.floor;
+                const baseXpGain = runState.runeChamberMode ? (runState.runeWave || 1) : runState.floor;
                 const dXpMult = runState.artifactMult?.xp || 1;
                 const xpGain = Math.floor(baseXpGain * dXpMult);
                 runState.xp += xpGain;
@@ -4058,8 +5203,32 @@
                 // Souls display (nothing awarded in dungeon)
                 addLog(`+${formatNum(runState.floor * BALANCE.souls.baseMult)} 💀 (display)`, 'system');
 
-                // Drop (equipment drops only in Torre de los Ancestros, not in Legacy Abyss)
-                if (!runState.legacyAbyssMode) {
+                // ─── RUNE CHAMBER MODE ────────────────────────────
+                if (runState.runeChamberMode) {
+                    // Award rune powder on defeat
+                    const isBossWave = (runState.runeWave || 1) % 10 === 0;
+                    if (isBossWave) runState.runeChamberBosses = (runState.runeChamberBosses || 0) + 1;
+                    const wavePowder = awardRunePowder(runState.runeWave || 1, runState.runeChamberBosses || 0);
+                    const gained = wavePowder - (runState.runeAccumulatedPowder || 0);
+                    runState.runeAccumulatedPowder = wavePowder;
+                    if (gained > 0) {
+                        addLog(`🔮 +${gained} Polvo de Runas (total acumulado: ${wavePowder})`, 'loot');
+                    }
+
+                    // Advance to next wave with delay
+                    runState.runeWave = (runState.runeWave || 1) + 1;
+                    runState.furiaStacks = 0;
+                    addLog(`⏳ Siguiente oleada en breve...`, 'system');
+                    // 0.5s pause then new enemy
+                    setTimeout(() => {
+                        if (!runState.active) return;
+                        startCombat();
+                    }, 500);
+                    return;
+                }
+
+                // Drop (equipment drops only in Torre de los Ancestros, not in Legacy Abyss/Rune Chamber)
+                if (!runState.legacyAbyssMode && !runState.runeChamberMode) {
                     const isMiniboss = runState.floor === 5;
                     const isBossFloor = runState.floor === 10;
                     let dropItem = null;
@@ -4095,7 +5264,7 @@
                 }
 
                 // Floor 10: dungeon complete!
-                if (runState.floor >= 10) {
+                if (!runState.runeChamberMode && runState.floor >= 10) {
                     if (runState.legacyAbyssMode) {
                         addLog('🌌 ¡Abismo del Legado completado!', 'victory');
                         runState.active = false;
@@ -4119,10 +5288,13 @@
                     return;
                 }
 
-                // Next floor
-                runState.floor++;
-                runState.furiaStacks = 0;
-                checkLevelUp();
+                // Next floor (for non-rune-chamber dungeons)
+                if (!runState.runeChamberMode) {
+                    runState.floor++;
+                    runState.furiaStacks = 0;
+                    checkLevelUp();
+                    return;
+                }
                 return;
             }
 
@@ -4264,9 +5436,22 @@
 
             // Dungeon mode: return to dungeon selection (no souls/leaderboard/essence)
             if (runState.dungeonMode) {
-                addLog(`💀 Caíste en la mazmorra (piso ${runState.floor}).`, 'death');
+                // Rune Chamber: award accumulated powder on death
+                if (runState.runeChamberMode) {
+                    const finalPowder = runState.runeAccumulatedPowder || 0;
+                    if (finalPowder > 0) {
+                        metaState.runePowder += finalPowder;
+                        addLog(`🔮 Cámara terminada. Ganaste ${finalPowder} Polvo de Runas.`, 'loot');
+                        saveGame();
+                    } else {
+                        addLog(`🔮 Cámara terminada. No acumulaste Polvo de Runas.`, 'system');
+                    }
+                } else {
+                    addLog(`💀 Caíste en la mazmorra (piso ${runState.floor}).`, 'death');
+                }
                 runState.dungeonMode = false;
                 runState.legacyAbyssMode = false;
+                runState.runeChamberMode = false;
                 runState.dungeonDifficulty = 0;
                 render();
                 updateButtons();
@@ -4956,6 +6141,7 @@
                     </div>
                 </div>
                 `}
+                ${metaState.unlockedReforge ? renderRuneCharacterSection() : ''}
                 <div style="background:#1a1a2e;border-radius:12px;padding:12px;border:1px solid #2a2a4a;margin-bottom:12px;">
                     <h3 style="color:#a78bfa;font-size:0.95rem;margin-bottom:8px;">⚡ Pasivas</h3>`;
 
@@ -5023,6 +6209,79 @@
                 }
             }
             return total;
+        }
+
+        // Helper: render rune equipped display for Character Screen (6.4)
+        function renderRuneCharacterSection() {
+            const slots = ['weapon', 'armor', 'ring'];
+            const slotIcons = { weapon: '🗡️', armor: '🛡️', ring: '💍' };
+            const slotLabels = { weapon: 'Arma', armor: 'Armadura', ring: 'Anillo' };
+
+            const hasInventory = Object.keys(metaState.runeInventory).length > 0;
+            let hasAnyRuna = false;
+            let runeHTML = '';
+            for (const slot of slots) {
+                const item = metaState.equipment[slot];
+                if (item && item.runas && item.runas.conditionId) {
+                    // Show equipped rune
+                    hasAnyRuna = true;
+                    const rn = item.runas;
+                const condDef = findRuneCondition(rn.conditionId);
+                const effDef = findRuneEffect(rn.effectId);
+                const maxEnh = getRuneMaxEnhance(rn.rarity);
+                const isMax = rn.enhance >= maxEnh;
+                runeHTML += `
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;margin-bottom:4px;background:#111118;border-radius:8px;border:1px solid #2a2a4a;">
+                        <div style="flex:1;">
+                            <div style="font-weight:600;font-size:0.8rem;">${slotIcons[slot]} ${slotLabels[slot]}</div>
+                            <div style="font-size:0.7rem;color:#9ca3af;">
+                                ⚡ ${condDef ? condDef.label : '?'} → ✨ ${effDef ? effDef.label : '?'}
+                                <span class="rarity-${rn.rarity}" style="font-weight:600;">${rn.rarity}+${rn.enhance}</span>
+                                ${isMax ? ' <span style="color:#4ade80;">✅ MAX</span>' : ''}
+                            </div>
+                            <div style="font-size:0.6rem;color:#6b7280;margin-top:2px;">
+                                ${condDef ? condDef.desc : ''} → ${effDef ? effDef.desc : ''}
+                            </div>
+                        </div>
+                        <button class="rune-action-btn danger" onclick="doUnequipRune('${slot}')" style="font-size:0.7rem;">Desequipar</button>
+                    </div>
+                `;
+                }
+            }
+
+            // Add equip buttons for empty slots if there's inventory
+            for (const slot of slots) {
+                const item = metaState.equipment[slot];
+                if (!item || (item.runas && item.runas.conditionId)) continue;
+                const label = `${slotIcons[slot]} ${slotLabels[slot]}`;
+                runeHTML += `
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;margin-bottom:4px;background:#111118;border-radius:8px;border:1px solid #2a2a4a;opacity:0.6;">
+                        <div style="flex:1;">
+                            <div style="font-weight:600;font-size:0.8rem;">${label}</div>
+                            <div style="font-size:0.7rem;color:#6b7280;">Sin runa</div>
+                        </div>
+                        <button onclick="showRuneEquipPicker('${slot}')" style="background:transparent;border:1px solid #60a5fa;color:#60a5fa;border-radius:6px;padding:3px 10px;font-size:0.7rem;cursor:pointer;" ${hasInventory ? '' : 'disabled title="No tenés runas en inventario"'}>🔮 Equipar</button>
+                    </div>
+                `;
+                if (hasInventory) hasAnyRuna = true;
+            }
+
+            return `
+                <div style="background:#1a1a2e;border-radius:12px;padding:12px;border:1px solid #2a2a4a;margin-bottom:12px;">
+                    <h3 style="color:#a78bfa;font-size:0.95rem;margin-bottom:8px;">🔮 Runas</h3>
+                    ${hasAnyRuna ? runeHTML : '<div style="font-size:0.8rem;color:#6b7280;text-align:center;padding:8px;">No tenés runas equipadas. Conseguilas en la <b style="color:#a78bfa;cursor:pointer;" onclick="closeCharacterScreen();showDungeonSelection()">🔮 Cámara de las Runas</b>.</div>'}
+                    <div style="margin-top:8px;text-align:center;">
+                        <button onclick="showRuneModal()" style="background:transparent;border:1px solid #3b82f6;color:#60a5fa;border-radius:6px;padding:4px 12px;font-size:0.75rem;cursor:pointer;">🔮 Gestionar Runas</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function doUnequipRune(slot) {
+            unequipRune(slot);
+            if (runState.characterScreenActive) {
+                setTimeout(renderCharacterScreen, 50);
+            }
         }
 
         // ============================================
@@ -5400,6 +6659,13 @@ runState.furiaStacks = 0;
             runState.vitalShield = 0;
             runState.shieldMax = 0;
             runState.piedraShield = { amount: 0, ticksLeft: 0 };
+            runState.runeBuffs = [];
+            runState.runeCooldowns = {};
+            runState.runeConditionsTick = 0;
+            if (runState.enemy && runState.enemy._runeQuebrantarOrigDef !== undefined) {
+                runState.enemy.def = runState.enemy._runeQuebrantarOrigDef;
+                delete runState.enemy._runeQuebrantarOrigDef;
+            }
             metaState.hasRebirthed = false;
             runState.runStartTime = Date.now();
             runState.recap = initRecap();
@@ -5420,6 +6686,12 @@ runState.furiaStacks = 0;
         }
 
         function restartRun() {
+            // Award accumulated rune powder before clearing state (manual dungeon exit)
+            if (runState.runeChamberMode && (runState.runeAccumulatedPowder || 0) > 0) {
+                metaState.runePowder += runState.runeAccumulatedPowder;
+                addLog(`🔮 Cámara terminada. Ganaste ${runState.runeAccumulatedPowder} Polvo de Runas.`, 'loot');
+                saveGame();
+            }
             arenaIdle();
             if (combatLoop) clearInterval(combatLoop);
             runState.active = false; runState.floor = 1; runState.enemy = null;
@@ -5445,6 +6717,9 @@ runState.furiaStacks = 0;
             runState.vitalShield = 0;
             runState.shieldMax = 0;
             runState.piedraShield = { amount: 0, ticksLeft: 0 };
+            runState.runeBuffs = [];
+            runState.runeCooldowns = {};
+            runState.runeConditionsTick = 0;
             runState.recap = initRecap();
             runState.level = 0;
             runState.xp = 0;
@@ -5537,10 +6812,18 @@ runState.furiaStacks = 0;
                         <span class="slot-desc">Alcanzá el piso 100 para desbloquear</span>
                     </div>
                     `}
+                    ${metaState.unlockedReforge ? `
+                    <div class="dungeon-slot" onclick="startRuneChamberRun()">
+                        <span class="slot-title">🔮 Cámara de las Runas</span>
+                        <span class="slot-desc">Oleadas infinitas — Recompensa: 🔮 Polvo de Runas</span>
+                        <span class="slot-status">${Math.max(0, BALANCE.dungeon.dailyAttempts - metaState.dungeon.attemptsToday)}/${BALANCE.dungeon.dailyAttempts} intentos hoy</span>
+                    </div>
+                    ` : `
                     <div class="dungeon-slot locked">
                         <span class="slot-title">🔒 Cámara de las Runas</span>
-                        <span class="slot-desc">Próximamente</span>
+                        <span class="slot-desc">Alcanzá el piso 100 para desbloquear</span>
                     </div>
+                    `}
                 </div>
             `;
             document.getElementById('dungeon-overlay').classList.add('visible');
@@ -5669,13 +6952,20 @@ runState.furiaStacks = 0;
                 document.getElementById('boss-indicator').style.display = 'none';
             } else if (runState.dungeonMode) {
                 const diff = runState.dungeonDifficulty;
-                if (runState.legacyAbyssMode) {
+                if (runState.runeChamberMode) {
+                    const wave = runState.runeWave || 1;
+                    const isBossWave = wave % 10 === 0;
+                    document.getElementById('floor-number').textContent = `🔮 Cámara de las Runas — Oleada ${wave}`;
+                    const bossEl = document.getElementById('boss-indicator');
+                    if (isBossWave) {
+                        bossEl.textContent = '☠️ JEFE';
+                        bossEl.style.display = 'block';
+                    } else {
+                        bossEl.style.display = 'none';
+                    }
+                } else if (runState.legacyAbyssMode) {
                     document.getElementById('floor-number').textContent = `🌌 Abismo del Legado — Piso ${runState.floor}`;
-                } else {
-                    document.getElementById('floor-number').textContent = `🏰 Mazmorra N${diff} — Piso ${runState.floor}`;
-                }
-                const bossEl = document.getElementById('boss-indicator');
-                if (runState.legacyAbyssMode) {
+                    const bossEl = document.getElementById('boss-indicator');
                     if (runState.floor === 10) {
                         bossEl.textContent = '☠️ BOSS FINAL';
                         bossEl.style.display = 'block';
@@ -5685,14 +6975,18 @@ runState.furiaStacks = 0;
                     } else {
                         bossEl.style.display = 'none';
                     }
-                } else if (runState.floor === 10) {
-                    bossEl.textContent = '☠️ BOSS';
-                    bossEl.style.display = 'block';
-                } else if (runState.floor === 5) {
-                    bossEl.textContent = '⚠️ MINIBOSS';
-                    bossEl.style.display = 'block';
                 } else {
-                    bossEl.style.display = 'none';
+                    document.getElementById('floor-number').textContent = `🏰 Mazmorra N${diff} — Piso ${runState.floor}`;
+                    const bossEl = document.getElementById('boss-indicator');
+                    if (runState.floor === 10) {
+                        bossEl.textContent = '☠️ BOSS';
+                        bossEl.style.display = 'block';
+                    } else if (runState.floor === 5) {
+                        bossEl.textContent = '⚠️ MINIBOSS';
+                        bossEl.style.display = 'block';
+                    } else {
+                        bossEl.style.display = 'none';
+                    }
                 }
             } else {
                 document.getElementById('floor-number').textContent = `Piso ${runState.floor}`;
@@ -5899,6 +7193,13 @@ runState.furiaStacks = 0;
                 const hasLegacy = metaState.heroArtifact?.legacyEssence > 0 || metaState.unlockedReforge;
                 legacyDisplay.style.display = hasLegacy ? 'inline' : 'none';
                 legacyCount.textContent = formatNum(metaState.heroArtifact?.legacyEssence || 0);
+            }
+            const runePowderDisplay = document.getElementById('rune-powder-display');
+            const runePowderCount = document.getElementById('rune-powder-count');
+            if (runePowderDisplay && runePowderCount) {
+                const hasPowder = metaState.runePowder > 0 || metaState.unlockedReforge;
+                runePowderDisplay.style.display = hasPowder ? 'inline' : 'none';
+                runePowderCount.textContent = formatNum(metaState.runePowder || 0);
             }
 
             // Accumulated stats from leveling
@@ -6261,6 +7562,117 @@ runState.furiaStacks = 0;
             updateButtons();
         }
 
+        // ════════════════════════════════════════════════
+        // CÁMARA DE LAS RUNAS
+        // ════════════════════════════════════════════════
+
+        function startRuneChamberRun() {
+            if (runState.active) return;
+            checkDungeonDailyReset();
+
+            // Same attempt pool as regular dungeons
+            if (metaState.dungeon.attemptsToday >= BALANCE.dungeon.dailyAttempts) {
+                const paidCost = BALANCE.dungeon.soulCostBase * Math.pow(BALANCE.dungeon.soulCostMult, metaState.dungeon.attemptsToday - BALANCE.dungeon.dailyAttempts);
+                if (metaState.souls < paidCost) {
+                    addLog(`❌ No tenés suficientes almas para la Cámara (${paidCost} 💀)`, 'system');
+                    return;
+                }
+                metaState.souls -= paidCost;
+                addLog(`🪙 Pagaste ${paidCost} 💀 por un intento extra.`, 'system');
+            }
+
+            metaState.dungeon.attemptsToday++;
+            metaState.dungeon.currentDifficulty = 0;
+            metaState.dungeon.currentFloor = 0;
+            saveGame();
+            closeDungeonSelection();
+
+            // Setup run state for Rune Chamber
+            arenaIdle();
+            runState.runeBuffs = [];
+            runState.runeCooldowns = {};
+            runState.runeConditionsTick = 0;
+            runState.active = true;
+            runState.floor = 1;
+            runState.dungeonMode = true;
+            runState.runeChamberMode = true;
+            runState.legacyAbyssMode = false;
+            runState.dungeonDifficulty = 0;
+            runState.trainingMode = false;
+            runState.enemiesDefeated = 0;
+            runState.level = metaState.heroLevel;
+            runState.xp = metaState.heroXp;
+            runState.xpToNext = BALANCE.levelUp.xpScale * (runState.level || 1);
+            runState.runBonuses = { ...metaState.heroBonuses };
+            if (metaState.playerClass) {
+                const cb = calcularClassBonuses(runState.level, metaState.playerClass);
+                runState.runBonuses.hp += cb.hp;
+                runState.runBonuses.atk += cb.atk;
+                runState.runBonuses.def += cb.def;
+                runState.runBonuses.agi += cb.agi;
+            }
+            runState.characterScreenActive = false;
+            runState.classHits = 0;
+            runState.firstHitDone = false;
+            runState.nextHitMult = 1;
+            runState.dodgeStreak = 0;
+            runState.attackCounter = 0;
+            runState.demonHits = 0;
+            runState.demonActive = false;
+            runState.demonHitsLeft = 0;
+            runState.classComboStacks = 0;
+            runState.abilities = [];
+            runState.talentLevels = {};
+            runState.hasRevived = false;
+            runState.furiaStacks = 0;
+            runState.critMasteryCounter = 0;
+            runState.runeTapCounter = 0;
+            runState.reflejoBonus = 0;
+            runState.spellShieldCounter = 0;
+            runState.segundoAlientoUsed = false;
+            runState.bossesKilledThisRun = 0;
+            runState.enemyDebuffs = [];
+            runState.vitalShield = 0;
+            runState.shieldMax = 0;
+            runState.piedraShield = { amount: 0, ticksLeft: 0 };
+            runState.runeWave = 1;
+            runState.runeAccumulatedPowder = 0;
+            runState.runeChamberBosses = 0;
+            runState.runStartTime = Date.now();
+            runState.recap = initRecap();
+            document.getElementById('combat-log').innerHTML = '';
+            addLog(`🔮 Cámara de las Runas iniciada.`, 'system');
+            startCombat();
+            updateButtons();
+        }
+
+        function calcRuneChamberEnemyStats(waveNumber, playerStats) {
+            // Scale enemy based on player power + wave progression
+            // Wave 1: ~50% of player stats
+            // Wave 10: ~100% of player stats
+            // Wave 50: ~300% of player stats
+            // Boss every 10 waves: 1.5x stats
+            const isBoss = waveNumber % 10 === 0;
+            const waveMult = 0.5 + (waveNumber - 1) * 0.05; // 0.5 at wave 1, 1.0 at wave 11, 2.5 at wave 41
+            const bossMult = isBoss ? 1.5 : 1.0;
+            const mult = waveMult * bossMult;
+
+            return {
+                hp: Math.max(50, Math.floor(playerStats.maxHp * mult * (isBoss ? 2.0 : 1.0))),
+                atk: Math.max(5, Math.floor(playerStats.atk * mult)),
+                def: Math.max(1, Math.floor(playerStats.def * mult)),
+                agi: Math.max(5, Math.floor(playerStats.agi * Math.max(0.8, mult))),
+                isBoss: isBoss,
+                maxHp: Math.max(50, Math.floor(playerStats.maxHp * mult * (isBoss ? 2.0 : 1.0))),
+            };
+        }
+
+        function awardRunePowder(wave, bosses) {
+            // 1🔮 cada 3 oleadas, +1🔮 cada 5, +2🔮 bono jefe
+            let powder = Math.floor(wave / 3) + Math.floor(wave / 5) + bosses * 2;
+            return Math.max(0, powder);
+        }
+
         // ============================================
         // 7e. LEADERBOARD
         // ============================================
@@ -6320,6 +7732,491 @@ runState.furiaStacks = 0;
 
         function closeForjaModal() {
             document.getElementById('forja-overlay').classList.remove('visible');
+        }
+
+        // ============================================
+        // 7b. RUNAS — MODAL Y ACCIONES UI
+        // ============================================
+
+        let _runeModalStep = null; // 'main' | 'equip'
+        let _runeEquipSlot = null;
+
+        function showRuneModal() {
+            if (!metaState.unlockedReforge) return;
+            _runeModalStep = 'main';
+            _runeEquipSlot = null;
+            renderRuneModal();
+            document.getElementById('rune-overlay').classList.add('visible');
+        }
+
+        function closeRuneModal() {
+            document.getElementById('rune-overlay').classList.remove('visible');
+            _runeModalStep = null;
+            _runeEquipSlot = null;
+        }
+
+        function renderRuneModal() {
+            const content = document.getElementById('rune-content');
+
+            if (_runeModalStep === 'equip') {
+                content.innerHTML = renderRuneEquipPicker();
+                return;
+            }
+
+            const slots = ['weapon', 'armor', 'ring'];
+            const slotIcons = { weapon: '🗡️', armor: '🛡️', ring: '💍' };
+            const slotLabels = { weapon: 'Arma', armor: 'Armadura', ring: 'Anillo' };
+
+            // ── Section 1: Fabricar ──────────────────────
+            const fabricarHTML = `
+                <div class="rune-section">
+                    <h3>🔨 Fabricar Runa</h3>
+                    <div class="desc">Elegí fabricar una Condición o un Efecto. La runa se guarda en tu inventario para equipar después.</div>
+                    <div class="rune-fabricate-row">
+                        <div class="rune-fab-btn" onclick="showFabricateConfirm('condition')">
+                            <span class="fab-icon">⚡</span>
+                            <span class="fab-label">Condición</span>
+                            <span class="fab-cost">10🔮 + 100💀</span>
+                        </div>
+                        <div class="rune-fab-btn" onclick="showFabricateConfirm('effect')">
+                            <span class="fab-icon">✨</span>
+                            <span class="fab-label">Efecto</span>
+                            <span class="fab-cost">10🔮 + 100💀</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // ── Section 2: Mejorar (Enhance) — solo efectos ────
+            let enhanceHTML = '';
+            for (const slot of slots) {
+                const item = metaState.equipment[slot];
+                if (!item || !item.runas || !item.runas.conditionId) continue;
+                const rn = item.runas;
+                const effDef = findRuneEffect(rn.effectId);
+                const effRarity = rn.effRarity || rn.rarity;
+                const effEnh = rn.effEnhance ?? rn.enhance;
+                const maxEnh = getRuneMaxEnhance(effRarity);
+                const isMax = effEnh >= maxEnh;
+                const cost = isMax ? 0 : Math.floor(Math.pow(BALANCE.runas.enhanceCostScale, effEnh));
+                const canEnhance = !isMax && metaState.runePowder >= cost;
+                enhanceHTML += `
+                    <div class="rune-slot-row">
+                        <div class="rune-info">
+                            <div class="rune-name">${slotIcons[slot]} ${slotLabels[slot]} ✨</div>
+                            <div class="rune-detail">
+                                ${effDef ? effDef.label : '?'} <span class="rarity-${effRarity}">${effRarity}+${effEnh}</span>
+                            </div>
+                            <div style="font-size:0.6rem;color:#6b7280;margin-top:1px;">
+                                ${effDef ? effDef.desc : ''}
+                            </div>
+                        </div>
+                        <div class="rune-actions">
+                            ${isMax
+                                ? `<span style="color:#4ade80;font-size:0.7rem;">✅ MAX</span>`
+                                : `<button class="rune-action-btn primary" onclick="enhanceEffectInSlot('${slot}');renderRuneModal();" ${canEnhance ? '' : 'disabled'}>
+                                    +1 (${cost}🔮)
+                                   </button>`
+                            }
+                        </div>
+                    </div>
+                `;
+            }
+            if (!enhanceHTML) {
+                enhanceHTML = `<div class="rune-empty">No hay efectos equipados para mejorar. Mejorálos desde el inventario o equipá runas primero.</div>`;
+            }
+            const mejorarHTML = `
+                <div class="rune-section">
+                    <h3>⬆️ Mejorar Efecto</h3>
+                    <div class="desc">Subí el nivel de mejora de un efecto equipado (+8% poder por nivel).</div>
+                    ${enhanceHTML}
+                </div>
+            `;
+
+            // ── Section 3: Subir Rareza (individual) ──────
+            let upgradeHTML = '';
+            for (const slot of slots) {
+                const item = metaState.equipment[slot];
+                if (!item || !item.runas || !item.runas.conditionId) continue;
+                const rn = item.runas;
+                const condDef = findRuneCondition(rn.conditionId);
+                const effDef = findRuneEffect(rn.effectId);
+                const condRarity = rn.condRarity || rn.rarity;
+                const effRarity = rn.effRarity || rn.rarity;
+
+                // ── Condición ──
+                let condTarget, condUpgCost;
+                if (condRarity === 'S') {
+                    condTarget = 'SS';
+                    condUpgCost = BALANCE.runas.rarityConfig.SS?.upgradeCost;
+                } else if (condRarity === 'SS') {
+                    condTarget = 'SSS';
+                    condUpgCost = BALANCE.runas.rarityConfig.SSS?.upgradeCost;
+                }
+                if (condTarget) {
+                    const curMaxEnh = getRuneMaxEnhance(condRarity);
+                    const enhTotal = calcCumulativeEnhanceCost(curMaxEnh);
+                    const totalPowder = enhTotal + (condUpgCost?.powder ?? 0);
+                    const canAffordCond = condUpgCost && metaState.runePowder >= totalPowder && metaState.souls >= condUpgCost.souls;
+                    upgradeHTML += `
+                        <div class="rune-slot-row">
+                            <div class="rune-info">
+                                <div class="rune-name">${slotIcons[slot]} ${slotLabels[slot]} ⚡</div>
+                                <div class="rune-detail">
+                                    ${condDef ? condDef.label : '?'} <span class="rarity-${condRarity}">${condRarity}</span>
+                                </div>
+                                <div style="font-size:0.6rem;color:#6b7280;margin-top:1px;">
+                                    ${condDef ? condDef.desc : ''}
+                                </div>
+                            </div>
+                            <div class="rune-actions">
+                                <button class="rune-action-btn primary" onclick="upgradeConditionInSlot('${slot}');renderRuneModal();" ${canAffordCond ? '' : 'disabled'}>
+                                    → ${condTarget} (${totalPowder}🔮+${condUpgCost?.souls ?? 0}💀)
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // ── Efecto ──
+                let effTarget, effUpgCost, requireMax;
+                if (effRarity === 'S') {
+                    effTarget = 'SS';
+                    effUpgCost = BALANCE.runas.rarityConfig.SS?.upgradeCost;
+                    requireMax = getRuneMaxEnhance('S');
+                } else if (effRarity === 'SS') {
+                    effTarget = 'SSS';
+                    effUpgCost = BALANCE.runas.rarityConfig.SSS?.upgradeCost;
+                    requireMax = getRuneMaxEnhance('SS');
+                }
+                if (effTarget) {
+                    const effEnh = rn.effEnhance ?? rn.enhance;
+                    const meetsReq = effEnh >= requireMax;
+                    const canAffordEff = effUpgCost && metaState.runePowder >= effUpgCost.powder && metaState.souls >= effUpgCost.souls;
+                    upgradeHTML += `
+                        <div class="rune-slot-row">
+                            <div class="rune-info">
+                                <div class="rune-name">${slotIcons[slot]} ${slotLabels[slot]} ✨</div>
+                                <div class="rune-detail">
+                                    ${effDef ? effDef.label : '?'} <span class="rarity-${effRarity}">${effRarity}+${effEnh}</span>
+                                    ${meetsReq ? '' : `<span style="color:#ef4444;font-size:0.7rem;"> (requiere +${requireMax})</span>`}
+                                </div>
+                                <div style="font-size:0.6rem;color:#6b7280;margin-top:1px;">
+                                    ${effDef ? effDef.desc : ''}
+                                </div>
+                            </div>
+                            <div class="rune-actions">
+                                ${effUpgCost ? `<button class="rune-action-btn primary" onclick="upgradeEffectInSlot('${slot}');renderRuneModal();" ${(meetsReq && canAffordEff) ? '' : 'disabled'}>
+                                    → ${effTarget} (${effUpgCost.powder}🔮+${effUpgCost.souls}💀)
+                                </button>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            if (!upgradeHTML) {
+                upgradeHTML = `<div class="rune-empty">No hay runas elegibles para subir de rareza.</div>`;
+            }
+            const upgradeSectionHTML = `
+                <div class="rune-section">
+                    <h3>⬆️ Subir Rareza</h3>
+                    <div class="desc">Mejorá la rareza de condición o efecto. La condición paga costo acumulado (sin enhance). El efecto requiere máximo +enhance de su rareza actual y se resetea a +0.</div>
+                    ${upgradeHTML}
+                </div>
+            `;
+
+            // ── Section 4: Inventario ────────────────────
+            const invKeys = Object.keys(metaState.runeInventory);
+            let invHTML = '';
+            const conds = {};
+            const effs = {};
+            for (const key of invKeys) {
+                const r = metaState.runeInventory[key];
+                if (r.conditionId) conds[key] = r;
+                if (r.effectId) effs[key] = r;
+            }
+            const condKeys = Object.keys(conds);
+            const effKeys = Object.keys(effs);
+            if (condKeys.length > 0 || effKeys.length > 0) {
+                invHTML = `<div class="rune-section">
+                    <h3>📦 Inventario</h3>
+                    <div class="desc">Runas disponibles. Equipalas desde la pantalla de personaje.</div>`;
+                if (condKeys.length > 0) {
+                    invHTML += `<div style="font-size:0.75rem;color:#9ca3af;margin-bottom:4px;">⚡ Condiciones:</div>`;
+                    for (const key of condKeys) {
+                        const r = conds[key];
+                        const def = findRuneCondition(r.conditionId);
+                        const isSss = r.rarity === 'SSS';
+                        let actionBtn = '';
+                        if (isSss) {
+                            actionBtn = `<span style="color:#4ade80;font-size:0.65rem;">✅ MAX</span>`;
+                        } else {
+                            const targetRarity = r.rarity === 'S' ? 'SS' : 'SSS';
+                            const currentMax = getRuneMaxEnhance(r.rarity);
+                            const enhanceTotal = calcCumulativeEnhanceCost(currentMax);
+                            const upgCost = BALANCE.runas.rarityConfig[targetRarity]?.upgradeCost;
+                            if (upgCost) {
+                                const totalPowder = enhanceTotal + upgCost.powder;
+                                actionBtn = `<button class="rune-action-btn primary" style="font-size:0.65rem;padding:2px 8px;" onclick="upgradeConditionRarity('${key}');renderRuneModal();">⬆️ ${targetRarity} (${totalPowder}🔮)</button>`;
+                            }
+                        }
+                        invHTML += `<div class="rune-inv-item" style="display:block;width:100%;margin:0 0 4px 0;padding:6px 10px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;">
+                                <div style="font-weight:600;font-size:0.75rem;">${def ? def.label : '?'} <span class="rarity-${r.rarity}">${r.rarity}</span></div>
+                                ${actionBtn}
+                            </div>
+                            <div style="font-size:0.65rem;color:#6b7280;">${def ? def.desc : ''}</div>
+                        </div>`;
+                    }
+                }
+                if (effKeys.length > 0) {
+                    invHTML += `<div style="font-size:0.75rem;color:#9ca3af;margin-top:4px;margin-bottom:4px;">✨ Efectos:</div>`;
+                    for (const key of effKeys) {
+                        const r = effs[key];
+                        const def = findRuneEffect(r.effectId);
+                        const maxEnh = getRuneMaxEnhance(r.rarity);
+                        const isMax = r.enhance >= maxEnh;
+                        const isSss = r.rarity === 'SSS';
+                        let actionBtn = '';
+                        if (isSss) {
+                            actionBtn = `<span style="color:#4ade80;font-size:0.65rem;">✅ MAX</span>`;
+                        } else if (!isMax) {
+                            const cost = Math.floor(Math.pow(BALANCE.runas.enhanceCostScale, r.enhance));
+                            const canAfford = metaState.runePowder >= cost;
+                            actionBtn = `<button class="rune-action-btn primary" style="font-size:0.65rem;padding:2px 8px;" ${canAfford ? '' : 'disabled'} onclick="enhanceEffectInInventory('${key}');renderRuneModal();">+1 (${cost}🔮)</button>`;
+                        } else {
+                            // At max enhance, can upgrade rarity
+                            const targetRarity = r.rarity === 'S' ? 'SS' : 'SSS';
+                            const upgCost = BALANCE.runas.rarityConfig[targetRarity]?.upgradeCost;
+                            if (upgCost) {
+                                const canAffordUpg = metaState.runePowder >= upgCost.powder && metaState.souls >= upgCost.souls;
+                                actionBtn = `<button class="rune-action-btn primary" style="font-size:0.65rem;padding:2px 8px;" ${canAffordUpg ? '' : 'disabled'} onclick="upgradeEffectInInventory('${key}');renderRuneModal();">⬆️ ${targetRarity} (${upgCost.powder}🔮+${upgCost.souls}💀)</button>`;
+                            }
+                        }
+                        invHTML += `<div class="rune-inv-item" style="display:block;width:100%;margin:0 0 4px 0;padding:6px 10px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;">
+                                <div style="font-weight:600;font-size:0.75rem;">${def ? def.label : '?'} <span class="rarity-${r.rarity}">${r.rarity}+${r.enhance}</span></div>
+                                ${actionBtn}
+                            </div>
+                            <div style="font-size:0.65rem;color:#6b7280;">${def ? def.desc : ''}</div>
+                        </div>`;
+                    }
+                }
+                invHTML += `</div>`;
+            }
+
+            content.innerHTML = fabricarHTML + mejorarHTML + upgradeSectionHTML + invHTML;
+        }
+
+        // ─── Confirmación: Fabricar ───────────────────
+        function showFabricateConfirm(poolType) {
+            const cost = BALANCE.runas.fabricateCost;
+            const label = poolType === 'condition' ? '⚡ Condición' : '✨ Efecto';
+            const canAfford = metaState.runePowder >= cost.powder && metaState.souls >= cost.souls;
+
+            // Check if there are any unowned runes of this type
+            const ownedIds = new Set();
+            for (const r of Object.values(metaState.runeInventory)) {
+                if (poolType === 'condition' && r.conditionId) ownedIds.add(r.conditionId);
+                if (poolType === 'effect' && r.effectId) ownedIds.add(r.effectId);
+            }
+            for (const slot of ['weapon', 'armor', 'ring']) {
+                const item = metaState.equipment[slot];
+                if (item && item.runas && item.runas.conditionId) {
+                    if (poolType === 'condition') ownedIds.add(item.runas.conditionId);
+                    if (poolType === 'effect') ownedIds.add(item.runas.effectId);
+                }
+            }
+            const pool = poolType === 'condition' ? RUNE_CONDITIONS : RUNE_EFFECTS;
+            const available = pool.filter(e => !ownedIds.has(e.id));
+            const noMore = available.length === 0;
+            const poolLabel = poolType === 'condition' ? 'condiciones' : 'efectos';
+
+            const content = document.getElementById('rune-content');
+            content.innerHTML = `
+                <div class="rune-confirm-box">
+                    <div class="confirm-question">¿Fabricar ${label}?</div>
+                    <div class="confirm-cost">Costo: ${cost.powder}🔮 + ${cost.souls}💀</div>
+                    ${noMore ? `<div style="color:#ef4444;font-size:0.8rem;margin-bottom:8px;">❌ Ya tenés todas las ${poolLabel} disponibles.</div>` : ''}
+                    ${!canAfford && !noMore ? `<div style="color:#ef4444;font-size:0.8rem;margin-bottom:8px;">❌ No tenés suficientes recursos</div>` : ''}
+                    <div class="confirm-btns">
+                        <button class="btn-confirm" onclick="doFabricate('${poolType}')" ${(canAfford && !noMore) ? '' : 'disabled'}>✅ Fabricar</button>
+                        <button class="btn-cancel" onclick="renderRuneModal()">❌ Cancelar</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function doFabricate(poolType) {
+            fabricateRune(poolType);
+            renderRuneModal();
+        }
+
+        // ─── Equipar: selector manual de condición + efecto ──
+        let _runePickSlot = null;      // slot destino
+        let _runePickCond = null;      // conditionId elegido
+        let _runePickEff = null;       // effectId elegido
+
+        function showRuneEquipPicker(slot) {
+            _runePickSlot = slot;
+            _runePickCond = null;
+            _runePickEff = null;
+            _runeModalStep = 'equip';
+            renderRuneModal();
+            document.getElementById('rune-overlay').classList.add('visible');
+        }
+
+        function renderRuneEquipPicker() {
+            const slotLabels = { weapon: '🗡️ Arma', armor: '🛡️ Armadura', ring: '💍 Anillo' };
+            const invEntries = Object.entries(metaState.runeInventory);
+            const condEntries = invEntries.filter(([, r]) => r.conditionId);
+            const effEntries = invEntries.filter(([, r]) => r.effectId);
+
+            // Step: pick condition
+            if (!_runePickCond) {
+                let html = `<p style="text-align:center;color:#9ca3af;font-size:0.85rem;margin-bottom:10px;">Paso 1: Elegí una Condición para ${slotLabels[_runePickSlot] || _runePickSlot}</p>`;
+                if (condEntries.length === 0) {
+                    html += `<p style="text-align:center;color:#ef4444;font-size:0.8rem;">❌ No tenés condiciones en el inventario. Fabricá una en "🔮 Runas".</p>`;
+                } else {
+                    for (const [key, r] of condEntries) {
+                        const def = findRuneCondition(r.conditionId);
+                        html += `<button class="rune-inv-item block" onclick="_runePickCond='${r.conditionId}';renderRuneModal();" style="padding:8px 10px;">
+                            <div style="font-weight:600;font-size:0.75rem;">⚡ ${def ? def.label : r.conditionId} <span class="rarity-${r.rarity}">${r.rarity}+${r.enhance}</span></div>
+                            <div style="font-size:0.65rem;color:#6b7280;margin-top:2px;">${def ? def.desc : ''}</div>
+                        </button>`;
+                    }
+                }
+                html += `<br><button class="modal-close" onclick="closeRuneModal()" style="background:#4a4a6a;font-size:0.8rem;padding:6px 16px;">← Cancelar</button>`;
+                return html;
+            }
+
+            // Step: pick effect
+            if (!_runePickEff) {
+                const condDef = findRuneCondition(_runePickCond);
+                let html = `<p style="text-align:center;color:#9ca3af;font-size:0.85rem;margin-bottom:10px;">Paso 2: Elegí un Efecto para ${condDef ? condDef.label : _runePickCond}</p>`;
+                if (effEntries.length === 0) {
+                    html += `<p style="text-align:center;color:#ef4444;font-size:0.8rem;">❌ No tenés efectos en el inventario. Fabricá uno en "🔮 Runas".</p>`;
+                } else {
+                    for (const [key, r] of effEntries) {
+                        const def = findRuneEffect(r.effectId);
+                        const isDuplicate = !isRuneCombinationUnique(_runePickCond, r.effectId, _runePickSlot);
+                        if (isDuplicate) continue; // skip combos already used
+                        html += `<button class="rune-inv-item block" onclick="_runePickEff='${r.effectId}';renderRuneModal();" style="padding:8px 10px;">
+                            <div style="font-weight:600;font-size:0.75rem;">✨ ${def ? def.label : r.effectId} <span class="rarity-${r.rarity}">${r.rarity}+${r.enhance}</span></div>
+                            <div style="font-size:0.65rem;color:#6b7280;margin-top:2px;">${def ? def.desc : ''}</div>
+                        </button>`;
+                    }
+                }
+                html += `<br><button class="modal-close" onclick="_runePickCond=null;renderRuneModal();" style="background:#4a4a6a;font-size:0.8rem;padding:6px 16px;">← Volver</button>`;
+                return html;
+            }
+
+            // Step: confirm
+            const condDef = findRuneCondition(_runePickCond);
+            const effDef = findRuneEffect(_runePickEff);
+            // Find actual inventory items to get rarity/enhance
+            const condInvEntry = Object.entries(metaState.runeInventory).find(([, r]) => r.conditionId === _runePickCond);
+            const effInvEntry = Object.entries(metaState.runeInventory).find(([, r]) => r.effectId === _runePickEff);
+            const condRuna = condInvEntry ? condInvEntry[1] : null;
+            const effRuna = effInvEntry ? effInvEntry[1] : null;
+            // Use the better rarity/enhance from both pieces
+            const rarityOrder = { 'S': 0, 'SS': 1, 'SSS': 2 };
+            let finalRarity = 'S', finalEnhance = 0;
+            if (condRuna && effRuna) {
+                finalRarity = rarityOrder[condRuna.rarity] >= rarityOrder[effRuna.rarity] ? condRuna.rarity : effRuna.rarity;
+                finalEnhance = Math.max(condRuna.enhance, effRuna.enhance);
+            } else if (condRuna) {
+                finalRarity = condRuna.rarity; finalEnhance = condRuna.enhance;
+            } else if (effRuna) {
+                finalRarity = effRuna.rarity; finalEnhance = effRuna.enhance;
+            }
+
+            return `
+                <div class="rune-confirm-box">
+                    <p style="text-align:center;color:#9ca3af;font-size:0.85rem;margin-bottom:10px;">Confirmar equipamiento</p>
+                    <div style="text-align:center;font-size:0.9rem;margin-bottom:2px;">
+                        ⚡ ${condDef ? condDef.label : '?'} → ✨ ${effDef ? effDef.label : '?'}
+                    </div>
+                    <div style="text-align:center;font-size:0.65rem;color:#6b7280;margin-bottom:6px;">
+                        ${condDef ? condDef.desc : ''} → ${effDef ? effDef.desc : ''}
+                    </div>
+                    <div style="text-align:center;font-size:0.75rem;color:#60a5fa;margin-bottom:10px;">
+                        Rareza: ${finalRarity} | Enhance: +${finalEnhance}
+                    </div>
+                    <div class="confirm-btns">
+                        <button class="btn-confirm" onclick="confirmManualEquip('${_runePickSlot}', '${_runePickCond}', '${_runePickEff}')">✅ Equipar</button>
+                        <button class="btn-cancel" onclick="_runePickEff=null;renderRuneModal();">← Volver</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function confirmManualEquip(slot, conditionId, effectId) {
+            const item = metaState.equipment[slot];
+            if (!item) {
+                addLog(`❌ No hay equipo en ${slot}`, 'system');
+                closeRuneModal();
+                return;
+            }
+
+            // Find inventory items
+            const condKey = Object.keys(metaState.runeInventory).find(k => metaState.runeInventory[k].conditionId === conditionId);
+            const effKey = Object.keys(metaState.runeInventory).find(k => metaState.runeInventory[k].effectId === effectId);
+            if (!condKey || !effKey) {
+                addLog(`❌ Runa no encontrada en inventario`, 'system');
+                closeRuneModal();
+                return;
+            }
+
+            const condRuna = metaState.runeInventory[condKey];
+            const effRuna = metaState.runeInventory[effKey];
+
+            // Check unique combination
+            if (!isRuneCombinationUnique(conditionId, effectId, slot)) {
+                addLog(`❌ Esta combinación de runa ya está equipada en otra pieza`, 'system');
+                return;
+            }
+
+            // Determine final rarity/enhance (best of both)
+            const rarityOrder = { 'S': 0, 'SS': 1, 'SSS': 2 };
+            const finalRarity = rarityOrder[condRuna.rarity] >= rarityOrder[effRuna.rarity] ? condRuna.rarity : effRuna.rarity;
+            const finalEnhance = Math.max(condRuna.enhance, effRuna.enhance);
+
+            // Remove from inventory
+            delete metaState.runeInventory[condKey];
+            delete metaState.runeInventory[effKey];
+
+            // Assign to equipment — store individual component states
+            item.runas = {
+                conditionId: conditionId,
+                effectId: effectId,
+                rarity: finalRarity,
+                enhance: finalEnhance,
+                condRarity: condRuna.rarity || 'S',
+                effRarity: effRuna.rarity || 'S',
+                effEnhance: effRuna.enhance || 0,
+            };
+
+            saveGame();
+            render();
+            const condDef = findRuneCondition(conditionId);
+            const effDef = findRuneEffect(effectId);
+            addLog(`🔮 Runa equipada: ${condDef ? condDef.label : '?'} → ${effDef ? effDef.label : '?'}`, 'loot');
+
+            _runeModalStep = null;
+            _runePickSlot = null;
+            _runePickCond = null;
+            _runePickEff = null;
+            closeRuneModal();
+            if (runState.characterScreenActive) {
+                setTimeout(renderCharacterScreen, 50);
+            }
+        }
+
+        function cancelRuneEquip() {
+            _runeModalStep = 'main';
+            _runeEquipSlot = null;
+            renderRuneModal();
         }
 
         // ============================================
@@ -6764,6 +8661,7 @@ runState.furiaStacks = 0;
                 { icon: '🏛️', name: 'Clases', isClasses: true },
                 { icon: '⚡', name: 'Talentos', isTalents: true },
                 { icon: '⭐', name: 'Maestrías', isMasteries: true },
+                { icon: '🔮', name: 'Runas', isRunes: true },
                 { icon: '🪶', name: 'Prestigio', isPrestige: true },
             ];
 
@@ -6919,6 +8817,39 @@ runState.furiaStacks = 0;
                         }
                         html += `</div></div>`;
                     }
+                } else if (block.isRunes) {
+                    // Render rune conditions and effects
+                    const runeCondId = `codex-runes-cond-${bi}`;
+                    const runeEffId = `codex-runes-eff-${bi}`;
+                    html += `<div class="codex-block" style="border:none;margin-bottom:4px;">
+                        <div class="codex-block-title" onclick="toggleCodexTalentCat('${runeCondId}')" style="font-size:0.85rem;padding:6px 10px;border-left:3px solid #a78bfa;">
+                            <span>⚡ Condiciones</span>
+                            <span class="arrow">▶</span>
+                        </div>
+                        <div class="codex-block-body" id="${runeCondId}">
+                            <div style="font-size:0.7rem;color:#6b7280;margin-bottom:6px;">Se activan cuando se cumple la condición en combate.</div>`;
+                    for (const c of RUNE_CONDITIONS) {
+                        html += `<div class="codex-talent" style="margin-top:6px;">
+                            <div class="codex-talent-name">${c.label}</div>
+                            <div class="codex-talent-desc">${c.desc} — Valores: ${c.values.join('/')}<span style="color:#9ca3af;font-size:0.65rem;"> (S/SS/SSS)</span></div>
+                        </div>`;
+                    }
+                    html += `</div></div>`;
+
+                    html += `<div class="codex-block" style="border:none;margin-bottom:4px;">
+                        <div class="codex-block-title" onclick="toggleCodexTalentCat('${runeEffId}')" style="font-size:0.85rem;padding:6px 10px;border-left:3px solid #a78bfa;">
+                            <span>✨ Efectos</span>
+                            <span class="arrow">▶</span>
+                        </div>
+                        <div class="codex-block-body" id="${runeEffId}">
+                            <div style="font-size:0.7rem;color:#6b7280;margin-bottom:6px;">Se aplican al activarse la condición.</div>`;
+                    for (const e of RUNE_EFFECTS) {
+                        html += `<div class="codex-talent" style="margin-top:6px;">
+                            <div class="codex-talent-name">${e.label}</div>
+                            <div class="codex-talent-desc">${e.desc} — Valores: ${e.values.join('/')}<span style="color:#9ca3af;font-size:0.65rem;"> (S/SS/SSS)</span></div>
+                        </div>`;
+                    }
+                    html += `</div></div>`;
                 } else if (block.isPrestige) {
                     // Render prestige artifact tree
                     const artifactNodes = BALANCE.heroArtifact.nodes;

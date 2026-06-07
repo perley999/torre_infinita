@@ -2,6 +2,23 @@
 
 Todos los cambios notables en este proyecto.
 
+## [0.8.0] - 2026-06-07
+
+### Añadido
+- **Guía completa en el tutorial**: el botón `?` ahora muestra un resumen completo de todo lo que se puede hacer en el juego (combate, progresión, equipo, talentos, clases, training, mazmorras, prestigio, runas, leaderboard + tips).
+- **Cámara de las Runas**: tercer dungeon con sistema de runas (Condición + Efecto por pieza). Rarezas S/SS/SSS, enhance individual por componente.
+- **Sistema de Runas completo**: 8 condiciones, 8 efectos, mejora independiente, fabricación en la Forja con 🔮 Polvo de Runas.
+- **Runas.md**: documentación del sistema de runas.
+
+### Cambiado
+- **Barra de acciones**: rediseñada con botones en fila única (`.action-btn`), 3 estados visuales (sin run, run activa, training).
+- **Modal de Forja unificado**: un solo botón abre modal con Reforjar, Maximizar, Runas y Árbol de Artefacto.
+- **Orden de monedas**: Esencias → Runas → Almas → Legado en la barra de monedas.
+
+### Corregido
+- `loadGame()` ahora restaura `enhanceRune` correctamente.
+- Scrollbar en modales de contenido largo.
+
 ## [0.7.0] - 2026-06-03
 
 ### Añadido

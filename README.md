@@ -8,9 +8,9 @@ Un idle RPG incremental donde tu héroe asciende por una torre infinita. Combate
 - **37 Talentos**: 5 bloques (Ofensivo, Defensivo, Estado, Sustain, Heroico), 3 niveles cada uno. Se eligen cada 5 pisos.
 - **Sistema de Clases**: 4 clases (Guerrero, Brujo, Pícaro, Monje) con 12 especializaciones y pasivas escalables.
 - **Equipamiento**: Armas, armaduras y anillos con 6 rarezas (Poco común → Mítico), maestrías, enhance y bonus stats.
-- **Mazmorras**: Torre de los Ancestros (drops exclusivos) y Abismo del Legado (esencias de legado).
+- **Mazmorras**: Torre de los Ancestros (drops exclusivos), Abismo del Legado (esencias de legado) y Cámara de las Runas (🔮 polvo de runas).
 - **Prestigio**: Renacer al piso 100 para obtener 🪶 Esencias de Legado e invertir en el Árbol de Artefacto.
-- **Meta-progresión**: 💀 Almas para mejoras permanentes, 🩸 Esencias para mejora de equipo, 🪶 Esencias de Legado para el árbol de Prestigio.
+- **Meta-progresión**: 💀 Almas para mejoras permanentes, 🩸 Esencias para mejora de equipo, 🔮 Polvo de Runas para runas, 🪶 Esencias de Legado para el árbol de Prestigio.
 - **Balance centralizado**: Todos los números del juego en un solo objeto `BALANCE`.
 
 ## Cómo jugar
@@ -29,6 +29,7 @@ Un idle RPG incremental donde tu héroe asciende por una torre infinita. Combate
 | `Talentos.md` | Referencia de los 37 talentos |
 | `Clases.md` | Referencia de clases y especializaciones |
 | `Maestrias.md` | Referencia de maestrías de equipo |
+| `Runas.md` | Documentación del sistema de Runas |
 | `Prestigio.md` | Documentación del sistema de Prestigio |
 | `PROYECTO.md` | Decisiones de diseño y resumen técnico |
 | `CHANGELOG.md` | Historial de versiones |

@@ -1,8 +1,8 @@
 # Torre Infinita — Resumen del Proyecto
 
 ## Estado actual
-✅ Juego completo en un solo archivo `Torre_Infinita.html` — ~7.000 líneas  
-✅ Versión: **0.7.0** — Prestigio/Renacimiento
+✅ Juego completo en un solo archivo `Torre_Infinita.html` — ~8.350 líneas  
+✅ Versión: **0.8.0** — Cámara de las Runas + Tutorial Completo
 
 ## Decisiones de diseño
 
@@ -39,6 +39,13 @@
 - Se usan para Reforjar maestrías, Maximizar equipo (enhance), y Rerolear bonus stat.
 - Persisten entre runs.
 
+### Sistema de Runas (🔮 — v0.8.0)
+- Condiciones (8): Golpe Crítico, Bajo HP, Golpe Recibido, Enemigo con Debuff, Esquivar, Matar Enemigo, Usar Habilidad, Inicio de Combate.
+- Efectos (8): Daño Extra, Escudo, Curación, Aceleración, Cadena de Rayo, Robo de Vida, Explosión de Sangre, Maldición.
+- Se fabrican en la Forja con 🔮 Polvo de Runas (Cámara de las Runas) + 💀 Almas.
+- Rarezas: S → SS → SSS. Mejora individual por componente.
+- Se equipan en slots del personaje.
+
 ### Sistema de Prestigio (🪶 — v0.7.0)
 - Renacer al piso 100: `🪶 = floor(sqrt(heroLevel) × max(maxFloor, 100) / 100)`.
 - Árbol de Artefacto con 10 nodos: 4 de stats (+3%/nv) y 6 multiplicadores (+5%/nv).
@@ -54,9 +61,10 @@
 - **Decisión**: Enemigos escalan por tier (cada 10 pisos) + sub-escala dentro del tier.
 - **Jefes**: Piso 10 con stats fijas. P20+ con escalado dinámico basado en stats del jugador.
 
-### Dos monedas + una premium
+### Cuatro monedas
 - **💀 Almas**: moneda principal para mejoras permanentes.
 - **🩸 Esencias**: moneda secundaria para mejora de equipo (reforja, enhance).
+- **🔮 Polvo de Runas**: moneda del sistema de Runas (Cámara de las Runas).
 - **🪶 Esencias de Legado**: moneda premium del sistema de Prestigio.
 
 ## Estado del juego actual
@@ -83,7 +91,7 @@
 ### Mazmorras (v0.6.0)
 - **Torre de los Ancestros**: N1 = piso 100, +10 por nivel. Drops de Ancestral y Mítico. 3 intentos/día.
 - **Abismo del Legado** (v0.7.0): 10 pisos, recompensa 🪶. 3 intentos/día.
-- **Cámara de las Runas**: 🔒 Próximamente.
+- **Cámara de las Runas** (v0.8.0): oleadas de enemigos, recompensa 🔮 Polvo de Runas. 3 intentos/día.
 
 ### Persistencia
 - **localStorage** key: `torre_infinita_save_v1`
@@ -96,7 +104,7 @@
 - Jefes P20+ con escalado dinámico basado en stats del jugador (primer intento).
 
 ## Pendientes / Ideas futuras
-- [ ] 🔒 Cámara de las Runas — tercer dungeon
+- [x] 🔒 Cámara de las Runas — tercer dungeon ✅
 - [ ] Recompensas AFK / offline
 - [ ] Segunda capa de Prestige (Transcender)
 - [ ] Habilidades activas / Barra de Rage
@@ -118,6 +126,7 @@
 | `Talentos.md` | Referencia de los 37 talentos |
 | `Clases.md` | Referencia de clases y especializaciones |
 | `Maestrias.md` | Referencia de maestrías de equipo |
+| `Runas.md` | Documentación del sistema de Runas |
 | `Prestigio.md` | Documentación del sistema de Prestigio |
 | `PROMPT.md` | Prompt para replicar el MVP con otros modelos |
 | `PROYECTO.md` | Este resumen |
