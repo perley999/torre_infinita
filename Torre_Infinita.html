@@ -1667,10 +1667,10 @@
             // --- PRESTIGE / RENACIMIENTO ---
             heroArtifact: {
                 nodes: [
-                    { id: 'fuerza_ancestral',  label: '⚔️ Fuerza Ancestral',  bonus: 0.03 },
-                    { id: 'coraza_ancestral',  label: '🛡️ Coraza Ancestral',   bonus: 0.03 },
-                    { id: 'vitalidad_ancestral', label: '❤️ Vitalidad Ancestral', bonus: 0.03 },
-                    { id: 'pasos_ancestrales',  label: '🏃 Pasos Ancestrales',  bonus: 0.03 },
+                    { id: 'fuerza_ancestral',  label: '⚔️ Fuerza Ancestral',  flatBonus: 100 },
+                    { id: 'coraza_ancestral',  label: '🛡️ Coraza Ancestral',   flatBonus: 100 },
+                    { id: 'vitalidad_ancestral', label: '❤️ Vitalidad Ancestral', flatBonus: 1000 },
+                    { id: 'pasos_ancestrales',  label: '🏃 Pasos Ancestrales',  flatBonus: 50 },
                     { id: 'talento_innato',    label: '💥 Talento Innato',     bonus: 0.05 },
                     { id: 'herencia_equipo',   label: '💍 Herencia del Equipo', bonus: 0.05 },
                     { id: 'sabiduria_eterna',  label: '📖 Sabiduría Eterna',   bonus: 0.05 },
@@ -3300,14 +3300,18 @@
             // 4. Artefacto: capa multiplicativa post-metaUpgrades
             const artifact = metaState.heroArtifact;
             const a = (id) => (artifact.nodes[id] || 0) * (BALANCE.heroArtifact.nodes.find(n => n.id === id)?.bonus || 0);
-            const fuerzaLvl = artifact.nodes.fuerza_ancestral || 0;
-            const corazaLvl = artifact.nodes.coraza_ancestral || 0;
-            const vitalidadLvl = artifact.nodes.vitalidad_ancestral || 0;
-            const pasosLvl = artifact.nodes.pasos_ancestrales || 0;
-            if (fuerzaLvl > 0) atk *= (1 + fuerzaLvl * 0.03);
-            if (corazaLvl > 0) def *= (1 + corazaLvl * 0.03);
-            if (vitalidadLvl > 0) hp *= (1 + vitalidadLvl * 0.03);
-            if (pasosLvl > 0) agi *= (1 + pasosLvl * 0.03);
+            // Nodos de estadísticas planas (sin límite de nivel)
+            for (const n of BALANCE.heroArtifact.nodes) {
+                if (n.flatBonus) {
+                    const lvl = artifact.nodes[n.id] || 0;
+                    if (lvl > 0) {
+                        if (n.id === 'fuerza_ancestral')      atk += lvl * n.flatBonus;
+                        else if (n.id === 'coraza_ancestral') def += lvl * n.flatBonus;
+                        else if (n.id === 'vitalidad_ancestral') hp += lvl * n.flatBonus;
+                        else if (n.id === 'pasos_ancestrales') agi += lvl * n.flatBonus;
+                    }
+                }
+            }
 
             // Herencia del Equipo: multiplica stats del equipo (ya incluidas en hp/atk/def/agi)
             const herenciaLvl = artifact.nodes.herencia_equipo || 0;
@@ -7576,17 +7580,29 @@ runState.furiaStacks = 0;
             let nodesHTML = '';
             for (const n of BALANCE.heroArtifact.nodes) {
                 const currentLevel = metaState.heroArtifact.nodes[n.id] || 0;
-                const maxed = currentLevel >= 5;
+                const isFlat = n.flatBonus !== undefined;
+                const maxed = isFlat ? false : currentLevel >= 5;
                 const nextLevel = currentLevel + 1;
                 const cost = maxed ? 0 : Math.floor(5 * Math.sqrt(nextLevel));
                 const canAfford = !maxed && metaState.heroArtifact.legacyEssence >= cost;
-                const pct = (n.bonus * currentLevel * 100).toFixed(0);
+
+                let bonusText = '';
+                if (currentLevel > 0) {
+                    if (isFlat) {
+                        const total = currentLevel * n.flatBonus;
+                        const statName = n.id === 'vitalidad_ancestral' ? 'HP' : n.id === 'pasos_ancestrales' ? 'AGI' : n.id === 'fuerza_ancestral' ? 'ATK' : 'DEF';
+                        bonusText = `(+${formatNum(total)} ${statName})`;
+                    } else {
+                        const pct = (n.bonus * currentLevel * 100).toFixed(0);
+                        bonusText = `(+${pct}%)`;
+                    }
+                }
 
                 nodesHTML += `
                     <div class="artifact-node">
                         <span class="node-icon">${n.label.split(' ')[0]}</span>
                         <span class="node-name">${n.label.split(' ').slice(1).join(' ')}</span>
-                        <span class="node-level">Nv.${currentLevel}/5 ${currentLevel > 0 ? `(+${pct}%)` : ''}</span>
+                        <span class="node-level">Nv.${currentLevel}${isFlat ? '' : '/5'} ${bonusText}</span>
                         ${maxed
                             ? `<span class="node-max">✅ MAX</span>`
                             : `<span class="node-cost">🪶 ${cost}</span>
@@ -7620,7 +7636,10 @@ runState.furiaStacks = 0;
 
         function buyArtifactNode(id) {
             const currentLevel = metaState.heroArtifact.nodes[id] || 0;
-            if (currentLevel >= 5) return;
+            const nodeDef = BALANCE.heroArtifact.nodes.find(n => n.id === id);
+            const isFlat = nodeDef && nodeDef.flatBonus !== undefined;
+            const maxLevel = isFlat ? Infinity : 5;
+            if (currentLevel >= maxLevel) return;
             const nextLevel = currentLevel + 1;
             const cost = Math.floor(5 * Math.sqrt(nextLevel));
             if (metaState.heroArtifact.legacyEssence < cost) {
@@ -7631,7 +7650,6 @@ runState.furiaStacks = 0;
             metaState.heroArtifact.legacyEssence -= cost;
             metaState.heroArtifact.nodes[id] = nextLevel;
             saveGame();
-            const nodeDef = BALANCE.heroArtifact.nodes.find(n => n.id === id);
             addLog(`🌟 ${nodeDef ? nodeDef.label : id} mejorado a nivel ${nextLevel}!`, 'loot');
             closeArtifactTree();
             showArtifactTree();
@@ -9128,13 +9146,22 @@ runState.furiaStacks = 0;
                     html += `<div class="codex-block-body" id="codex-prestige-stats">`;
                     for (const n of statNodes) {
                         const lvl = nodeLevels[n.id] || 0;
-                        const bonusPct = lvl * n.bonus * 100;
+                        const isFlat = n.flatBonus !== undefined;
+                        const statName = isFlat ? (n.id === 'vitalidad_ancestral' ? 'HP' : n.id === 'pasos_ancestrales' ? 'AGI' : n.id === 'fuerza_ancestral' ? 'ATK' : 'DEF') : '';
+                        let bonusText = '';
+                        if (isFlat) {
+                            const total = lvl * n.flatBonus;
+                            bonusText = `+${formatNum(total)} ${statName} planos`;
+                        } else {
+                            const pct = lvl * n.bonus * 100;
+                            bonusText = `+${pct.toFixed(0)}%`;
+                        }
                         const costNext = Math.floor(5 * Math.sqrt(lvl + 1));
                         html += `<div class="codex-talent" style="margin-top:6px;">
                             <div class="codex-talent-name">${n.label}</div>
-                            <div class="codex-talent-desc">+${(n.bonus * 100).toFixed(0)}% por nivel — Bonificación actual: +${bonusPct.toFixed(0)}%</div>
+                            <div class="codex-talent-desc">${isFlat ? `+${formatNum(n.flatBonus)} ${statName}/nivel — ` : `+${(n.bonus * 100).toFixed(0)}% por nivel — `}Bonificación actual: ${bonusText}</div>
                             <div class="codex-talent-levels">
-                                <span><b>Nivel actual:</b> ${lvl}</span>
+                                <span><b>Nivel actual:</b> ${lvl}${isFlat ? '' : '/5'}</span>
                                 <span><b>Siguiente costo:</b> 🪶${costNext}</span>
                             </div>
                         </div>`;

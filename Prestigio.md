@@ -61,14 +61,14 @@ costo = floor(5 × sqrt(nivelSiguiente))
 
 ### Nodos del Árbol
 
-#### ⚔️ Estadísticas Ancestrales (×3% por nivel)
+#### ⚔️ Estadísticas Ancestrales (planas, sin límite de nivel)
 
 | Nodo | Efecto | Descripción |
 |------|--------|-------------|
-| ⚔️ **Fuerza Ancestral** | +3% ATK por nivel | Aumenta el daño base del héroe |
-| 🛡️ **Coraza Ancestral** | +3% DEF por nivel | Aumenta la defensa base del héroe |
-| ❤️ **Vitalidad Ancestral** | +3% HP por nivel | Aumenta los puntos de vida base |
-| 🏃 **Pasos Ancestrales** | +3% AGI por nivel | Aumenta la agilidad (velocidad de ataque + evasion) |
+| ⚔️ **Fuerza Ancestral** | +100 ATK por nivel | Aumenta el ataque base del héroe de forma plana |
+| 🛡️ **Coraza Ancestral** | +100 DEF por nivel | Aumenta la defensa base del héroe de forma plana |
+| ❤️ **Vitalidad Ancestral** | +1000 HP por nivel | Aumenta los puntos de vida base de forma plana |
+| 🏃 **Pasos Ancestrales** | +50 AGI por nivel | Aumenta la agilidad de forma plana (velocidad de ataque + evasión) |
 
 #### 📈 Multiplicadores Globales (×5% por nivel)
 
