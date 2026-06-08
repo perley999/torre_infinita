@@ -359,8 +359,8 @@ Ver `Talentos.md` para la referencia completa con valores por nivel.
 | Raro | 1.5 | 2 (pri+1sec) | ✅ niv 1 | 25% | 65% |
 | Épico | 2.0 | 3 (pri+2sec) | ✅ niv 2 | 5% | 30% |
 | Legendario | 3.0 | 4 (pri+3sec) | ✅ niv 3 | 0% | 5% |
-| Ancestral | 3.0 | 5 (pri+4sec) | ✅ niv 3 | — | rates Cámara Ancestral |
-| Mítico | 4.0 | 5 (pri+4sec, perfectas) | ✅ niv 4 fija | — | rates Cámara Ancestral |
+| Ancestral | 3.0 | 5 (pri+4sec, ×1.1/×1.2) | ✅ niv 3 | — | rates Cámara Ancestral |
+| Mítico | 4.0 | 5 (pri+4sec, ×1.1/×1.2) | ✅ niv 4 fija | — | rates Cámara Ancestral |
 
 ### Maestrías (pasivas de equipo)
 

@@ -3733,7 +3733,8 @@
             const primaryStat = pool.primary[Math.floor(Math.random() * pool.primary.length)];
             const primaryMult = budgetMult.primary;
             if (maxStats) {
-                stats[primaryStat] = Math.floor(budget * primaryMult);
+                // Ancestral/Mítico: máximo del rango del Legendario (×1.1)
+                stats[primaryStat] = Math.floor(budget * primaryMult * 1.1);
             } else {
                 stats[primaryStat] = Math.floor(budget * primaryMult * (0.9 + Math.random() * 0.2));
             }
@@ -3746,7 +3747,8 @@
                 const secStat = availableSecondary.splice(idx, 1)[0];
                 const mult = budgetMult[secStat] ?? budgetMult.flat;
                 if (maxStats) {
-                    stats[secStat] = Math.floor(budget * mult);
+                    // Ancestral/Mítico: máximo del rango del Legendario (×1.2)
+                    stats[secStat] = Math.floor(budget * mult * 1.2);
                 } else {
                     stats[secStat] = Math.floor(budget * mult * (0.8 + Math.random() * 0.4));
                 }
