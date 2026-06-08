@@ -23,7 +23,7 @@ Todos los cambios notables en este proyecto.
 
 ### Cambiado
 - **Barra de acciones**: rediseñada con botones en fila única (`.action-btn`), 3 estados visuales (sin run, run activa, training).
-- **Modal de Forja unificado**: un solo botón abre modal con Reforjar, Maximizar, Runas y Árbol de Artefacto.
+- **Modal de Forja unificado**: un solo botón abre modal con Reforjar, Maximizar, Runas y Árbol de Legado.
 - **Orden de monedas**: Esencias → Runas → Almas → Legado en la barra de monedas.
 
 ### Corregido
@@ -34,7 +34,7 @@ Todos los cambios notables en este proyecto.
 
 ### Añadido
 - **Sistema de Renacer / Prestigio**: al alcanzar el piso 100, el jugador puede renacer para reiniciar su progreso a cambio de 🪶 Esencias de Legado.
-- **Árbol de Artefacto (10 nodos)**: estadísticas ancestrales (⚔️🛡️❤️🏃 +3%/nv) y multiplicadores globales (💍 Herencia, 💥 Talento Innato, 📖 Sabiduría, 🍀 Fortuna, 🪶 Ciclo del Legado, 💀 Voluntad +5%/nv).
+- **Árbol de Legado (10 nodos)**: estadísticas ancestrales (⚔️🛡️❤️🏃 +3%/nv) y multiplicadores globales (💍 Herencia, 💥 Talento Innato, 📖 Sabiduría, 🍀 Fortuna, 🪶 Ciclo del Legado, 💀 Voluntad +5%/nv).
 - **Abismo Eterno**: dungeon de 10 pisos que otorga 🪶 Esencias de Legado. 3 intentos/día. Desbloqueable al piso 100.
 - **Prestigio.md**: documentación completa del sistema de Prestigio.
 - **Codex actualizado**: nuevo bloque 🪶 Prestigio en el codex del juego con niveles actuales y costos dinámicos.

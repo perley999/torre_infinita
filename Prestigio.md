@@ -1,6 +1,6 @@
 # Prestigio — Torre Infinita
 
-> Sistema de renacimiento que permite resetear el progreso a cambio de 🪶 Esencias de Legado, las cuales se invierten en el Árbol de Artefacto para obtener bonificaciones permanentes.
+> Sistema de renacimiento que permite resetear el progreso a cambio de 🪶 Esencias de Legado, las cuales se invierten en el Árbol de Legado para obtener bonificaciones permanentes.
 
 ---
 
@@ -27,7 +27,7 @@ Al confirmar el Renacer, las 🪶 Esencias de Legado se calculan **antes** de cu
 | 🗡️ Equipo completo | 💀 Almas |
 | 🏛️ Clase elegida | 🩸 Esencias normales |
 | 🪶 Esencias de Legado | ⬆️ Mejoras permanentes (todas a nivel 0) |
-| 🌳 Árbol de Artefacto | 👤 Nivel de héroe (vuelve a 0) |
+| 🌳 Árbol de Legado | 👤 Nivel de héroe (vuelve a 0) |
 | 📊 Mejor piso histórico | 📖 Especialización |
 | 🏆 Leaderboard | 🏛️ Bonificaciones de clase |
 
@@ -51,7 +51,7 @@ Moneda premium del sistema de Prestigio. Se obtienen de dos fuentes:
 
 ---
 
-## 🌳 Árbol de Artefacto
+## 🌳 Árbol de Legado
 
 Los nodos del artefacto se compran con 🪶 Esencias de Legado. Cada nodo tiene múltiples niveles y el costo crece con la fórmula:
 

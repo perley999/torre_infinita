@@ -1334,7 +1334,7 @@
                     <p>Al <b>Piso 100</b> podés renacer desde el botón 🪶 Renacer. Reiniciás tu progreso (pisos, almas, equipo, talentos) a cambio de <b>🪶 Esencias de Legado</b>.</p>
                     <ul>
                         <li>🪶 = <code>√(nivelHéroe) × max(pisoMax, 100) / 100</code></li>
-                        <li><b>🌳 Árbol de Artefacto</b>: 10 nodos que otorgan stats y multiplicadores globales (+3% a +5% por nivel)</li>
+                        <li><b>🌳 Árbol de Legado</b>: 10 nodos que otorgan stats y multiplicadores globales (+3% a +5% por nivel)</li>
                         <li>Las esencias de legado <b>persisten</b> entre renacimientos</li>
                     </ul>
                 </div>
@@ -1488,7 +1488,7 @@
                 <button class="action-btn training" onclick="showReforgeModal();closeForjaModal()" style="padding:12px;">🔨 Reforjar Maestría (3-8🩸)</button>
                 <button class="action-btn start" onclick="showMaximizeModal();closeForjaModal()" style="padding:12px;">⬆️ Maximizar Equipo (1-38🩸)</button>
                 <button class="action-btn start" onclick="showRuneModal();closeForjaModal()" style="padding:12px;">🔮 Runas</button>
-                <button class="action-btn rebirth" onclick="showArtifactTree();closeForjaModal()" style="padding:12px;">🌟 Árbol de Artefacto</button>
+                <button class="action-btn rebirth" onclick="showArtifactTree();closeForjaModal()" style="padding:12px;">🌟 Árbol de Legado</button>
             </div>
             <button class="modal-close" onclick="closeForjaModal()">Cerrar</button>
         </div>
@@ -1742,7 +1742,7 @@
             metaState.upgrades[key] = { level: 0, ...u };
         }
 
-        // Inicializar nodos del árbol de artefacto
+        // Inicializar nodos del árbol de legado
         for (const n of BALANCE.heroArtifact.nodes) {
             metaState.heroArtifact.nodes[n.id] = 0;
         }
@@ -7546,7 +7546,7 @@ runState.furiaStacks = 0;
         }
 
         // ============================================
-        // 7c. ÁRBOL DE ARTEFACTO
+        // 7c. ÁRBOL DE LEGADO
         // ============================================
 
         function showArtifactTree() {
@@ -7582,7 +7582,7 @@ runState.furiaStacks = 0;
 
             overlay.innerHTML = `
                 <div class="modal" onclick="event.stopPropagation()" style="max-width:440px;">
-                    <h2>🌟 Árbol de Artefacto</h2>
+                    <h2>🌟 Árbol de Legado</h2>
                     <p style="text-align:center;color:#9ca3af;font-size:0.85rem;">
                         🪶 Esencias de Legado: <span style="color:#fbbf24;font-weight:600;">${formatNum(metaState.heroArtifact.legacyEssence)}</span>
                     </p>

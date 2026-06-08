@@ -24,7 +24,7 @@
   - `souls` → fórmula de recompensa al morir
   - `essence` → esencias (reforja, maximize, reroll)
   - `enhance` → mejora de equipo (+10% por nivel, +1 a +10)
-  - `heroArtifact` → árbol de artefacto del Prestigio (10 nodos)
+  - `heroArtifact` → árbol de legado del Prestigio (10 nodos)
 
 ### Equipamiento con budget logarítmico
 - **Decisión**: El budget de stats por pieza usa `budgetBase × log2(floor + 1) × statMult(rareza)` en vez de lineal por piso.
@@ -48,7 +48,7 @@
 
 ### Sistema de Prestigio (🪶 — v0.7.0)
 - Renacer al piso 100: `🪶 = floor(sqrt(heroLevel) × max(maxFloor, 100) / 100)`.
-- Árbol de Artefacto con 10 nodos: 4 de stats (+3%/nv) y 6 multiplicadores (+5%/nv).
+- Árbol de Legado con 10 nodos: 4 de stats (+3%/nv) y 6 multiplicadores (+5%/nv).
 - Abismo Eterno: dungeon de 10 pisos que da 🪶 adicionales.
 - Esencias de Legado persisten entre renacimientos.
 
