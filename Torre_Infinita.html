@@ -1323,7 +1323,7 @@
                     <h3>🏰 Mazmorras</h3>
                     <p>Desbloqueables al <b>Piso 100</b>. 3 intentos gratis por día cada una. Se acceden desde el botón 🏰 Mazmorra.</p>
                     <ul>
-                        <li><b>🏛️ Torre de los Ancestros</b>: farmeá equipo Ancestral y Mítico. Niveles escalables (N1=piso 100, +10 por nivel).</li>
+                        <li><b>🏛️ Torre de los Ancestros</b>: farmeá equipo Ancestral y Mítico en oleadas infinitas. Cada oleada = 10 enemigos, miniboss en #5, boss en #10. A mayor oleada, mejores chances de drop.</li>
                         <li><b>🪶 Abismo del Legado</b>: obtené Esencias de Legado para el árbol de Prestigio. 10 pisos de combate.</li>
                         <li><b>🔮 Cámara de las Runas</b>: combatí oleadas de enemigos para conseguir 🔮 Polvo de Runas. Usalo en la Forja para crear Runas.</li>
                     </ul>
@@ -2038,6 +2038,10 @@
             // Rune Chamber mode
             runeChamberMode: false,
             runeWave: 0,
+            // Torre de los Ancestros (wave-based)
+            towerMode: false,
+            towerWave: 0,
+            towerEnemy: 0,
             runeAccumulatedPowder: 0,
             runeChamberBosses: 0,
             artifactMult: { xp: 1, drop: 1, souls: 1, talentDmg: 1 },
@@ -3906,6 +3910,54 @@
                 updateArena();
                 return;
             } else if (runState.dungeonMode) {
+                // Tower mode (wave-based)
+                if (runState.towerMode) {
+                    const wave = runState.towerWave || 1;
+                    const enemyPos = runState.towerEnemy || 1;
+                    const floorEquivalent = 100 + (wave - 1) * 10 + (enemyPos - 1);
+                    const isBossEnemy = enemyPos === 10;
+                    const statsForEnemy = calcEnemyStats(floorEquivalent, runState.player, false);
+                    const eStatsLocal = { ...statsForEnemy, isBoss: isBossEnemy };
+                    runState.enemy = {
+                        ...eStatsLocal,
+                        maxHp: eStatsLocal.hp,
+                        attackTimer: speedToInterval(eStatsLocal.agi),
+                        name: eStatsLocal.isBoss
+                            ? BOSS_NAMES[Math.floor((floorEquivalent / 10 - 1) % BOSS_NAMES.length)]
+                            : ENEMY_NAMES[Math.floor((floorEquivalent - 1) % ENEMY_NAMES.length)],
+                    };
+                    // Apply shields and initial debuff state
+                    const tl = runState.talentLevels || {};
+                    const t2 = (id) => tl[id] || 0;
+                    if (t2('escudo_vital') > 0) {
+                        const shieldPct = TALENT_POOL.defensivo.find(x => x.id === 'escudo_vital').levels[t2('escudo_vital') - 1].shieldPct;
+                        const newShield = Math.floor(stats.maxHp * shieldPct / 100);
+                        const maxShield = Math.floor(stats.maxHp * 0.35);
+                        runState.vitalShield = Math.min(maxShield, (runState.vitalShield || 0) + newShield);
+                    }
+                    const totalShield = (runState.vitalShield || 0) + (runState.piedraShield?.amount || 0);
+                    p.maxHp += totalShield;
+                    p.hp += totalShield;
+                    runState.shieldMax = totalShield;
+                    runState.enemyDebuffs = [];
+                    runState.enemyBlinded = false;
+                    runState.frozenTicks = 0;
+                    runState.freezeCooldown = 0;
+                    runState.enemySlowTicks = 0;
+                    runState.enemySlowPct = 0;
+                    if (t2('desgaste') > 0) {
+                        const d = TALENT_POOL.estado.find(x => x.id === 'desgaste').levels[t2('desgaste') - 1];
+                        applyDebuff({ id: 'desgaste', type: 'stat_drain', stack: 0, maxStack: d.maxStack, perTick: d.perTick, ticksLeft: 9999, duration: 9999 });
+                    }
+                    isFirstAttack = true;
+                    addLog(`── 🏰 Torre Oleada ${wave} · Enemigo ${enemyPos} ${eStatsLocal.isBoss ? '— ⚔️ JEFE ⚔️' : ''} ──`, 'system');
+                    render();
+                    if (combatLoop) clearInterval(combatLoop);
+                    combatLoop = setInterval(combatTick, BALANCE.combat.tickMs);
+                    updateArena();
+                    return;
+                }
+                // Standard dungeon mode (floor-based)
                 const floorEquivalent = 100 + (runState.dungeonDifficulty - 1) * 10 + (runState.floor - 1);
                 const isBossDungeon = runState.floor === 10;
                 const isMinibossDungeon = runState.floor === 5;
@@ -5181,7 +5233,7 @@
             // ─── DUNGEON MODE ──────────────────────────────
             if (runState.dungeonMode) {
                 // XP (con multiplicador de artefacto)
-                const baseXpGain = runState.runeChamberMode ? (runState.runeWave || 1) : runState.floor;
+                const baseXpGain = runState.runeChamberMode ? (runState.runeWave || 1) : (runState.towerMode ? (runState.towerWave || 1) : runState.floor);
                 const dXpMult = runState.artifactMult?.xp || 1;
                 const xpGain = Math.floor(baseXpGain * dXpMult);
                 runState.xp += xpGain;
@@ -5227,8 +5279,77 @@
                     return;
                 }
 
-                // Drop (equipment drops only in Torre de los Ancestros, not in Legacy Abyss/Rune Chamber)
-                if (!runState.legacyAbyssMode && !runState.runeChamberMode) {
+                // ─── TOWER MODE (Torre de los Ancestros) ─────────────
+                if (runState.towerMode) {
+                    const wave = runState.towerWave || 1;
+                    const enemyPos = runState.towerEnemy || 1;
+                    const floorEquivalent = 100 + (wave - 1) * 10 + (enemyPos - 1);
+
+                    // Essence drop (same as normal mode: boss always, normal 50%)
+                    if (!runState.trainingMode) {
+                        const essenceDrop = enemyPos === 10 ? 1 : (Math.random() < 0.5 ? 1 : 0);
+                        if (essenceDrop > 0) {
+                            metaState.essence += essenceDrop;
+                            addLog(`+${essenceDrop} 🩸 Esencia`, 'loot');
+                        }
+                    }
+
+                    // Drop equipment based on enemy position in wave
+                    let dropItem = null;
+                    if (enemyPos === 10) {
+                        // Boss siempre dropea
+                        dropItem = generateItem(floorEquivalent, true, { isDungeon: true, isMiniboss: false, dungeonLevel: Math.min(wave, 9) });
+                        addLog(`🎁 Drop: ${dropItem.name} (${dropItem.rarity})`, 'loot');
+                    } else if (enemyPos === 5) {
+                        // Miniboss: 60% chance
+                        if (Math.random() * 100 < BALANCE.dungeon.dropRates.minibossChance) {
+                            dropItem = generateItem(floorEquivalent, false, { isDungeon: true, isMiniboss: true, dungeonLevel: Math.min(wave, 9) });
+                            addLog(`🎁 Drop: ${dropItem.name} (${dropItem.rarity})`, 'loot');
+                        }
+                    } else {
+                        // Normal enemy: 5% drop, siempre Legendario
+                        if (Math.random() * 100 < BALANCE.dungeon.dropRates.normalChance) {
+                            dropItem = generateItem(floorEquivalent, false, { isDungeon: true, isMiniboss: false, dungeonLevel: Math.min(wave, 9) });
+                            addLog(`🎁 Drop: ${dropItem.name} (${dropItem.rarity})`, 'loot');
+                        }
+                    }
+                    if (dropItem) {
+                        const result = tryEquip(dropItem);
+                        if (result === null) {
+                            // Equip comparison modal will handle continuation
+                            return;
+                        } else if (result) {
+                            saveGame();
+                        }
+                    }
+
+                    // Advance enemy position or complete wave
+                    if (enemyPos >= 10) {
+                        // Wave complete — show completion message and advance
+                        runState.towerWave = wave + 1;
+                        runState.towerEnemy = 1;
+                        runState.furiaStacks = 0;
+                        checkLevelUp();
+                        addLog(`✅ ¡Oleada ${wave} completada! Pasando a oleada ${wave + 1}...`, 'victory');
+                        setTimeout(() => {
+                            if (!runState.active) return;
+                            startCombat();
+                        }, 500);
+                    } else {
+                        // Next enemy in same wave
+                        runState.towerEnemy = enemyPos + 1;
+                        runState.furiaStacks = 0;
+                        checkLevelUp();
+                        setTimeout(() => {
+                            if (!runState.active) return;
+                            startCombat();
+                        }, 500);
+                    }
+                    return;
+                }
+
+                // Drop (equipment drops only in old Torre de los Ancestros floors, not in Tower Mode/Legacy Abyss/Rune Chamber)
+                if (!runState.legacyAbyssMode && !runState.runeChamberMode && !runState.towerMode) {
                     const isMiniboss = runState.floor === 5;
                     const isBossFloor = runState.floor === 10;
                     let dropItem = null;
@@ -5446,12 +5567,17 @@
                     } else {
                         addLog(`🔮 Cámara terminada. No acumulaste Polvo de Runas.`, 'system');
                     }
+                } else if (runState.towerMode) {
+                    const wave = runState.towerWave || 1;
+                    const enemyPos = runState.towerEnemy || 1;
+                    addLog(`💀 Caíste en la Torre de los Ancestros (Oleada ${wave} · Enemigo ${enemyPos}/10).`, 'death');
                 } else {
                     addLog(`💀 Caíste en la mazmorra (piso ${runState.floor}).`, 'death');
                 }
                 runState.dungeonMode = false;
                 runState.legacyAbyssMode = false;
                 runState.runeChamberMode = false;
+                runState.towerMode = false;
                 runState.dungeonDifficulty = 0;
                 render();
                 updateButtons();
@@ -6369,6 +6495,24 @@
 
             // Dungeon mode: continue the dungeon flow
             if (runState.dungeonMode) {
+                // Tower mode: continue the wave instead of advancing floor
+                if (runState.towerMode) {
+                    const enemyPos = runState.towerEnemy || 1;
+                    if (enemyPos >= 10) {
+                        runState.towerWave = (runState.towerWave || 1) + 1;
+                        runState.towerEnemy = 1;
+                        addLog(`✅ ¡Oleada ${runState.towerWave - 1} completada!`, 'victory');
+                    } else {
+                        runState.towerEnemy = enemyPos + 1;
+                    }
+                    runState.furiaStacks = 0;
+                    checkLevelUp();
+                    setTimeout(() => {
+                        if (!runState.active) return;
+                        startCombat();
+                    }, 500);
+                    return;
+                }
                 if (runState.floor >= 10) {
                     // Boss was defeated and item comparison done - complete dungeon
                     if (runState.legacyAbyssMode) {
@@ -6759,9 +6903,6 @@ runState.furiaStacks = 0;
             checkDungeonDailyReset();
             checkDungeonLegacyDailyReset();
             const content = document.getElementById('dungeon-content');
-            const unlocked = metaState.dungeon.unlockedLevels;
-            const maxUnlocked = unlocked.length > 0 ? Math.max(...unlocked) : 0;
-            const nextLevel = maxUnlocked + 1;
             const attemptsLeft = Math.max(0, BALANCE.dungeon.dailyAttempts - metaState.dungeon.attemptsToday);
             const paidAttemptCost = BALANCE.dungeon.soulCostBase * Math.pow(BALANCE.dungeon.soulCostMult, Math.max(0, metaState.dungeon.attemptsToday - BALANCE.dungeon.dailyAttempts));
 
@@ -6770,35 +6911,9 @@ runState.furiaStacks = 0;
                 paidInfo = `<div class="dungeon-attempts">🪙 Próximo intento: <span>${paidAttemptCost} 💀</span></div>`;
             }
 
-            // Build level list: all cleared levels (replayable) + next level (push)
-            let levelButtons = '';
-            for (let i = 1; i <= maxUnlocked; i++) {
-                const floorEq = 100 + (i - 1) * 10;
-                const statusClass = attemptsLeft > 0 ? '' : 'paid';
-                levelButtons += `
-                    <div class="dungeon-level-row" onclick="startDungeonRun(${i})">
-                        <span class="level-label">🔄 N${i}</span>
-                        <span class="level-desc">Repetir — piso ${floorEq}</span>
-                        <span class="level-status ${statusClass}">${attemptsLeft > 0 ? '✅ Gratis' : `💀 ${paidAttemptCost}`}</span>
-                    </div>`;
-            }
-            // Next level
-            const nextFloorEq = 100 + (nextLevel - 1) * 10;
-            levelButtons += `
-                <div class="dungeon-level-row next" onclick="startDungeonRun(${nextLevel})">
-                    <span class="level-label">➡️ N${nextLevel}</span>
-                    <span class="level-desc">Avanzar — piso ${nextFloorEq}</span>
-                    <span class="level-status">${attemptsLeft > 0 ? '✅ Gratis' : `💀 ${paidAttemptCost}`}</span>
-                </div>`;
-
             content.innerHTML = `
                 <div class="dungeon-attempts">Intentos gratis hoy: <span>${attemptsLeft}</span> / ${BALANCE.dungeon.dailyAttempts}</div>
                 ${paidInfo}
-                <div style="margin-bottom:10px;color:#9ca3af;font-size:0.8rem;">⚔️ Torre de los Ancestros — elegí nivel:</div>
-                <div class="dungeon-level-list">
-                    ${levelButtons}
-                </div>
-                <hr style="border-color:#2a2a4a;margin:12px 0;">
                 <div class="dungeon-slot-grid">
                     ${metaState.unlockedReforge ? `
                     <div class="dungeon-slot" onclick="startLegacyAbyssRun()">
@@ -6813,6 +6928,11 @@ runState.furiaStacks = 0;
                     </div>
                     `}
                     ${metaState.unlockedReforge ? `
+                    <div class="dungeon-slot" onclick="startTowerRun()">
+                        <span class="slot-title">🏰 Torre de los Ancestros</span>
+                        <span class="slot-desc">Oleadas infinitas — Recompensa: equipo</span>
+                        <span class="slot-status">${Math.max(0, BALANCE.dungeon.dailyAttempts - metaState.dungeon.attemptsToday)}/${BALANCE.dungeon.dailyAttempts} intentos hoy</span>
+                    </div>
                     <div class="dungeon-slot" onclick="startRuneChamberRun()">
                         <span class="slot-title">🔮 Cámara de las Runas</span>
                         <span class="slot-desc">Oleadas infinitas — Recompensa: 🔮 Polvo de Runas</span>
@@ -6970,6 +7090,20 @@ runState.furiaStacks = 0;
                         bossEl.textContent = '☠️ BOSS FINAL';
                         bossEl.style.display = 'block';
                     } else if (runState.floor === 5) {
+                        bossEl.textContent = '⚠️ MINIBOSS';
+                        bossEl.style.display = 'block';
+                    } else {
+                        bossEl.style.display = 'none';
+                    }
+                } else if (runState.towerMode) {
+                    const wave = runState.towerWave || 1;
+                    const enemyPos = runState.towerEnemy || 1;
+                    document.getElementById('floor-number').textContent = `🏰 Torre de los Ancestros — Oleada ${wave} · Enemigo ${enemyPos}/10`;
+                    const bossEl = document.getElementById('boss-indicator');
+                    if (enemyPos === 10) {
+                        bossEl.textContent = '☠️ JEFE';
+                        bossEl.style.display = 'block';
+                    } else if (enemyPos === 5) {
                         bossEl.textContent = '⚠️ MINIBOSS';
                         bossEl.style.display = 'block';
                     } else {
@@ -7642,6 +7776,86 @@ runState.furiaStacks = 0;
             runState.recap = initRecap();
             document.getElementById('combat-log').innerHTML = '';
             addLog(`🔮 Cámara de las Runas iniciada.`, 'system');
+            startCombat();
+            updateButtons();
+        }
+
+        // ============================================
+        // TORRE DE LOS ANCESTROS (Wave-based)
+        // ============================================
+        function startTowerRun() {
+            if (runState.active) return;
+            checkDungeonDailyReset();
+
+            // Same attempt pool as regular dungeons
+            if (metaState.dungeon.attemptsToday >= BALANCE.dungeon.dailyAttempts) {
+                const paidCost = BALANCE.dungeon.soulCostBase * Math.pow(BALANCE.dungeon.soulCostMult, metaState.dungeon.attemptsToday - BALANCE.dungeon.dailyAttempts);
+                if (metaState.souls < paidCost) {
+                    addLog(`❌ No tenés suficientes almas para la Torre (${paidCost} 💀)`, 'system');
+                    return;
+                }
+                metaState.souls -= paidCost;
+                addLog(`🪙 Pagaste ${paidCost} 💀 por un intento extra.`, 'system');
+            }
+
+            metaState.dungeon.attemptsToday++;
+            metaState.dungeon.currentDifficulty = 0;
+            metaState.dungeon.currentFloor = 0;
+            saveGame();
+            closeDungeonSelection();
+
+            // Setup run state for Tower
+            arenaIdle();
+            runState.active = true;
+            runState.floor = 1;
+            runState.dungeonMode = true;
+            runState.towerMode = true;
+            runState.runeChamberMode = false;
+            runState.legacyAbyssMode = false;
+            runState.dungeonDifficulty = 0;
+            runState.trainingMode = false;
+            runState.enemiesDefeated = 0;
+            runState.level = metaState.heroLevel;
+            runState.xp = metaState.heroXp;
+            runState.xpToNext = BALANCE.levelUp.xpScale * (runState.level || 1);
+            runState.runBonuses = { ...metaState.heroBonuses };
+            if (metaState.playerClass) {
+                const cb = calcularClassBonuses(runState.level, metaState.playerClass);
+                runState.runBonuses.hp += cb.hp;
+                runState.runBonuses.atk += cb.atk;
+                runState.runBonuses.def += cb.def;
+                runState.runBonuses.agi += cb.agi;
+            }
+            runState.characterScreenActive = false;
+            runState.classHits = 0;
+            runState.firstHitDone = false;
+            runState.nextHitMult = 1;
+            runState.dodgeStreak = 0;
+            runState.attackCounter = 0;
+            runState.demonHits = 0;
+            runState.demonActive = false;
+            runState.demonHitsLeft = 0;
+            runState.classComboStacks = 0;
+            runState.abilities = [];
+            runState.talentLevels = {};
+            runState.hasRevived = false;
+            runState.furiaStacks = 0;
+            runState.critMasteryCounter = 0;
+            runState.runeTapCounter = 0;
+            runState.reflejoBonus = 0;
+            runState.spellShieldCounter = 0;
+            runState.segundoAlientoUsed = false;
+            runState.bossesKilledThisRun = 0;
+            runState.enemyDebuffs = [];
+            runState.vitalShield = 0;
+            runState.shieldMax = 0;
+            runState.piedraShield = { amount: 0, ticksLeft: 0 };
+            runState.towerWave = 1;
+            runState.towerEnemy = 1;
+            runState.runStartTime = Date.now();
+            runState.recap = initRecap();
+            document.getElementById('combat-log').innerHTML = '';
+            addLog(`🏰 Torre de los Ancestros iniciada.`, 'system');
             startCombat();
             updateButtons();
         }
