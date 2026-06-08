@@ -1892,6 +1892,13 @@
                     metaState.dataVersion = 6;
                     needsMigration = true;
                 }
+                // Inicialización incondicional: campos de dungeon faltantes
+                if (metaState.dungeon.attemptsTodayAncestral === undefined) {
+                    metaState.dungeon.attemptsTodayAncestral = 0;
+                }
+                if (metaState.dungeon.attemptsTodayLegacy === undefined) {
+                    metaState.dungeon.attemptsTodayLegacy = 0;
+                }
                 if (data.upgrades) {
                     for (const [key, saved] of Object.entries(data.upgrades)) {
                         if (metaState.upgrades[key]) {
@@ -6896,6 +6903,7 @@ runState.furiaStacks = 0;
             if (metaState.dungeon.lastAttemptDate !== today) {
                 metaState.dungeon.attemptsToday = 0;
                 metaState.dungeon.attemptsTodayLegacy = 0;
+                metaState.dungeon.attemptsTodayAncestral = 0;
                 metaState.dungeon.lastAttemptDate = today;
                 metaState.dungeon.completedToday = false;
                 saveGame();
@@ -6905,6 +6913,7 @@ runState.furiaStacks = 0;
         function showDungeonSelection() {
             checkDungeonDailyReset();
             checkDungeonLegacyDailyReset();
+            checkDungeonAncestralReset();
             const content = document.getElementById('dungeon-content');
             const attemptsLeft = Math.max(0, BALANCE.dungeon.dailyAttempts - metaState.dungeon.attemptsToday);
             const paidAttemptCost = BALANCE.dungeon.soulCostBase * Math.pow(BALANCE.dungeon.soulCostMult, Math.max(0, metaState.dungeon.attemptsToday - BALANCE.dungeon.dailyAttempts));
