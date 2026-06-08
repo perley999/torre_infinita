@@ -3975,11 +3975,19 @@
                     return;
                 }
                 // Standard dungeon mode (floor-based)
-                const floorEquivalent = 100 + (runState.dungeonDifficulty - 1) * 10 + (runState.floor - 1);
+                const floorEquivalent = runState.legacyAbyssMode
+                    ? Math.max(100, (metaState.maxFloor || 100) - 20) + (runState.floor - 1) * 8
+                    : 100 + (runState.dungeonDifficulty - 1) * 10 + (runState.floor - 1);
                 const isBossDungeon = runState.floor === 10;
                 const isMinibossDungeon = runState.floor === 5;
                 const isBossEnemy = isBossDungeon || isMinibossDungeon;
                 eStats = calcEnemyStats(floorEquivalent, runState.player, false);
+                // Legacy Abyss: clamp para que nunca sea un paseo
+                if (runState.legacyAbyssMode) {
+                    eStats.hp = Math.max(eStats.hp, Math.floor(runState.player.maxHp * 0.6));
+                    eStats.atk = Math.max(eStats.atk, Math.floor(runState.player.atk * 0.6));
+                    eStats.def = Math.max(eStats.def, Math.floor(runState.player.def * 0.6));
+                }
                 eStats.isBoss = isBossEnemy;
                 if (isBossDungeon) eStats.isBoss = true;
             } else {
