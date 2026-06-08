@@ -979,6 +979,7 @@
         .dungeon-slot .slot-title { font-weight: 600; color: #c084fc; display: block; font-size: 1rem; }
         .dungeon-slot .slot-desc { font-size: 0.8rem; color: #9ca3af; margin-top: 4px; }
         .dungeon-slot .slot-status { font-size: 0.75rem; color: #6b7280; margin-top: 6px; display: block; }
+        .dungeon-slot .slot-paid { font-size: 0.75rem; color: #fbbf24; margin-top: 2px; display: block; }
         .dungeon-level-list { display: flex; flex-direction: column; gap: 6px; max-height: 240px; overflow-y: auto; }
         .dungeon-level-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
         .dungeon-level-row:hover { background: #3a3a5a; border-color: #a78bfa; }
@@ -6920,6 +6921,14 @@ runState.furiaStacks = 0;
                                  + Math.max(0, d - metaState.dungeon.attemptsToday)
                                  + Math.max(0, d - metaState.dungeon.attemptsTodayLegacy);
 
+            // Helper: paid cost for extra attempts
+            const paidCostAncestral = BALANCE.dungeon.soulCostBase * Math.pow(BALANCE.dungeon.soulCostMult, Math.max(0, metaState.dungeon.attemptsTodayAncestral - d));
+            const paidCostRune = BALANCE.dungeon.soulCostBase * Math.pow(BALANCE.dungeon.soulCostMult, Math.max(0, metaState.dungeon.attemptsToday - d));
+
+            function slotPaidInfo(remaining, cost) {
+                return remaining <= 0 ? `<span class="slot-paid">🪙 Próximo: ${formatNum(cost)} 💀</span>` : '';
+            }
+
             content.innerHTML = `
                 <div class="dungeon-attempts">Intentos restantes: <span>${totalRemaining}</span> / ${d * 3}</div>
                 <div class="dungeon-slot-grid">
@@ -6927,17 +6936,19 @@ runState.furiaStacks = 0;
                     <div class="dungeon-slot" onclick="startTowerRun()">
                         <span class="slot-title">🏰 Cámara Ancestral</span>
                         <span class="slot-desc">Oleadas infinitas — Recompensa: equipo</span>
-                        <span class="slot-status">${Math.max(0, BALANCE.dungeon.dailyAttempts - metaState.dungeon.attemptsTodayAncestral)}/${BALANCE.dungeon.dailyAttempts} intentos hoy</span>
+                        <span class="slot-status">${Math.max(0, d - metaState.dungeon.attemptsTodayAncestral)}/${d} intentos hoy</span>
+                        ${slotPaidInfo(d - metaState.dungeon.attemptsTodayAncestral, paidCostAncestral)}
                     </div>
                     <div class="dungeon-slot" onclick="startRuneChamberRun()">
                         <span class="slot-title">🔮 Cámara Rúnica</span>
                         <span class="slot-desc">Oleadas infinitas — Recompensa: 🔮 Polvo de Runas</span>
-                        <span class="slot-status">${Math.max(0, BALANCE.dungeon.dailyAttempts - metaState.dungeon.attemptsToday)}/${BALANCE.dungeon.dailyAttempts} intentos hoy</span>
+                        <span class="slot-status">${Math.max(0, d - metaState.dungeon.attemptsToday)}/${d} intentos hoy</span>
+                        ${slotPaidInfo(d - metaState.dungeon.attemptsToday, paidCostRune)}
                     </div>
                     <div class="dungeon-slot" onclick="startLegacyAbyssRun()">
                         <span class="slot-title">🌌 Abismo Eterno</span>
                         <span class="slot-desc">10 pisos — Recompensa: 🪶 Esencias de Legado</span>
-                        <span class="slot-status">${Math.max(0, BALANCE.dungeon.dailyAttempts - metaState.dungeon.attemptsTodayLegacy)}/${BALANCE.dungeon.dailyAttempts} intentos hoy</span>
+                        <span class="slot-status">${Math.max(0, d - metaState.dungeon.attemptsTodayLegacy)}/${d} intentos hoy</span>
                     </div>
                     ` : `
                     <div class="dungeon-slot locked">
