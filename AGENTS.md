@@ -354,11 +354,13 @@ Ver `Talentos.md` para la referencia completa con valores por nivel.
 ### Rarezas
 
 | Rareza | statMult | Stats totales | Maestría | Drop normal | Drop boss |
-|--------|:--------:|:-------:|:--------:|:-----------:|:---------:|
-| Poco común | 1.0 | 1 | ❌ | 70% | 0% |
-| Raro | 1.5 | 2 | ✅ niv 1 | 25% | 65% |
-| Épico | 2.0 | 3 | ✅ niv 2 | 5% | 30% |
-| Legendario | 3.0 | 4 | ✅ niv 3 | 0% | 5% |
+|--------|:--------:|:------------:|:--------:|:-----------:|:---------:|
+| Poco común | 1.0 | 1 (pri) | ❌ | 70% | 0% |
+| Raro | 1.5 | 2 (pri+1sec) | ✅ niv 1 | 25% | 65% |
+| Épico | 2.0 | 3 (pri+2sec) | ✅ niv 2 | 5% | 30% |
+| Legendario | 3.0 | 4 (pri+3sec) | ✅ niv 3 | 0% | 5% |
+| Ancestral | 3.0 | 5 (pri+4sec) | ✅ niv 3 | — | rates Cámara Ancestral |
+| Mítico | 4.0 | 5 (pri+4sec, con varianza) | ✅ niv 4 fija | — | rates Cámara Ancestral |
 
 ### Maestrías (pasivas de equipo)
 

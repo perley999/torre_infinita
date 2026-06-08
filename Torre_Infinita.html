@@ -3719,7 +3719,7 @@
             // Ancestral/Mythic overrides
             const isAncestral = rarity === 'Ancestral';
             const isMythic = rarity === 'Mítico';
-            const maxStats = isAncestral; // Ancestral: stats perfectas; Mítico: varianza pero ×4.0
+            const maxStats = isAncestral || isMythic; // Ambos con stats perfectas
             const statCount = (isAncestral || isMythic) ? 4 : (rarity === 'Poco común' ? 0 : rarity === 'Raro' ? 1 : rarity === 'Épico' ? 2 : 3);
             const hasMastery = ['Raro', 'Épico', 'Legendario', 'Ancestral', 'Mítico'].includes(rarity);
             const masteryLevel = isMythic ? 4 : isAncestral ? 3 : rarity === 'Raro' ? 1 : rarity === 'Épico' ? 2 : rarity === 'Legendario' ? 3 : 0;
