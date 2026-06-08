@@ -6915,17 +6915,13 @@ runState.furiaStacks = 0;
             checkDungeonLegacyDailyReset();
             checkDungeonAncestralReset();
             const content = document.getElementById('dungeon-content');
-            const attemptsLeft = Math.max(0, BALANCE.dungeon.dailyAttempts - metaState.dungeon.attemptsToday);
-            const paidAttemptCost = BALANCE.dungeon.soulCostBase * Math.pow(BALANCE.dungeon.soulCostMult, Math.max(0, metaState.dungeon.attemptsToday - BALANCE.dungeon.dailyAttempts));
-
-            let paidInfo = '';
-            if (attemptsLeft <= 0) {
-                paidInfo = `<div class="dungeon-attempts">🪙 Próximo intento: <span>${paidAttemptCost} 💀</span></div>`;
-            }
+            const d = BALANCE.dungeon.dailyAttempts;
+            const totalRemaining = Math.max(0, d - metaState.dungeon.attemptsTodayAncestral)
+                                 + Math.max(0, d - metaState.dungeon.attemptsToday)
+                                 + Math.max(0, d - metaState.dungeon.attemptsTodayLegacy);
 
             content.innerHTML = `
-                <div class="dungeon-attempts">Intentos gratis hoy: <span>${attemptsLeft}</span> / ${BALANCE.dungeon.dailyAttempts}</div>
-                ${paidInfo}
+                <div class="dungeon-attempts">Intentos restantes: <span>${totalRemaining}</span> / ${d * 3}</div>
                 <div class="dungeon-slot-grid">
                     ${metaState.unlockedReforge ? `
                     <div class="dungeon-slot" onclick="startTowerRun()">
