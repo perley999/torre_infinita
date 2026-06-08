@@ -2,7 +2,7 @@
 
 ## Estado actual
 ✅ Juego completo en un solo archivo `Torre_Infinita.html` — ~8.350 líneas  
-✅ Versión: **0.8.0** — Cámara de las Runas + Tutorial Completo
+✅ Versión: **0.8.0** — Cámara Rúnica + Cámara Ancestral + Tutorial Completo
 
 ## Decisiones de diseño
 
@@ -49,7 +49,7 @@
 ### Sistema de Prestigio (🪶 — v0.7.0)
 - Renacer al piso 100: `🪶 = floor(sqrt(heroLevel) × max(maxFloor, 100) / 100)`.
 - Árbol de Artefacto con 10 nodos: 4 de stats (+3%/nv) y 6 multiplicadores (+5%/nv).
-- Abismo del Legado: dungeon de 10 pisos que da 🪶 adicionales.
+- Abismo Eterno: dungeon de 10 pisos que da 🪶 adicionales.
 - Esencias de Legado persisten entre renacimientos.
 
 ### Combate por velocidad (no turnos alternos)
@@ -64,7 +64,7 @@
 ### Cuatro monedas
 - **💀 Almas**: moneda principal para mejoras permanentes.
 - **🩸 Esencias**: moneda secundaria para mejora de equipo (reforja, enhance).
-- **🔮 Polvo de Runas**: moneda del sistema de Runas (Cámara de las Runas).
+- **🔮 Polvo de Runas**: moneda del sistema de Runas (Cámara Rúnica).
 - **🪶 Esencias de Legado**: moneda premium del sistema de Prestigio.
 
 ## Estado del juego actual
@@ -89,9 +89,9 @@
 3 niveles cada uno. Se eligen cada 5 pisos.
 
 ### Mazmorras (v0.6.0)
-- **Torre de los Ancestros**: N1 = piso 100, +10 por nivel. Drops de Ancestral y Mítico. 3 intentos/día.
-- **Abismo del Legado** (v0.7.0): 10 pisos, recompensa 🪶. 3 intentos/día.
-- **Cámara de las Runas** (v0.8.0): oleadas de enemigos, recompensa 🔮 Polvo de Runas. 3 intentos/día.
+- **🏰 Cámara Ancestral**: oleadas infinitas — drops de equipo Ancestral y Mítico. Intentos separados.
+- **🔮 Cámara Rúnica** (v0.8.0): oleadas infinitas — recompensa 🔮 Polvo de Runas.
+- **🌌 Abismo Eterno** (v0.7.0): 10 pisos — recompensa 🪶 Esencias de Legado. Intentos separados.
 
 ### Persistencia
 - **localStorage** key: `torre_infinita_save_v1`
@@ -104,7 +104,7 @@
 - Jefes P20+ con escalado dinámico basado en stats del jugador (primer intento).
 
 ## Pendientes / Ideas futuras
-- [x] 🔒 Cámara de las Runas — tercer dungeon ✅
+- [x] 🔒 Cámara Rúnica — tercer dungeon ✅
 - [ ] Recompensas AFK / offline
 - [ ] Segunda capa de Prestige (Transcender)
 - [ ] Habilidades activas / Barra de Rage

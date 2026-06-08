@@ -8,7 +8,7 @@ Un idle RPG incremental donde tu héroe asciende por una torre infinita. Combate
 - **37 Talentos**: 5 bloques (Ofensivo, Defensivo, Estado, Sustain, Heroico), 3 niveles cada uno. Se eligen cada 5 pisos.
 - **Sistema de Clases**: 4 clases (Guerrero, Brujo, Pícaro, Monje) con 12 especializaciones y pasivas escalables.
 - **Equipamiento**: Armas, armaduras y anillos con 6 rarezas (Poco común → Mítico), maestrías, enhance y bonus stats.
-- **Mazmorras**: Torre de los Ancestros (drops exclusivos), Abismo del Legado (esencias de legado) y Cámara de las Runas (🔮 polvo de runas).
+- **Mazmorras**: Cámara Ancestral (drops exclusivos), Cámara Rúnica (🔮 polvo de runas) y Abismo Eterno (🪶 esencias de legado).
 - **Prestigio**: Renacer al piso 100 para obtener 🪶 Esencias de Legado e invertir en el Árbol de Artefacto.
 - **Meta-progresión**: 💀 Almas para mejoras permanentes, 🩸 Esencias para mejora de equipo, 🔮 Polvo de Runas para runas, 🪶 Esencias de Legado para el árbol de Prestigio.
 - **Balance centralizado**: Todos los números del juego en un solo objeto `BALANCE`.

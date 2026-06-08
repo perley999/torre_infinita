@@ -1323,9 +1323,9 @@
                     <h3>🏰 Mazmorras</h3>
                     <p>Desbloqueables al <b>Piso 100</b>. 3 intentos gratis por día cada una. Se acceden desde el botón 🏰 Mazmorra.</p>
                     <ul>
-                        <li><b>🏛️ Torre de los Ancestros</b>: farmeá equipo Ancestral y Mítico en oleadas infinitas. Cada oleada = 10 enemigos, miniboss en #5, boss en #10. A mayor oleada, mejores chances de drop.</li>
-                        <li><b>🪶 Abismo del Legado</b>: obtené Esencias de Legado para el árbol de Prestigio. 10 pisos de combate.</li>
-                        <li><b>🔮 Cámara de las Runas</b>: combatí oleadas de enemigos para conseguir 🔮 Polvo de Runas. Usalo en la Forja para crear Runas.</li>
+                        <li><b>🏛️ Cámara Ancestral</b>: farmeá equipo Ancestral y Mítico en oleadas infinitas. Cada oleada = 10 enemigos, miniboss en #5, boss en #10. A mayor oleada, mejores chances de drop.</li>
+                        <li><b>🪶 Abismo Eterno</b>: obtené Esencias de Legado para el árbol de Prestigio. 10 pisos de combate.</li>
+                        <li><b>🔮 Cámara Rúnica</b>: combatí oleadas de enemigos para conseguir 🔮 Polvo de Runas. Usalo en la Forja para crear Runas.</li>
                     </ul>
                 </div>
 
@@ -1873,6 +1873,9 @@
                     if (!metaState.dungeon.attemptsTodayLegacy) {
                         metaState.dungeon.attemptsTodayLegacy = 0;
                     }
+                    if (!metaState.dungeon.attemptsTodayAncestral) {
+                        metaState.dungeon.attemptsTodayAncestral = 0;
+                    }
                     metaState.dataVersion = 5;
                     needsMigration = true;
                 }
@@ -1949,7 +1952,7 @@
                 metaState.heroArtifact.nodes[n.id] = 0;
             }
             metaState.hasRebirthed = false;
-            metaState.dungeon = { unlockedLevels: [], attemptsToday: 0, attemptsTodayLegacy: 0, lastAttemptDate: '', currentDifficulty: 0, currentFloor: 0, completedToday: false };
+            metaState.dungeon = { unlockedLevels: [], attemptsToday: 0, attemptsTodayLegacy: 0, attemptsTodayAncestral: 0, lastAttemptDate: '', currentDifficulty: 0, currentFloor: 0, completedToday: false };
             for (const key of Object.keys(metaState.upgrades)) {
                 metaState.upgrades[key].level = 0;
             }
@@ -2038,7 +2041,7 @@
             // Rune Chamber mode
             runeChamberMode: false,
             runeWave: 0,
-            // Torre de los Ancestros (wave-based)
+            // Cámara Ancestral (wave-based)
             towerMode: false,
             towerWave: 0,
             towerEnemy: 0,
@@ -5279,7 +5282,7 @@
                     return;
                 }
 
-                // ─── TOWER MODE (Torre de los Ancestros) ─────────────
+                // ─── TOWER MODE (Cámara Ancestral) ─────────────
                 if (runState.towerMode) {
                     const wave = runState.towerWave || 1;
                     const enemyPos = runState.towerEnemy || 1;
@@ -5348,7 +5351,7 @@
                     return;
                 }
 
-                // Drop (equipment drops only in old Torre de los Ancestros floors, not in Tower Mode/Legacy Abyss/Rune Chamber)
+                // Drop (equipment drops only in old Cámara Ancestral floors, not in Tower Mode/Legacy Abyss/Rune Chamber)
                 if (!runState.legacyAbyssMode && !runState.runeChamberMode && !runState.towerMode) {
                     const isMiniboss = runState.floor === 5;
                     const isBossFloor = runState.floor === 10;
@@ -5387,7 +5390,7 @@
                 // Floor 10: dungeon complete!
                 if (!runState.runeChamberMode && runState.floor >= 10) {
                     if (runState.legacyAbyssMode) {
-                        addLog('🌌 ¡Abismo del Legado completado!', 'victory');
+                        addLog('🌌 ¡Abismo Eterno completado!', 'victory');
                         runState.active = false;
                         runState.legacyAbyssMode = false;
                         saveGame();
@@ -5570,7 +5573,7 @@
                 } else if (runState.towerMode) {
                     const wave = runState.towerWave || 1;
                     const enemyPos = runState.towerEnemy || 1;
-                    addLog(`💀 Caíste en la Torre de los Ancestros (Oleada ${wave} · Enemigo ${enemyPos}/10).`, 'death');
+                    addLog(`💀 Caíste en la Cámara Ancestral (Oleada ${wave} · Enemigo ${enemyPos}/10).`, 'death');
                 } else {
                     addLog(`💀 Caíste en la mazmorra (piso ${runState.floor}).`, 'death');
                 }
@@ -6395,7 +6398,7 @@
             return `
                 <div style="background:#1a1a2e;border-radius:12px;padding:12px;border:1px solid #2a2a4a;margin-bottom:12px;">
                     <h3 style="color:#a78bfa;font-size:0.95rem;margin-bottom:8px;">🔮 Runas</h3>
-                    ${hasAnyRuna ? runeHTML : '<div style="font-size:0.8rem;color:#6b7280;text-align:center;padding:8px;">No tenés runas equipadas. Conseguilas en la <b style="color:#a78bfa;cursor:pointer;" onclick="closeCharacterScreen();showDungeonSelection()">🔮 Cámara de las Runas</b>.</div>'}
+                    ${hasAnyRuna ? runeHTML : '<div style="font-size:0.8rem;color:#6b7280;text-align:center;padding:8px;">No tenés runas equipadas. Conseguilas en la <b style="color:#a78bfa;cursor:pointer;" onclick="closeCharacterScreen();showDungeonSelection()">🔮 Cámara Rúnica</b>.</div>'}
                     <div style="margin-top:8px;text-align:center;">
                         <button onclick="showRuneModal()" style="background:transparent;border:1px solid #3b82f6;color:#60a5fa;border-radius:6px;padding:4px 12px;font-size:0.75rem;cursor:pointer;">🔮 Gestionar Runas</button>
                     </div>
@@ -6516,7 +6519,7 @@
                 if (runState.floor >= 10) {
                     // Boss was defeated and item comparison done - complete dungeon
                     if (runState.legacyAbyssMode) {
-                        addLog('🌌 ¡Abismo del Legado completado!', 'victory');
+                        addLog('🌌 ¡Abismo Eterno completado!', 'victory');
                         runState.active = false;
                         runState.legacyAbyssMode = false;
                         saveGame();
@@ -6916,31 +6919,32 @@ runState.furiaStacks = 0;
                 ${paidInfo}
                 <div class="dungeon-slot-grid">
                     ${metaState.unlockedReforge ? `
+                    <div class="dungeon-slot" onclick="startTowerRun()">
+                        <span class="slot-title">🏰 Cámara Ancestral</span>
+                        <span class="slot-desc">Oleadas infinitas — Recompensa: equipo</span>
+                        <span class="slot-status">${Math.max(0, BALANCE.dungeon.dailyAttempts - metaState.dungeon.attemptsTodayAncestral)}/${BALANCE.dungeon.dailyAttempts} intentos hoy</span>
+                    </div>
+                    <div class="dungeon-slot" onclick="startRuneChamberRun()">
+                        <span class="slot-title">🔮 Cámara Rúnica</span>
+                        <span class="slot-desc">Oleadas infinitas — Recompensa: 🔮 Polvo de Runas</span>
+                        <span class="slot-status">${Math.max(0, BALANCE.dungeon.dailyAttempts - metaState.dungeon.attemptsToday)}/${BALANCE.dungeon.dailyAttempts} intentos hoy</span>
+                    </div>
                     <div class="dungeon-slot" onclick="startLegacyAbyssRun()">
-                        <span class="slot-title">🌌 Abismo del Legado</span>
+                        <span class="slot-title">🌌 Abismo Eterno</span>
                         <span class="slot-desc">10 pisos — Recompensa: 🪶 Esencias de Legado</span>
                         <span class="slot-status">${Math.max(0, BALANCE.dungeon.dailyAttempts - metaState.dungeon.attemptsTodayLegacy)}/${BALANCE.dungeon.dailyAttempts} intentos hoy</span>
                     </div>
                     ` : `
                     <div class="dungeon-slot locked">
-                        <span class="slot-title">🔒 Abismo del Legado</span>
+                        <span class="slot-title">🔒 Cámara Ancestral</span>
                         <span class="slot-desc">Alcanzá el piso 100 para desbloquear</span>
                     </div>
-                    `}
-                    ${metaState.unlockedReforge ? `
-                    <div class="dungeon-slot" onclick="startTowerRun()">
-                        <span class="slot-title">🏰 Torre de los Ancestros</span>
-                        <span class="slot-desc">Oleadas infinitas — Recompensa: equipo</span>
-                        <span class="slot-status">${Math.max(0, BALANCE.dungeon.dailyAttempts - metaState.dungeon.attemptsToday)}/${BALANCE.dungeon.dailyAttempts} intentos hoy</span>
-                    </div>
-                    <div class="dungeon-slot" onclick="startRuneChamberRun()">
-                        <span class="slot-title">🔮 Cámara de las Runas</span>
-                        <span class="slot-desc">Oleadas infinitas — Recompensa: 🔮 Polvo de Runas</span>
-                        <span class="slot-status">${Math.max(0, BALANCE.dungeon.dailyAttempts - metaState.dungeon.attemptsToday)}/${BALANCE.dungeon.dailyAttempts} intentos hoy</span>
-                    </div>
-                    ` : `
                     <div class="dungeon-slot locked">
-                        <span class="slot-title">🔒 Cámara de las Runas</span>
+                        <span class="slot-title">🔒 Cámara Rúnica</span>
+                        <span class="slot-desc">Alcanzá el piso 100 para desbloquear</span>
+                    </div>
+                    <div class="dungeon-slot locked">
+                        <span class="slot-title">🔒 Abismo Eterno</span>
                         <span class="slot-desc">Alcanzá el piso 100 para desbloquear</span>
                     </div>
                     `}
@@ -7075,7 +7079,7 @@ runState.furiaStacks = 0;
                 if (runState.runeChamberMode) {
                     const wave = runState.runeWave || 1;
                     const isBossWave = wave % 10 === 0;
-                    document.getElementById('floor-number').textContent = `🔮 Cámara de las Runas — Oleada ${wave}`;
+                    document.getElementById('floor-number').textContent = `🔮 Cámara Rúnica — Oleada ${wave}`;
                     const bossEl = document.getElementById('boss-indicator');
                     if (isBossWave) {
                         bossEl.textContent = '☠️ JEFE';
@@ -7084,7 +7088,7 @@ runState.furiaStacks = 0;
                         bossEl.style.display = 'none';
                     }
                 } else if (runState.legacyAbyssMode) {
-                    document.getElementById('floor-number').textContent = `🌌 Abismo del Legado — Piso ${runState.floor}`;
+                    document.getElementById('floor-number').textContent = `🌌 Abismo Eterno — Piso ${runState.floor}`;
                     const bossEl = document.getElementById('boss-indicator');
                     if (runState.floor === 10) {
                         bossEl.textContent = '☠️ BOSS FINAL';
@@ -7098,7 +7102,7 @@ runState.furiaStacks = 0;
                 } else if (runState.towerMode) {
                     const wave = runState.towerWave || 1;
                     const enemyPos = runState.towerEnemy || 1;
-                    document.getElementById('floor-number').textContent = `🏰 Torre de los Ancestros — Oleada ${wave} · Enemigo ${enemyPos}/10`;
+                    document.getElementById('floor-number').textContent = `🏰 Cámara Ancestral — Oleada ${wave} · Enemigo ${enemyPos}/10`;
                     const bossEl = document.getElementById('boss-indicator');
                     if (enemyPos === 10) {
                         bossEl.textContent = '☠️ JEFE';
@@ -7616,7 +7620,7 @@ runState.furiaStacks = 0;
         }
 
         // ============================================
-        // 7d. ABISMO DEL LEGADO
+        // 7d. ABISMO ETERNO
         // ============================================
 
         function checkDungeonLegacyDailyReset() {
@@ -7628,13 +7632,26 @@ runState.furiaStacks = 0;
             }
         }
 
+        // ============================================
+        // 7e. CÁMARA ANCESTRAL
+        // ============================================
+
+        function checkDungeonAncestralReset() {
+            const today = new Date().toISOString().split('T')[0];
+            if (metaState.dungeon.lastAttemptDate !== today) {
+                metaState.dungeon.attemptsTodayAncestral = 0;
+                metaState.dungeon.lastAttemptDate = today;
+                saveGame();
+            }
+        }
+
         function startLegacyAbyssRun() {
             if (runState.active) return;
             checkDungeonLegacyDailyReset();
 
             // Hardcap: 3 attempts per day, no paid extras
             if (metaState.dungeon.attemptsTodayLegacy >= BALANCE.dungeon.dailyAttempts) {
-                addLog('❌ Ya usaste todos los intentos del Abismo del Legado hoy. ¡Volvé mañana!', 'system');
+                addLog('❌ Ya usaste todos los intentos del Abismo Eterno hoy. ¡Volvé mañana!', 'system');
                 return;
             }
 
@@ -7691,13 +7708,13 @@ runState.furiaStacks = 0;
             runState.runStartTime = Date.now();
             runState.recap = initRecap();
             document.getElementById('combat-log').innerHTML = '';
-            addLog(`🌌 Abismo del Legado iniciado.`, 'system');
+            addLog(`🌌 Abismo Eterno iniciado.`, 'system');
             startCombat();
             updateButtons();
         }
 
         // ════════════════════════════════════════════════
-        // CÁMARA DE LAS RUNAS
+        // CÁMARA RÚNICA
         // ════════════════════════════════════════════════
 
         function startRuneChamberRun() {
@@ -7775,36 +7792,36 @@ runState.furiaStacks = 0;
             runState.runStartTime = Date.now();
             runState.recap = initRecap();
             document.getElementById('combat-log').innerHTML = '';
-            addLog(`🔮 Cámara de las Runas iniciada.`, 'system');
+            addLog(`🔮 Cámara Rúnica iniciada.`, 'system');
             startCombat();
             updateButtons();
         }
 
         // ============================================
-        // TORRE DE LOS ANCESTROS (Wave-based)
+        // CÁMARA ANCESTRAL (Wave-based)
         // ============================================
         function startTowerRun() {
             if (runState.active) return;
-            checkDungeonDailyReset();
+            checkDungeonAncestralReset();
 
-            // Same attempt pool as regular dungeons
-            if (metaState.dungeon.attemptsToday >= BALANCE.dungeon.dailyAttempts) {
-                const paidCost = BALANCE.dungeon.soulCostBase * Math.pow(BALANCE.dungeon.soulCostMult, metaState.dungeon.attemptsToday - BALANCE.dungeon.dailyAttempts);
+            // Separate attempt pool
+            if (metaState.dungeon.attemptsTodayAncestral >= BALANCE.dungeon.dailyAttempts) {
+                const paidCost = BALANCE.dungeon.soulCostBase * Math.pow(BALANCE.dungeon.soulCostMult, metaState.dungeon.attemptsTodayAncestral - BALANCE.dungeon.dailyAttempts);
                 if (metaState.souls < paidCost) {
-                    addLog(`❌ No tenés suficientes almas para la Torre (${paidCost} 💀)`, 'system');
+                    addLog(`❌ No tenés suficientes almas para la Cámara Ancestral (${paidCost} 💀)`, 'system');
                     return;
                 }
                 metaState.souls -= paidCost;
                 addLog(`🪙 Pagaste ${paidCost} 💀 por un intento extra.`, 'system');
             }
 
-            metaState.dungeon.attemptsToday++;
+            metaState.dungeon.attemptsTodayAncestral++;
             metaState.dungeon.currentDifficulty = 0;
             metaState.dungeon.currentFloor = 0;
             saveGame();
             closeDungeonSelection();
 
-            // Setup run state for Tower
+            // Setup run state
             arenaIdle();
             runState.active = true;
             runState.floor = 1;
@@ -7855,7 +7872,7 @@ runState.furiaStacks = 0;
             runState.runStartTime = Date.now();
             runState.recap = initRecap();
             document.getElementById('combat-log').innerHTML = '';
-            addLog(`🏰 Torre de los Ancestros iniciada.`, 'system');
+            addLog(`🏰 Cámara Ancestral iniciada.`, 'system');
             startCombat();
             updateButtons();
         }

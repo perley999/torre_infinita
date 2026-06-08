@@ -40,9 +40,9 @@ Moneda premium del sistema de Prestigio. Se obtienen de dos fuentes:
 | Fuente | Cantidad | Condiciones |
 |--------|----------|-------------|
 | **Renacer** | `floor(sqrt(hl) × max(mf, 100) / 100)` | Solo al renacer, se multiplican por Ciclo del Legado |
-| **Abismo del Legado** | `floor(sqrt(nivelHéroe) × numPiso / 5)` | Dungeon de 10 pisos, piso 10 = ×2 |
+| **Abismo Eterno** | `floor(sqrt(nivelHéroe) × numPiso / 5)` | Dungeon de 10 pisos, piso 10 = ×2 |
 
-### Abismo del Legado
+### Abismo Eterno
 
 - Dungeon independiente con 10 pisos
 - Mini-boss en piso 5, boss en piso 10

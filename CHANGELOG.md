@@ -2,11 +2,22 @@
 
 Todos los cambios notables en este proyecto.
 
+## [0.8.1] - 2026-06-08
+
+### Cambiado
+- **Cámara Ancestral**: la Torre de los Ancestros pasa a oleadas infinitas (10 enemigos/oleada, miniboss #5, boss #10). Se eliminó el sistema de N-niveles.
+- **Nombres de mazmorras**: 🏰 Cámara Ancestral (gear), 🔮 Cámara Rúnica (runas), 🌌 Abismo Eterno (legado).
+- **Orden de slots**: Cámara Ancestral → Cámara Rúnica → Abismo Eterno.
+- **Intentos separados**: cada mazmorra tiene su propio contador de intentos diarios.
+
+### Añadido
+- **Drops por oleada**: boss garantizado (#10), miniboss 60% (#5), normal 5%. Cap de rareza alcanzado en oleada 9.
+
 ## [0.8.0] - 2026-06-07
 
 ### Añadido
 - **Guía completa en el tutorial**: el botón `?` ahora muestra un resumen completo de todo lo que se puede hacer en el juego (combate, progresión, equipo, talentos, clases, training, mazmorras, prestigio, runas, leaderboard + tips).
-- **Cámara de las Runas**: tercer dungeon con sistema de runas (Condición + Efecto por pieza). Rarezas S/SS/SSS, enhance individual por componente.
+- **Cámara Rúnica**: tercer dungeon con sistema de runas (Condición + Efecto por pieza). Rarezas S/SS/SSS, enhance individual por componente.
 - **Sistema de Runas completo**: 8 condiciones, 8 efectos, mejora independiente, fabricación en la Forja con 🔮 Polvo de Runas.
 - **Runas.md**: documentación del sistema de runas.
 
@@ -24,13 +35,13 @@ Todos los cambios notables en este proyecto.
 ### Añadido
 - **Sistema de Renacer / Prestigio**: al alcanzar el piso 100, el jugador puede renacer para reiniciar su progreso a cambio de 🪶 Esencias de Legado.
 - **Árbol de Artefacto (10 nodos)**: estadísticas ancestrales (⚔️🛡️❤️🏃 +3%/nv) y multiplicadores globales (💍 Herencia, 💥 Talento Innato, 📖 Sabiduría, 🍀 Fortuna, 🪶 Ciclo del Legado, 💀 Voluntad +5%/nv).
-- **Abismo del Legado**: dungeon de 10 pisos que otorga 🪶 Esencias de Legado. 3 intentos/día. Desbloqueable al piso 100.
+- **Abismo Eterno**: dungeon de 10 pisos que otorga 🪶 Esencias de Legado. 3 intentos/día. Desbloqueable al piso 100.
 - **Prestigio.md**: documentación completa del sistema de Prestigio.
 - **Codex actualizado**: nuevo bloque 🪶 Prestigio en el codex del juego con niveles actuales y costos dinámicos.
-- **Slot 3 de mazmorra**: "Abismo del Legado" ahora visible y seleccionable en la pantalla de selección de mazmorras post-piso 100.
+- **Slot 3 de mazmorra**: "Abismo Eterno" ahora visible y seleccionable en la pantalla de selección de mazmorras post-piso 100.
 
 ### Cambiado
-- **Dungeon spec**: especificación actualizada para incluir Slot 3 (Abismo del Legado) en la pantalla de selección.
+- **Dungeon spec**: especificación actualizada para incluir Slot 3 (Abismo Eterno) en la pantalla de selección.
 - **Migración de saves**: v4→v5 con nuevos campos `heroArtifact`, `hasRebirthed`, `dungeon.attemptsTodayLegacy`.
 
 ### Corregido
