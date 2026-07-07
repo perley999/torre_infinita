@@ -84,24 +84,341 @@
 - 🗡️ Pícaro (Agilidad) — crítico, combo, evasión
 - 🧘 Monje (Equilibrio) — velocidad, curación, daño por velocidad
 
+Ver `Clases.md` para detalle de las 12 especializaciones y sus pasivas.
+
 ### Sistema de Talentos (37 talentos)
 5 bloques: Ofensivo (10), Defensivo (10), Estado (7), Sustain (5), Heroico (5).  
-3 niveles cada uno. Se eligen cada 5 pisos.
+3 niveles cada uno. Se eligen cada 5 pisos (opción heroica adicional cada 20).
 
-### Mazmorras (v0.6.0)
-- **🏰 Cámara Ancestral**: oleadas infinitas — drops de equipo Ancestral y Mítico. Intentos separados.
-- **🔮 Cámara Rúnica** (v0.8.0): oleadas infinitas — recompensa 🔮 Polvo de Runas.
-- **🌌 Abismo Eterno** (v0.7.0): 10 pisos — recompensa 🪶 Esencias de Legado. Intentos separados.
+Ver `Talentos.md` para la referencia completa con valores por nivel.
+
+### Mazmorras (v0.6.0+)
+- **🏰 Cámara Ancestral**: oleadas infinitas — drops de equipo Ancestral y Mítico. Intentos diarios separados.
+- **🔮 Cámara Rúnica** (v0.8.0): oleadas infinitas — recompensa 🔮 Polvo de Runas. Intentos diarios separados.
+- **🌌 Abismo Eterno** (v0.7.0): 10 pisos — recompensa 🪶 Esencias de Legado. Escala con `maxFloor`. Intentos diarios separados.
+
+Cada mazmorra tiene su propio pool de intentos, independiente de la Torre principal.
 
 ### Persistencia
 - **localStorage** key: `torre_infinita_save_v1`
-- dataVersion v5 con migraciones automáticas.
+- dataVersion v5 con migraciones automáticas al cargar.
 
 ### Enemigos
 - 8 nombres rotativos para enemigos normales.
 - 6 nombres rotativos para jefes.
 - Jefe P10 con stats fijas: HP 150, ATK 15, DEF 5.
-- Jefes P20+ con escalado dinámico basado en stats del jugador (primer intento).
+- Jefes P20+ con escalado dinámico basado en stats del jugador (primer intento). Stats se guardan en `metaState.bossStats` para reuso en reintentos.
+
+---
+
+## Referencia técnica
+
+Detalle de implementación, fórmulas y estructuras. Las decisiones de
+alto nivel están arriba; esta sección es para implementación.
+
+### Estructura de `BALANCE`
+
+Objeto global con todos los números del juego. Editar un valor acá
+recalcula todo lo que dependa de él.
+
+```
+BALANCE
+├── player          → { hp: 100, atk: 10, def: 5, agi: 10 }
+├── levelUp         → { xpBase, xpScale, maxLevel, abilityLevels[] }
+├── metaUpgrades    → { hp, atk, def, agi, souls, crit, drop, ... }
+│   Cada upgrade:
+│   { baseCost, scale, percent, flat?, maxLevel?, label, icon }
+├── enemy
+│   ├── normal      → { hp, atk, def, agi }
+│   ├── boss        → { hp, atk, def, agi }
+│   ├── tierScale   → { normal, boss } — salto cada 10 pisos
+│   ├── subScale    → { normal, boss } — incremental dentro del tier
+│   ├── agiScale    → 1.02
+│   ├── bossHpMult  → 1.6
+│   ├── firstBoss   → { hp: 150, atk: 15, def: 5 } — stats fijos P10
+│   └── dynamicBoss → { hpMult, atkMult, defMult } — 1er intento P20+
+├── equipment
+│   ├── dropBaseChance → 50
+│   ├── slots       → [weapon, armor, ring]
+│   ├── statPools   → por slot (primarios y secundarios)
+│   ├── budgetMult  → multiplicadores por tipo de stat
+│   │   ├── crit/lifesteal/dodge/pen/critDmg → 1.5
+│   │   ├── hp                              → 1.5
+│   │   ├── bossDmg/hpRegen                 → 1.2
+│   │   ├── primary (atk/def)               → 1.0
+│   │   └── flat (atk/def/agi secundario)   → 0.4
+│   ├── rarities[]  → nombre, pesos, statMult
+│   └── budgetBase  → 5
+├── combat
+│   ├── tickMs      → 100
+│   ├── speedBase   → 3000ms
+│   ├── speedPerAgi → 100ms
+│   ├── speedMin    → 750ms
+│   ├── minDamage   → 1
+│   ├── caps y K    → crit(70/100), dodge(40/80), block(50/100),
+│   │                 lifesteal(25/80), pen(50/100), critDmg(600/200),
+│   │                 bossDmg(100/150)
+│   └── critDmgBase → 50 (% base sobre ×1.5)
+├── souls
+│   └── baseMult    → 2
+├── essence
+│   ├── dropChance  → 50% (normales)
+│   ├── bossAlways  → 1 (jefes siempre dan 1)
+│   ├── reforgeRandom → 3
+│   ├── reforgeChoose → 8
+│   └── rerollBonus   → 5
+├── enhance
+│   ├── maxLevel    → 10
+│   ├── scale       → 1.5 (cost = floor(1.5^enhance))
+│   └── multPerLevel → 0.1 (10% por nivel)
+└── heroArtifact
+    └── (Árbol de Legado del Prestigio — 10 nodos)
+```
+
+### Fórmulas
+
+**Daño** (`calcDamage`):
+```js
+DR = def / (def + atk * K)     // K = 0.6
+dmg = max(1, floor(atk * (1 - DR)))
+```
+La DEF siempre reduce un porcentaje, nunca anula el daño por completo.
+
+**Velocidad de ataque** (`speedToInterval`):
+```js
+interval = max(750, 3000 - (agi * 100))
+```
+
+**Diminishing Returns** (genérica):
+```js
+DR(raw, cap, K) = cap * (raw / (raw + K))
+```
+
+**Crit chance** (combate y display son la misma fórmula):
+```js
+equipCritPct = (p.critRating || 0) / 13  // rating → % lineal
+rawCrit      = derived.crit + equipCritPct + preciseBonus
+totalCrit    = floor(DR(rawCrit, cap=70, K=100))
+              + masteryCritFlat + critBonus + trinityFlat
+```
+- Equipment: ratio 13. +65 = 5%.
+- Golpe Preciso: +10/15/20 flat pre-DR.
+- Trinidad: +8/12/16 flat pre-DR.
+- Meta upgrade crit: +2%/nivel, post-DR (flat).
+- Maestría Crítica: +5/10/15 flat, post-DR.
+- Base: 0%.
+
+**Dodge / Evasión**:
+```js
+baseDodge     = floor(40 * agi / (agi + 80))        // DR desde AGI
+equipDodgePct = (p.dodgeRating || 0) / 5            // rating → %
+rawDodge      = baseDodge + equipDodgePct
+totalDodge    = floor(DR(rawDodge, cap=40, K=80))
+              + masteryFlatDodge + reflejosFelinos + trinityFlat
+```
+- Equipo pasa por DR una sola vez (no hay doble DR).
+- Reflejos Felinos: +8/12/16 flat post-DR.
+- Maestría Evasiva: +2.5/5/7.5 flat post-DR.
+
+**Crit damage**:
+```js
+critMult = 1.5 + DR(critDamage, cap=600, K=200) / 100
+dmg = floor(dmg * critMult)
+```
+
+**Ilvl del equipo** (`calcIlvl`):
+```js
+return atk*1.0 + def*1.0 + agi*1.0
+     + hp*0.4 + crit*0.5 + lifesteal*0.5 + dodge*0.5
+     + block*0.4 + critDamage*0.4 + hpRegen*0.4
+     + bossDamage*0.3 + pen*0.3
+     + maestria(nivel)*3
+```
+- Primarios (ATK/DEF/AGI): peso ×1.0.
+- Secundarios premium (CRIT/Lifesteal/Dodge): peso ×0.5.
+- Secundarios medios (HP/Block/Crit DMG/HP REGEN): peso ×0.4.
+- Secundarios situacionales (Boss DMG/PEN): peso ×0.3.
+- Maestría: +3 por nivel.
+
+**Progresión de enemigos** (`calcEnemyStats`, tier-based):
+```js
+tier = floor((floor - 1) / 10)   // cada 10 pisos = 1 tier
+sub  = ((floor - 1) % 10) + 1    // posición dentro del tier
+
+stat = base * tierScale^tier * subScale^(sub-1)
+```
+Jefes P20+ con escalado dinámico: stats se calculan en función de las
+stats del jugador en el primer intento y se guardan en
+`metaState.bossStats` para reuso. Jefe P10 usa stats fijas.
+
+**Almas al morir**:
+```js
+souls = floor(piso * baseMult + piso * upgrade_almas.level * upgrade_almas.flat)
+```
+- Se calculan una sola vez al morir (no se acumulan por enemigo).
+- Maestría Afortunada (anillo): 10/20/30% chance de duplicar.
+- Training mode: base solamente, 25% del valor, sin mejoras permanentes.
+
+**Presupuesto de equipo**:
+```js
+budget = floor(budgetBase * log2(piso + 1) * statMult(rareza))
+// budgetBase = 5
+```
+
+**Enhance multiplier** (`calcPlayerStats`):
+```js
+enhMult = 1 + (item.enhance || 0) * 0.1
+// Cada nivel = +10% a TODAS las stats del item (multiplicativo)
+// Bonus stat se suma DESPUÉS del multiplicador
+```
+
+**Costo de mejora** (`getMaximizeCost`):
+```js
+cost = Math.floor(1.5^enhance)  // 0→1: 1, 1→2: 1, 2→3: 2, 3→4: 3, ...
+```
+
+**Bonus stat** (`getRandomBonusStat`):
+```js
+bonus = floor(valorStatBase * enhMult * 0.25)  // +25% del valor con enhance
+```
+- Se otorga al alcanzar `enhance = 5` y `enhance = 10`.
+- Se puede rerolear por 5🩸 (cambia a otro stat no-cero).
+
+### Tabla de rarezas
+
+| Rareza | statMult | Stats | Maestría | Drop normal | Drop boss |
+|--------|:--------:|:-----:|:--------:|:-----------:|:---------:|
+| Poco común | 1.0 | 1 (pri) | ❌ | 70% | 0% |
+| Raro | 1.5 | 2 (pri+1sec) | ✅ niv 1 | 25% | 65% |
+| Épico | 2.0 | 3 (pri+2sec) | ✅ niv 2 | 5% | 30% |
+| Legendario | 3.0 | 4 (pri+3sec) | ✅ niv 3 | 0% | 5% |
+| Ancestral | 3.0 | 5 (pri+4sec, ×1.1/×1.2) | ✅ niv 3 | — | rates Cámara Ancestral |
+| Mítico | 4.0 | 5 (pri+4sec, ×1.1/×1.2) | ✅ niv 4 fija | — | rates Cámara Ancestral |
+
+### Slots y stats
+
+| Slot | Primario | Secundarios posibles |
+|------|----------|---------------------|
+| Arma | ATK | CRIT, Lifesteal, PEN, CRIT DMG, Boss DMG |
+| Armadura | DEF | HP, Dodge, HP REGEN |
+| Anillo | HP/ATK/DEF/AGI | Cualquiera (incluye repetidos de primarios) |
+
+Maestrías por slot: ver `Maestrias.md`.
+
+### Reforja y Maximizar
+
+Sistema de mejora de equipo, se desbloquea al alcanzar el piso 100
+(`metaState.unlockedReforge`). Moneda: 🩸 esencias.
+
+**Reforjar (Reforging)** — reemplazar la maestría de un item equipado
+(solo Raro+):
+
+| Modo | Costo | Mecánica |
+|------|:-----:|----------|
+| Aleatorio | 3🩸 | Maestría al azar del pool del slot |
+| Elegir | 8🩸 | Grilla de maestrías disponibles para elegir |
+
+La maestría nueva hereda el nivel de la anterior (no se resetea a 1).
+
+**Maximizar (Enhancing)** — subir `enhance` de +0 a +10:
+
+```
+costo = floor(1.5^enhance_actual)
+```
+
+| De | A | Costo |
+|----|---|:-----:|
+| +0 | +1 | 1🩸 |
+| +1 | +2 | 1🩸 |
+| +2 | +3 | 2🩸 |
+| ... | ... | ... |
+| +9 | +10 | 38🩸 |
+
+Cada nivel otorga +10% a TODAS las stats del item (multiplicativo).
+
+**Bonus stat** — al alcanzar `enhance = 5` y `enhance = 10`, el item
+obtiene un stat bonus aleatorio de sus stats no-cero. El bonus es +25%
+del valor base del stat (incluyendo el multiplicador de enhance). Se
+muestra en azul (`#60a5fa`). Se puede rerolear por 5🩸.
+
+### Diminishing Returns por stat
+
+Cada stat pasa por DR con un cap y K específicos:
+
+| Stat | Cap | K |
+|------|:---:|:---:|
+| Crit chance | 70% | 100 |
+| Dodge | 40% | 80 |
+| Block | 50% | 100 |
+| PEN | 50% | 100 |
+| Crit DMG | 600% | 200 |
+| Boss DMG | 100% | 150 |
+| Lifesteal | 25% | 80 |
+| HP REGEN | ~15% | 150 |
+
+### Sistema de debuffs
+
+Los debuffs se aplican al enemigo mediante talentos de estado. Viven
+en `runState.enemyDebuffs[]`. Funciones clave: `clearDebuffs()` (al
+derrotar enemigo), `applyDebuff(def)` (respetando `maxStack`),
+`processDebuffs()` (cada tick de combate).
+
+| Talento | ID | Tipo | Efecto |
+|---------|----|------|--------|
+| Hemorragia | `hemorragia` | `dot` | Sangrado: daño por tick, acumulable ×3 |
+| Hoja Tóxica | `hoja_toxica` | `dot` | Veneno: DoT + reduce % DEF |
+| Marca de Muerte | `marca_muerte` | `vulnerability` | +% daño recibido multiplicativo |
+| Furia Ardiente | `quemadura` | `burn` | DoT de fuego 1s + reduce ATK del enemigo |
+| Desgaste | `desgaste` | `stat_drain` | Cada 3s pierde % ATK/DEF acumulativo |
+
+### Persistencia detallada
+
+**Key**: `torre_infinita_save_v1`
+
+**Se guarda en `metaState` y persiste**:
+almas, esencias, maxFloor, equipo (con `enhance` y `bonusStat`),
+upgrades (solo level), `unlockedReforge`, `bossAttempted[]`,
+`bossStats{}`, heroLevel, heroXp, heroBonuses, playerName,
+leaderboard[].
+
+**NO se guarda**: `talentLevels` (se resetea cada run), debuffs
+activos, `runState` completo (excepto lo que persiste via metaState).
+
+**Cuándo se guarda** (`saveGame()`): al comprar mejora, al morir, al
+equipar, al capturar boss stats, al subir de nivel.
+
+**`resetGame()`**: borra todo (`metaState` + `runState` + localStorage).
+
+### Funciones principales (cheat sheet)
+
+- `calcPlayerStats()` — stats finales del jugador desde fuentes flat +
+  % + talentos. NO modifica `runState`.
+- `calcEnemyStats(floor, playerStats, isFirstBossAttempt)` — stats de
+  enemigo con tier scaling + dynamic boss.
+- `calcDamage(atk, def, K=0.6)` — daño con DR relativa.
+- `startCombat()` — llama `calcPlayerStats()`, setea `runState.player`,
+  genera enemigo, arranca loop.
+- `combatTick()` — tick de combate (100ms), ataque de jugador y
+  enemigo, debuffs.
+- `showTalentChoice(floor)` — presenta opciones de talento + heroico
+  cada 20 pisos.
+- `selectTalent(id, level)` — asigna talento y cierra modal.
+- `enemyDefeated()` — XP, drop, talento cada 5 pisos, `floor++`.
+- `playerDied()` — cálculo de almas, leaderboard entry, guardado.
+- `render()` — actualiza TODO el DOM desde `metaState` + `runState`.
+- `spendEssence(amount)` — descuenta esencias, `saveGame()`, `render()`.
+  Retorna `false` si insuficiente.
+- `showReforgeModal()` / `selectReforgeSlot(slot)` / `reforgeRandom()`
+  / `reforgeChoose()` / `confirmReforge(id)` — flujo de reforja.
+- `showMaximizeModal()` / `selectMaximizeSlot(slot)` / `maximizeItem()`
+  / `rerollBonusStat()` — flujo de maximize.
+- `getMaximizeCost(enhance)` — `Math.floor(1.5^enhance)`.
+- `getRandomBonusStat(item)` — elige stat no-cero aleatorio, calcula
+  bonus.
+- `getAvailableMasteries(slot, currentId)` — filtra `MASTERIES[slot]`
+  excluyendo la actual.
+- `formatRunTime(ms)` — formatea ms a "Xm Ys" / "Xs".
+
 
 ## Pendientes / Ideas futuras
 - [x] 🔒 Cámara Rúnica — tercer dungeon ✅
