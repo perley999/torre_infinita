@@ -549,7 +549,7 @@
             font-weight: 800;
             font-size: 1.3rem;
             transform: translateX(-50%);
-            animation: floatUp 0.9s ease-out forwards;
+            animation: floatUp 1.4s ease-out forwards;
             text-shadow: 0 2px 6px rgba(0,0,0,0.9), 0 0 12px currentColor;
             pointer-events: none;
         }
@@ -560,7 +560,7 @@
         .float-num.crit { 
             font-size: 2rem; 
             color: #fbbf24;
-            animation: critFloat 1s ease-out forwards;
+            animation: critFloat 1.5s ease-out forwards;
         }
         .float-num.normal { color: #ef4444; }
         .float-num.heal { 
@@ -4250,7 +4250,7 @@
                     const actual = Math.min(perTick, runState._staggerDmg);
                     runState._staggerDmg -= actual;
                     p.hp -= actual;
-                    spawnFloat('player-floats', `-${formatNum(actual)} (🍺)`, 'normal');
+                    spawnFloat('player-floats', `-${formatNum(actual)} 🍺`, 'normal');
                     if (runState._staggerDmg <= 0) {
                         runState._staggerDmg = 0;
                         runState._staggerTick = 0;
@@ -4351,11 +4351,11 @@
                         const heal = Math.floor(fireDmg * currentLifesteal / 100);
                         if (heal > 0) {
                             p.hp = Math.min(p.maxHp, p.hp + heal);
-                            spawnFloat('player-floats', `+${formatNum(heal)} (🔥)`, 'heal');
+                            spawnFloat('player-floats', `+${formatNum(heal)} 🔥`, 'heal');
                             if (runState.recap) runState.recap.heal.lifesteal += heal;
                         }
                     }
-                    spawnFloat('enemy-floats', `-${formatNum(fireDmg)} (🔥)`, 'crit', 'left');
+                    spawnFloat('enemy-floats', `-${formatNum(fireDmg)} 🔥`, 'crit', 'left');
 
                     // 20% chance to apply/refresh burn (3s = 30 ticks)
                     if (Math.random() * 100 < fa.chance) {
@@ -4453,7 +4453,7 @@
                     const demonDmg = Math.floor(p.atk * 0.5);
                     e.hp -= demonDmg;
                     runState.demonHitsLeft--;
-                    spawnFloat('enemy-floats', `-${formatNum(demonDmg)} (👹)`, 'crit', 'right');
+                    spawnFloat('enemy-floats', `-${formatNum(demonDmg)} 👹`, 'crit', 'right');
                     if (runState.demonHitsLeft <= 0) runState.demonActive = false;
                 }
 
@@ -4622,7 +4622,7 @@
                         if (asesinato && Math.random() * 100 < (asesinato.chance || 0)) {
                             const poisonDmg = Math.max(1, Math.floor(e.maxHp * (asesinato.dmgPct || 0) / 100 / 3));
                             e.hp -= poisonDmg;
-                            spawnFloat('enemy-floats', `-${formatNum(poisonDmg)} (☠️)`, 'crit', 'right');
+                            spawnFloat('enemy-floats', `-${formatNum(poisonDmg)} ☠️`, 'crit', 'right');
                         }
                     }
 
@@ -9030,7 +9030,7 @@ runState.furiaStacks = 0;
             setTimeout(() => {
                 el.remove();
                 _floatQueues[queueKey] = Math.max(0, _floatQueues[queueKey] - 1);
-            }, 900);
+            }, 1400);
         }
 
         function showTutorial() { document.getElementById('tutorial-overlay').classList.add('visible'); }
