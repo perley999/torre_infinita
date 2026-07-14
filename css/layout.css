@@ -1,1 +1,17 @@
 /* layout.css — grid principal, media queries */
+
+/* ============================================
+   MAIN GRID LAYOUT
+   ============================================ */
+.combat-area {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    position: relative;
+}
+
+#action-bar {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+}
