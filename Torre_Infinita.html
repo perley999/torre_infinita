@@ -451,10 +451,6 @@
         let combatLoop = null;
         let isFirstAttack = true;
 
-
-            const stats = calcPlayerStats();
-            const p = runState.player;
-
         function combatTick() {
             if (!runState.active || !runState.enemy || runState.pendingChoice) return;
 
@@ -2084,7 +2080,6 @@ runState.furiaStacks = 0;
         // ============================================
         // DUNGEON FUNCTIONS — moved to js/game/dungeons.js
         // ============================================
-            const today = new Date().toISOString().split('T')[0];
 
         function buyUpgrade(key) {
             const u = metaState.upgrades[key];
@@ -2668,7 +2663,6 @@ runState.furiaStacks = 0;
         // ============================================
         // 7d. ABISMO ETERNO + CÁMARA ANCESTRAL — moved to js/game/dungeons.js
         // ============================================
-            const today = new Date().toISOString().split('T')[0];
         // ============================================
         // 7e. LEADERBOARD
         // ============================================
