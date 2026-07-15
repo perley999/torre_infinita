@@ -30,8 +30,8 @@ talentos cada 5 pisos, equipando items, y progresando entre runs.
 | `css/layout.css` | Grid principal, media queries. |
 | `css/components.css` | Combat, modales, equipment, runes, debuffs, talents, upgrades, reforge, codex, training, leaderboard. |
 | `js/core/` | 6 módulos sin dependencias entre ellos: `balance.js`, `state.js`, `constants.js`, `calc.js`, `equipment.js`, `utilities.js`. |
-| `js/game/` | 7 módulos que dependen de `core/`: `combat.js`, `combat-tick.js`, `classes.js`, `talents.js`, `runes.js`, `dungeons.js`, `debuffs.js` (placeholder). |
-| `js/ui/` | 6 módulos con contenido (`render.js`, `dom.js`, `modals-flow.js`, `modals-equipment.js`, `codex.js`, `arena.js`) + 6 placeholders vacíos. Dependen de `game/`. |
+| `js/game/` | 7 módulos que dependen de `core/`: `combat.js`, `combat-tick.js`, `classes.js`, `talents.js`, `runes.js`, `dungeons.js`, `debuffs.js` (placeholder reservado). |
+| `js/ui/` | 10 módulos con contenido (`render.js`, `dom.js`, `modals-flow.js`, `modals-equipment.js`, `codex.js`, `arena.js`, `character.js`, `talents.js`, `dungeons.js`, `runes.js`). Dependen de `game/`. |
 | `js/controls.js` | startRun, buyUpgrade, endTraining, restartRun. Orquestador de controles de flujo. |
 | `PROYECTO.md` | Arquitectura técnica, decisiones, fórmulas, referencia de subsistemas. **Doc principal de referencia.** |
 | `REFACTOR-PLAN.md` | **Histórico** del refactor `separate-ui-logic`. NO es un plan a seguir. |
@@ -146,6 +146,10 @@ El JS está dividido en módulos. Cada uno sigue este patrón:
 <!-- 3. UI (dependen de game) -->
 <script src="js/ui/modals-flow.js"></script>
 <script src="js/ui/modals-equipment.js"></script>
+<script src="js/ui/character.js"></script>
+<script src="js/ui/talents.js"></script>
+<script src="js/ui/dungeons.js"></script>
+<script src="js/ui/runes.js"></script>
 <script src="js/ui/codex.js"></script>
 <script src="js/ui/arena.js"></script>
 <script src="js/ui/dom.js"></script>
@@ -169,22 +173,34 @@ están en PROYECTO.md o en el doc del subsistema.
   playerDied, calcTieredBonuses) + `js/game/combat-tick.js` (loop
   principal, ~1000 líneas). Timers por velocidad, no turnos alternos.
   Ver PROYECTO.md.
-- **Talentos** → `js/game/talents.js` (checkLevelUp, showTalentChoice,
-  selectTalent, renderChoices, closeChoice). 37 talentos, 5 bloques,
-  3 niveles. Ver `Talentos.md`.
+- **Talentos** → `js/game/talents.js` (checkLevelUp, selectTalent) +
+  modales en `js/ui/talents.js` (showTalentChoice, renderChoices,
+  closeChoice). 37 talentos, 5 bloques, 3 niveles. Ver `Talentos.md`.
 - **Equipo (generación + comparación)** → `js/core/equipment.js`
   (generateItem, selectDungeonDrop, tryEquip) + modales de forja/
   reforge/ maximize en `js/ui/modals-equipment.js`. Slots, rarezas,
   maestrías, enhance, bonus stat. Ver `Maestrias.md` y PROYECTO.md.
-- **Runas** → `js/game/runes.js` (módulo más grande, ~1300 líneas:
-  conditions, effects, equipRune, fabricateRune, modales). Rarity
-  S/SS/SSS. Ver `Runas.md`.
+- **Runas** → `js/game/runes.js` (RUNE_CONDITIONS, RUNE_EFFECTS,
+  equipRune, fabricateRune, enhance, upgrade — 791 líneas) + modales
+  en `js/ui/runes.js` (showRuneModal, closeRuneModal, renderRuneModal,
+  showFabricateConfirm, doFabricate, showRuneEquipPicker,
+  renderRuneEquipPicker, confirmManualEquip, cancelRuneEquip).
+  Rarity S/SS/SSS. Ver `Runas.md`.
 - **Clases y especializaciones** → `js/game/classes.js`
-  (CLASS_CONFIG, SPECIALIZATIONS, getClass*, getSpec*, modal de
-  cambio). 4 clases × 3 specs. Ver `Clases.md`.
-- **Mazmorras** → `js/game/dungeons.js` (3 dungeons: Torre Ancestral,
-  Cámara Rúnica, Abismo Eterno, cada una con su pool de intentos).
-  Ver PROYECTO.md.
+  (CLASS_CONFIG, SPECIALIZATIONS, getClass*, getSpec*,
+  getClassPassiveValue, getSpecPassiveValue, calcularClassBonuses,
+  61 líneas) + modales en `js/ui/character.js` (showClassSelection,
+  showSpecSelection, showSpecChangeConfirm, confirmSpecChange,
+  showClassChangeConfirm, confirmClassChange, cancelClassChange,
+  showCharacterScreen, closeCharacterScreen, renderCharacterScreen,
+  renderRuneCharacterSection, doUnequipRune). 4 clases × 3 specs.
+  Ver `Clases.md`.
+- **Mazmorras** → `js/game/dungeons.js` (startTowerRun,
+  startRuneChamberRun, startLegacyAbyssRun, startDungeonRun, calc*,
+  check*Reset — 403 líneas) + modales en `js/ui/dungeons.js`
+  (showDungeonSelection, closeDungeonSelection, showDungeonComplete,
+  closeDungeonComplete). 3 dungeons: Torre Ancestral, Cámara Rúnica,
+  Abismo Eterno. Ver PROYECTO.md.
 - **Debuffs** → funciones de debuff viven en `js/core/calc.js`
   (mezcladas con cálculos puros). `js/game/debuffs.js` está como
   placeholder vacío. Ver PROYECTO.md.
