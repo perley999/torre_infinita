@@ -1166,4 +1166,5 @@ function combatTick() {
   };
 
   window.combatTick = combatTick;
+  window.combatLoop = combatLoop;
 })();
