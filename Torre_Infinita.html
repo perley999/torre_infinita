@@ -132,7 +132,7 @@
             <button class="action-btn forge" id="btn-forge" onclick="showForjaModal()" disabled>🔨 Forja</button>
             <button class="action-btn" id="btn-dungeon" onclick="Game.dungeons.showDungeonSelection()" style="display:none">🏰 Mazmorra</button>
             <button class="action-btn rebirth" id="btn-rebirth" onclick="showRebirthModal()" style="display:none">🪶 Renacer</button>
-            <button class="action-btn character" id="btn-character" onclick="Game.classes.showCharacterScreen()" disabled>👤</button>
+            <button class="action-btn character" id="btn-character" onclick="Game.character.showCharacterScreen()" disabled>👤</button>
         </div>
         <div style="text-align: center; margin-top: 4px;">
             <button onclick="resetGame()" style="background: transparent; border: 1px solid #3a2a2a; color: #6b4a4a; padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 0.75rem;">🗑️ Borrar progreso</button>
@@ -443,6 +443,7 @@
     <script src="js/controls.js"></script>
     <script src="js/ui/modals-flow.js"></script>
     <script src="js/ui/modals-equipment.js"></script>
+    <script src="js/ui/character.js"></script>
     <script src="js/ui/codex.js"></script>
     <script src="js/ui/arena.js"></script>
     <script src="js/ui/dom.js"></script>
