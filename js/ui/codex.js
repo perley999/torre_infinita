@@ -1,6 +1,7 @@
 // codex.js — talent/class/mastery/rune/prestige codex modal.
 (function() {
   'use strict';
+  window.Game = window.Game || {};
 
         // Talent Codex
         function showCodex() {

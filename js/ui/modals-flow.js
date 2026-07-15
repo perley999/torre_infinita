@@ -12,6 +12,7 @@
 //     references resolve through the global lookup at call time.
 (function() {
   'use strict';
+  window.Game = window.Game || {};
 
         // --- Training Mode Functions ---
         function showTrainingModal() {

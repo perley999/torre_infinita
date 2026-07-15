@@ -5,6 +5,7 @@
 // `window.combatLoop` (set in combat-tick.js).
 (function() {
   'use strict';
+  window.Game = window.Game || {};
 
         function startRun() {
             if (runState.active) return;

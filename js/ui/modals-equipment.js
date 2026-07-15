@@ -15,6 +15,7 @@
 // Both call sites resolve through the global lookup once this module loads.
 (function() {
   'use strict';
+  window.Game = window.Game || {};
 
         // ============================================
         // 6c. COMPARACIÓN DE EQUIPO

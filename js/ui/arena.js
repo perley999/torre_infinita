@@ -1,6 +1,7 @@
 // arena.js — visual combat arena (emoji sprites, lunge/hurt animations, lifecycle states).
 (function() {
   'use strict';
+  window.Game = window.Game || {};
 
         // ─── Arena ────────────────────────────────────────
         const ARENA_EMOJIS = {
