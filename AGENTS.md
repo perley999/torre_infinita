@@ -16,16 +16,25 @@ talentos cada 5 pisos, equipando items, y progresando entre runs.
 - **Lenguaje**: Vanilla JS, HTML, CSS. Sin TypeScript, sin frameworks.
 - **Build**: ninguno. El archivo se abre directamente en el browser.
 - **Tests**: ninguno. No hay runner, no hay infraestructura de testing.
-- **Persistencia**: `localStorage`.
+- **Persistencia**: `localStorage` (key `torre_infinita_save_v1`,
+  dataVersion 3, no migrar saves viejos).
 - **Sin package manager**: no existe `package.json`. NO correr `npm` /
   `pnpm` / `yarn` — no hay nada que instalar.
 
 ## File layout
 
-| Archivo | Rol |
+| Path | Rol |
 |---------|-----|
-| `Torre_Infinita.html` | El juego completo (HTML + CSS + JS inline). |
+| `Torre_Infinita.html` | Entry point. HTML + inline init code (loadGame, retro-check, render/updateButtons, showTutorial) + 20 `<script src>` que cargan los módulos. |
+| `css/base.css` | Reset, variables CSS, tipografía. |
+| `css/layout.css` | Grid principal, media queries. |
+| `css/components.css` | Combat, modales, equipment, runes, debuffs, talents, upgrades, reforge, codex, training, leaderboard. |
+| `js/core/` | 6 módulos sin dependencias entre ellos: `balance.js`, `state.js`, `constants.js`, `calc.js`, `equipment.js`, `utilities.js`. |
+| `js/game/` | 7 módulos que dependen de `core/`: `combat.js`, `combat-tick.js`, `classes.js`, `talents.js`, `runes.js`, `dungeons.js`, `debuffs.js` (placeholder). |
+| `js/ui/` | 6 módulos con contenido (`render.js`, `dom.js`, `modals-flow.js`, `modals-equipment.js`, `codex.js`, `arena.js`) + 6 placeholders vacíos. Dependen de `game/`. |
+| `js/controls.js` | startRun, buyUpgrade, endTraining, restartRun. Orquestador de controles de flujo. |
 | `PROYECTO.md` | Arquitectura técnica, decisiones, fórmulas, referencia de subsistemas. **Doc principal de referencia.** |
+| `REFACTOR-PLAN.md` | **Histórico** del refactor `separate-ui-logic`. NO es un plan a seguir. |
 | `README.md` | Docs para jugadores humanos. |
 | `CHANGELOG.md` | Historial de versiones. |
 | `Talentos.md` | Referencia de los 37 talentos. |
@@ -36,14 +45,17 @@ talentos cada 5 pisos, equipando items, y progresando entre runs.
 | `PROMPT.md` | Prompt para regenerar el MVP con otros modelos. |
 | `openspec/specs/*` | Specs SDD archivados de features implementadas. |
 
-> `BETA-GUIA.md` y `ANALIZADOR-PROGRESION.md` están en `.gitignore` — no commitear.
+> `BETA-GUIA.md` y `ANALIZADOR-PROGRESION.html` están en `.gitignore` — no commitear.
 
 ## Dev workflow
 
 1. **Probar el juego**: abrir `Torre_Infinita.html` directo en el
    browser (o servirlo con cualquier static server local, ej
    `python -m http.server`).
-2. **Hacer un cambio**: editar el archivo, refresh, probar.
+2. **Hacer un cambio**: identificar el módulo correcto (ver
+   **Subsystems map** abajo), editar el archivo, refresh, probar. La
+   mayoría de cambios visuales tocan `js/ui/render.js` o
+   `js/ui/dom.js`. Cambios de balance tocan `js/core/balance.js`.
 3. **Validar**: no hay tests automáticos. La validación es manual —
    jugar un par de runs, verificar que las mecánicas afectadas
    funcionan.
@@ -79,40 +91,136 @@ talentos cada 5 pisos, equipando items, y progresando entre runs.
   por `render()`.
 - Si necesitás actualizar un valor en pantalla, mutar el state y dejar
   que `render()` lo muestre — no leer/escribir `.textContent` directo.
+- `render()` vive en `js/ui/render.js`. `updateButtons()` vive en
+  `js/ui/dom.js`.
 
-### Estructura del script
+### Estructura modular
 
-El JS dentro de `Torre_Infinita.html` sigue este orden (ver
-[PROYECTO.md](PROYECTO.md) para el detalle de cada sección):
+El JS está dividido en módulos. Cada uno sigue este patrón:
 
-1. `BALANCE` — objeto central de números.
-2. Estado (`metaState` + `runState` + persistencia).
-3. Constantes y pools (nombres, talentos, clases, runas).
-4. Cálculos puros (daño, speed, stats, ilvl).
-5. Generación de equipo.
-6. Combate (incluye debuffs).
-7. Talentos.
-8. Modales (comparación equipo, reforzar, maximizar).
-9. Controles (start run, restart, buy upgrade).
-10. `render()` + UI.
-11. Leaderboard.
-12. Reforja y Maximizar.
+```js
+(function() {
+  'use strict';
+  // ...funciones y estado privado...
+  Game.modulo = { fn1, fn2 };
+  window.fn1 = fn1; // window bridge para onclick inline
+})();
+```
 
-## Subsystems map (con docs de referencia)
+**Conventions de módulos**:
+- Cada archivo expone su API pública como `Game.{module}`.
+- Para funciones que el HTML body llama via `onclick="X()"`,
+  también se exporta como `window.X = X;` al final del IIFE
+  (window bridge pattern). Esto sacrifica encapsulación estricta
+  a cambio de no reescribir 88 handlers del HTML body.
+- Si una variable necesita ser leída por otros scripts (como
+  `combatLoop` o `isFirstAttack`), se declara con `var` a nivel
+  top-level del archivo, **fuera del IIFE**. `let` dentro de un IIFE
+  strict NO se filtra al script-global lexical env.
+- Cross-module calls funcionan via global lookup: una función
+  expuesta a `window.X` puede ser llamada como `X()` desde otros
+  archivos sin prefijo.
+- `Game` es el namespace global; NO redeclarar `window.Game` (ya
+  existe desde `js/game/classes.js:5`).
 
-- **Combate** → timers por velocidad, no turnos alternos. Ver
-  PROYECTO.md.
-- **Talentos** → 37 talentos, 5 bloques, 3 niveles. Ver `Talentos.md`.
-- **Equipo** → slots, rarezas, maestrías, enhance, bonus stat. Ver
-  `Maestrias.md` y PROYECTO.md.
-- **Runas** → conditions + effects, rarezas S/SS/SSS. Ver `Runas.md`.
-- **Clases y especializaciones** → 4 clases × 3 specs. Ver `Clases.md`.
-- **Mazmorras** → 3 dungeons, cada una con su pool de intentos. Ver
-  PROYECTO.md.
-- **Prestigio** → Renacer al piso 100 + Árbol de Legado. Ver
-  `Prestigio.md`.
-- **Leaderboard** → top 10 local, persistido en `localStorage`. Solo
-  aplica a modo Torre.
+**Orden de carga** (en `Torre_Infinita.html`):
+
+```html
+<!-- 1. Core (sin dependencias internas) -->
+<script src="js/core/balance.js"></script>
+<script src="js/core/state.js"></script>
+<script src="js/core/constants.js"></script>
+<script src="js/core/calc.js"></script>
+<script src="js/core/equipment.js"></script>
+<script src="js/core/utilities.js"></script>
+
+<!-- 2. Game (dependen de core) -->
+<script src="js/game/debuffs.js"></script>
+<script src="js/game/classes.js"></script>
+<script src="js/game/talents.js"></script>
+<script src="js/game/runes.js"></script>
+<script src="js/game/dungeons.js"></script>
+<script src="js/game/combat.js"></script>
+<script src="js/game/combat-tick.js"></script>
+
+<!-- 3. UI (dependen de game) -->
+<script src="js/ui/modals-flow.js"></script>
+<script src="js/ui/modals-equipment.js"></script>
+<script src="js/ui/codex.js"></script>
+<script src="js/ui/arena.js"></script>
+<script src="js/ui/dom.js"></script>
+<script src="js/ui/render.js"></script>
+
+<!-- 4. Controls (orquestador, cargado último) -->
+<script src="js/controls.js"></script>
+```
+
+NO cambiar este orden sin entender el grafo de dependencias — si
+`combat.js` carga antes que `debuffs.js`, las llamadas internas
+rompen con `TypeError`. El grafo es estrictamente acíclico:
+`core → game → ui → controls`.
+
+## Subsystems map
+
+Cada subsistema apunta al archivo principal. Los detalles profundos
+están en PROYECTO.md o en el doc del subsistema.
+
+- **Combate** → `js/game/combat.js` (startCombat, enemyDefeated,
+  playerDied, calcTieredBonuses) + `js/game/combat-tick.js` (loop
+  principal, ~1000 líneas). Timers por velocidad, no turnos alternos.
+  Ver PROYECTO.md.
+- **Talentos** → `js/game/talents.js` (checkLevelUp, showTalentChoice,
+  selectTalent, renderChoices, closeChoice). 37 talentos, 5 bloques,
+  3 niveles. Ver `Talentos.md`.
+- **Equipo (generación + comparación)** → `js/core/equipment.js`
+  (generateItem, selectDungeonDrop, tryEquip) + modales de forja/
+  reforge/ maximize en `js/ui/modals-equipment.js`. Slots, rarezas,
+  maestrías, enhance, bonus stat. Ver `Maestrias.md` y PROYECTO.md.
+- **Runas** → `js/game/runes.js` (módulo más grande, ~1300 líneas:
+  conditions, effects, equipRune, fabricateRune, modales). Rarity
+  S/SS/SSS. Ver `Runas.md`.
+- **Clases y especializaciones** → `js/game/classes.js`
+  (CLASS_CONFIG, SPECIALIZATIONS, getClass*, getSpec*, modal de
+  cambio). 4 clases × 3 specs. Ver `Clases.md`.
+- **Mazmorras** → `js/game/dungeons.js` (3 dungeons: Torre Ancestral,
+  Cámara Rúnica, Abismo Eterno, cada una con su pool de intentos).
+  Ver PROYECTO.md.
+- **Debuffs** → funciones de debuff viven en `js/core/calc.js`
+  (mezcladas con cálculos puros). `js/game/debuffs.js` está como
+  placeholder vacío. Ver PROYECTO.md.
+- **Prestigio** → Renacer al piso 100 + Árbol de Legado. Modales
+  (showRebirthModal, performRebirth, showArtifactTree,
+  buyArtifactNode) en `js/ui/modals-flow.js`. Ver `Prestigio.md`.
+- **Leaderboard** → top 10 local, persistido en `localStorage`. Modal
+  (showLeaderboard) en `js/ui/modals-flow.js`. Solo aplica a modo
+  Torre.
+- **Codex** → `js/ui/codex.js` (5 funciones: showCodex, buildCodexHTML,
+  toggleCodexBlock, toggleCodexTalentCat, closeCodex). Guía in-game
+  de talentos y clases.
+- **Arena** → `js/ui/arena.js` (8 funciones + constante `ARENA_EMOJIS`).
+  Visuales del combate (toggleArena, updateArena, arenaLunge,
+  arenaHurt, arenaEnemyDefeated, arenaPlayerDied, arenaIdle,
+  getArenaEmoji).
+- **Tutorial** → `js/ui/modals-flow.js` (showTutorial, closeTutorial,
+  toggleAdvancedStats). Aparece solo en el primer arranque.
+- **Render y UI helpers** → `js/ui/render.js` (función `render()`,
+  324 líneas) + `js/ui/dom.js` (`updateButtons`).
+- **Controles de flujo** → `js/controls.js` (startRun, buyUpgrade,
+  endTraining, restartRun). `combatLoop` vive en
+  `js/game/combat-tick.js` como `var` top-level.
+- **Persistencia y estado** → `js/core/state.js` (metaState, runState,
+  saveGame, loadGame, resetGame, initRecap, checkTrainingUnlock,
+  spendEssence, flashSaveIndicator).
+- **Constantes y pools** → `js/core/constants.js` (ENEMY_NAMES,
+  BOSS_NAMES, POOL_ICONS, TALENT_POOL, CLASS_CONFIG, CLASS_PASSIVES,
+  SPECIALIZATIONS, SPEC_PASSIVES, MASTERIES, SAVE_KEY, getAllTalents,
+  findTalent).
+- **Cálculos puros** → `js/core/calc.js` (calcDamage, calcPlayerStats,
+  calcEnemyStats, calcIlvl, diminishingReturns, speedToInterval,
+  getUpgradeCost, calcTieredBonuses, funciones de debuff).
+- **Utilidades y DOM effects** → `js/core/utilities.js` (formatNum,
+  formatRunTime, addLog, flashElement, flashSaveIndicator,
+  spawnFloat, triggerAttackEffect).
 
 ## Things to AVOID
 
@@ -131,6 +239,18 @@ El JS dentro de `Torre_Infinita.html` sigue este orden (ver
   juego (💀, 🩸, 🔮, 🪶) son contenido del juego, no del repo.
 - **NO usar `Co-Authored-By: ...` en commits.** Regla del workspace,
   no del proyecto.
+- **NO crear nuevas variables globales a top-level** fuera de un
+  módulo. Si una variable necesita ser leída por otros scripts
+  (como `combatLoop`), declarala como `var X` dentro del archivo del
+  módulo que la posee y exponela con `window.X = X;`. NO usar `let`
+  para esto — se queda en el lexical env del IIFE.
+- **NO reordenar los `<script src>`** sin entender el grafo de
+  dependencias. Ver **Estructura modular** arriba. Si invertís el
+  orden de `core/`, `game/`, `ui/`, `controls`, las llamadas internas
+  rompen con `TypeError`.
+- **NO redefinir el namespace `Game`.** Ya está definido en
+  `js/game/classes.js:5`. Los módulos nuevos lo usan directamente
+  (`Game.X = { ... }`) sin redeclarar `window.Game = window.Game || {}`.
 - **Ante cualquier duda sobre lo que pide el usuario, PREGUNTAR antes
   de decidir por cuenta propia.** Es preferible una pregunta de más a
   implementar algo que no era lo que se quería.
@@ -153,3 +273,5 @@ El JS dentro de `Torre_Infinita.html` sigue este orden (ver
 - Para regenerar el MVP → [PROMPT.md](PROMPT.md)
 - Para spec formal de features → `openspec/specs/*`
 - Para historial → [CHANGELOG.md](CHANGELOG.md)
+- Histórico del refactor `separate-ui-logic` (qué se hizo, qué
+  desviaciones hubo, qué deuda queda) → [REFACTOR-PLAN.md](REFACTOR-PLAN.md)
