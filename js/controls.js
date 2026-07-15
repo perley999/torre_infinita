@@ -1,9 +1,82 @@
-// controls.js — control-flow handlers (endTraining, restartRun).
-// Extracted from inline HTML as part of F4a cleanup. The implicit
-// dependency on the `var combatLoop` leaked from combat-tick.js is
-// now an explicit read via `window.combatLoop` (set in combat-tick.js).
+// controls.js — control-flow handlers (startRun, endTraining,
+// restartRun, buyUpgrade). Extracted from inline HTML as part of
+// F4a/F4b-4a cleanup. The implicit dependency on the `var combatLoop`
+// leaked from combat-tick.js is now an explicit read via
+// `window.combatLoop` (set in combat-tick.js).
 (function() {
   'use strict';
+
+        function startRun() {
+            if (runState.active) return;
+            arenaIdle();
+            runState.active = true; runState.floor = 1;
+            runState.trainingMode = false;
+            runState.dungeonMode = false;
+            runState.legacyAbyssMode = false;
+            runState.dungeonDifficulty = 0;
+            runState.trainingFloor = 30;
+            runState.enemiesDefeated = 0;
+            runState.level = metaState.heroLevel;
+            runState.xp = metaState.heroXp;
+            runState.xpToNext = BALANCE.levelUp.xpScale * (runState.level || 1);
+            runState.runBonuses = { ...metaState.heroBonuses };
+            // Añadir class bonuses si hay clase
+            if (metaState.playerClass) {
+                const cb = calcularClassBonuses(runState.level, metaState.playerClass);
+                runState.runBonuses.hp += cb.hp;
+                runState.runBonuses.atk += cb.atk;
+                runState.runBonuses.def += cb.def;
+                runState.runBonuses.agi += cb.agi;
+            }
+            runState.characterScreenActive = false;
+            runState.classHits = 0;
+            runState.firstHitDone = false;
+            runState.nextHitMult = 1;
+            runState.dodgeStreak = 0;
+            runState.attackCounter = 0;
+            runState.demonHits = 0;
+            runState.classComboStacks = 0;
+            runState.demonActive = false;
+            runState.demonHitsLeft = 0;
+            runState.abilities = []; // Talentos se resetean cada run
+            runState.talentLevels = {}; // Progreso de talentos se resetea cada run
+            runState.hasRevived = false;
+            runState.furiaStacks = 0;
+            runState.critMasteryCounter = 0;
+            runState.runeTapCounter = 0;
+            runState.reflejoBonus = 0;
+            runState.spellShieldCounter = 0;
+            runState.segundoAlientoUsed = false;
+            runState.bossesKilledThisRun = 0;
+            runState.enemyDebuffs = [];
+            runState.vitalShield = 0;
+            runState.shieldMax = 0;
+            runState.piedraShield = { amount: 0, ticksLeft: 0 };
+            runState.runeBuffs = [];
+            runState.runeCooldowns = {};
+            runState.runeConditionsTick = 0;
+            if (runState.enemy && runState.enemy._runeQuebrantarOrigDef !== undefined) {
+                runState.enemy.def = runState.enemy._runeQuebrantarOrigDef;
+                delete runState.enemy._runeQuebrantarOrigDef;
+            }
+            metaState.hasRebirthed = false;
+            runState.runStartTime = Date.now();
+            runState.recap = initRecap();
+            document.getElementById('combat-log').innerHTML = '';
+            addLog('🗼 Nueva run iniciada', 'system');
+            startCombat();
+            // Si el jugador tiene nivel 50+ y no eligió clase, mostramos selección
+            if (runState.level >= 50 && !metaState.playerClass && !runState.trainingMode) {
+                showClassSelection();
+                return;
+            }
+            // Si tiene clase pero no especialización y nivel >= 100, mostramos selección
+            if (runState.level >= 100 && metaState.playerClass && !metaState.playerSpec && !runState.trainingMode) {
+                showSpecSelection();
+                return;
+            }
+            updateButtons();
+        }
 
         function endTraining() {
             if (!runState.trainingMode) return;
@@ -88,9 +161,22 @@
             render(); updateButtons();
         }
 
+        function buyUpgrade(key) {
+            const u = metaState.upgrades[key];
+            if (u.maxLevel && u.level >= u.maxLevel) return;
+            const cost = getUpgradeCost(key);
+            if (metaState.souls < cost) return;
+            metaState.souls -= cost; metaState.upgrades[key].level++;
+            addLog(`⬆️ Mejora: ${metaState.upgrades[key].label} (Nv ${metaState.upgrades[key].level})`, 'system');
+            render();
+            saveGame();
+        }
+
   Game.controls = Game.controls || {};
   Game.controls.endTraining = endTraining;
   Game.controls.restartRun = restartRun;
   window.endTraining = endTraining;
   window.restartRun = restartRun;
+  window.startRun = startRun;
+  window.buyUpgrade = buyUpgrade;
 })();

@@ -84,6 +84,17 @@ function spawnFloat(containerId, text, type, lane) {
     }, 1400);
 }
 
+function formatRunTime(ms) {
+    const totalSec = Math.floor(ms / 1000);
+    if (totalSec < 60) return totalSec + 's';
+    const min = Math.floor(totalSec / 60);
+    const sec = totalSec % 60;
+    if (min < 60) return min + 'm ' + sec + 's';
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    return h + 'h ' + m + 'm ' + sec + 's';
+}
+
 
   // Expose to namespace and global scope
   Game.utilities = {
@@ -98,4 +109,5 @@ function spawnFloat(containerId, text, type, lane) {
   window.flashElement = flashElement;
   window.triggerAttackEffect = triggerAttackEffect;
   window.spawnFloat = spawnFloat;
+  window.formatRunTime = formatRunTime;
 })();
